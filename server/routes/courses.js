@@ -72,14 +72,17 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
         const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
         return { duplicate: true, user: user.rows[0] };
       }
-      const user = await client.query(
+      await client.query(
         `UPDATE users
          SET xp_total = xp_total + $2,
              hours_total = hours_total + $3,
              updated_at = NOW()
-         WHERE id = $1
-         RETURNING xp_total, hours_total`,
+         WHERE id = $1`,
         [req.user.id, c.xp_reward, c.duration_hours]
+      );
+      const user = await client.query(
+        `SELECT xp_total, hours_total FROM users WHERE id = $1`,
+        [req.user.id]
       );
       await client.query("UPDATE courses SET enrolled_count = enrolled_count + 1 WHERE id = $1", [c.id]);
       return { duplicate: false, course: c, user: user.rows[0] };
@@ -111,17 +114,23 @@ coursesRouter.get("/:id/testimonials", async (req, res) => {
 coursesRouter.post("/:id/testimonials", async (req, res) => {
   const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [req.user.id, req.params.id]);
   if (!completed.rowCount) return res.status(403).json({ error: "COMPLETE_COURSE_FIRST" });
-  const result = await query(
+  await query(
     `INSERT INTO testimonials (course_id, user_id, rating, content)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`,
+     VALUES ($1, $2, $3, $4)`,
     [req.params.id, req.user.id, req.body.rating, req.body.content || null]
   );
   await query(
     `UPDATE courses SET rating = (
-       SELECT ROUND(AVG(rating)::numeric, 1) FROM testimonials WHERE course_id = $1
+       SELECT ROUND(AVG(rating), 1) FROM testimonials WHERE course_id = $1
      ) WHERE id = $1`,
     [req.params.id]
+  );
+  const result = await query(
+    `SELECT t.*, u.full_name, u.avatar_url FROM testimonials t
+     JOIN users u ON u.id = t.user_id
+     WHERE t.course_id = $1 AND t.user_id = $2
+     ORDER BY t.created_at DESC LIMIT 1`,
+    [req.params.id, req.user.id]
   );
   res.status(201).json({ testimonial: result.rows[0] });
 });

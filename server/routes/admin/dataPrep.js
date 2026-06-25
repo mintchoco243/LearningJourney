@@ -256,3 +256,333 @@ adminDataPrepRouter.post("/:type/save", async (req, res, next) => {
     next(error);
   }
 });
+
+// POST /admin/api/data-prep/:type/promote -> Promote staging draft batch to live tables
+adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
+  try {
+    const type = req.params.type;
+    const spec = getSpec(type);
+
+    // Permission check: super_admin for admin-accounts, ld_admin or super_admin for others
+    if (type === "admin-accounts" && req.adminRole !== "super_admin") {
+      return res.status(403).json({ error: "SUPER_ADMIN_REQUIRED_FOR_ADMIN_ACCOUNTS" });
+    }
+
+    const { batchId } = req.body;
+    let batch;
+
+    if (batchId) {
+      const result = await query("SELECT * FROM data_batches WHERE id = $1 AND entity_type = $2", [batchId, type]);
+      if (!result.rowCount) return res.status(404).json({ error: "BATCH_NOT_FOUND" });
+      batch = result.rows[0];
+    } else {
+      const result = await query(
+        `SELECT * FROM data_batches
+         WHERE entity_type = $1
+         ORDER BY created_at DESC LIMIT 1`,
+        [type]
+      );
+      if (!result.rowCount) return res.status(404).json({ error: "NO_BATCHES_FOUND" });
+      batch = result.rows[0];
+    }
+
+    if (batch.promoted_at) {
+      return res.status(400).json({ error: "BATCH_ALREADY_PROMOTED" });
+    }
+
+    const stagingRowsResult = await query(`SELECT * FROM ${spec.table} WHERE batch_id = $1`, [batch.id]);
+    const stagingRows = stagingRowsResult.rows;
+
+    if (!stagingRows.length) {
+      return res.status(400).json({ error: "BATCH_HAS_NO_ROWS" });
+    }
+
+    const promotedAt = new Date();
+
+    await withTransaction(async (client) => {
+      let snapshotData = {};
+
+      if (type === "courses") {
+        const courseIds = stagingRows.map((r) => r.course_id);
+        const placeholders = courseIds.map((_, i) => `$${i + 1}`).join(", ");
+        
+        // Snapshot existing courses
+        const existingCourses = await client.query(
+          `SELECT * FROM courses WHERE id IN (${placeholders})`,
+          courseIds
+        );
+        snapshotData = { existing: existingCourses.rows, promotedIds: courseIds };
+
+        // Promote (insert / upsert)
+        for (const row of stagingRows) {
+          await client.query(
+            `INSERT INTO courses
+               (id, title, trainer, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ON DUPLICATE KEY UPDATE
+               title = VALUES(title),
+               trainer = VALUES(trainer),
+               format = VALUES(format),
+               duration_hours = VALUES(duration_hours),
+               skill_tags = VALUES(skill_tags),
+               rank_targets = VALUES(rank_targets),
+               role_targets = VALUES(role_targets),
+               type = VALUES(type),
+               min_participants = VALUES(min_participants),
+               registration_url = VALUES(registration_url),
+               description = VALUES(description),
+               xp_reward = VALUES(xp_reward),
+               is_active = VALUES(is_active),
+               updated_at = NOW()`,
+            [
+              row.course_id,
+              row.title,
+              row.trainer,
+              row.format,
+              row.duration_hours,
+              row.skill_tags,
+              row.rank_targets,
+              row.role_targets,
+              row.type,
+              row.min_participants,
+              row.registration_url,
+              row.xp_reward,
+              row.is_active,
+            ]
+          );
+        }
+      }
+
+      else if (type === "sessions") {
+        const createdSessionIds = [];
+        for (const row of stagingRows) {
+          const sessionId = crypto.randomUUID();
+          createdSessionIds.push(sessionId);
+          await client.query(
+            `INSERT INTO course_sessions
+               (id, course_id, session_date, session_time, location, max_participants, status)
+             VALUES ($1, $2, $3, $4, $5, $6, 'open')`,
+            [
+              sessionId,
+              row.course_id,
+              row.session_date,
+              row.session_time || null,
+              row.location || null,
+              row.max_participants || null,
+            ]
+          );
+        }
+        snapshotData = { createdSessionIds };
+      }
+
+      else if (type === "policies") {
+        const createdPolicyIds = [];
+        for (const row of stagingRows) {
+          const policyId = crypto.randomUUID();
+          createdPolicyIds.push(policyId);
+          await client.query(
+            `INSERT INTO policies
+               (id, category, title, content, is_active, order_index)
+             VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+              policyId,
+              row.category,
+              row.title,
+              row.content,
+              row.is_active,
+              row.order_index || 0,
+            ]
+          );
+        }
+        snapshotData = { createdPolicyIds };
+      }
+
+      else if (type === "admin-accounts") {
+        const emails = stagingRows.map((r) => r.email.toLowerCase());
+        const placeholders = emails.map((_, i) => `$${i + 1}`).join(", ");
+
+        // Snapshot existing admin accounts
+        const existingAdmins = await client.query(
+          `SELECT * FROM admin_accounts WHERE email IN (${placeholders})`,
+          emails
+        );
+        snapshotData = { existing: existingAdmins.rows, promotedEmails: emails };
+
+        // Promote (insert / upsert)
+        for (const row of stagingRows) {
+          await client.query(
+            `INSERT INTO admin_accounts (email, full_name, \`role\`, is_active)
+             VALUES ($1, $2, $3, $4)
+             ON DUPLICATE KEY UPDATE
+               full_name = VALUES(full_name),
+               \`role\` = VALUES(\`role\`),
+               is_active = VALUES(is_active)`,
+            [
+              row.email.toLowerCase(),
+              row.full_name || null,
+              row.role,
+              row.is_active,
+            ]
+          );
+        }
+      }
+
+      // Mark batch as promoted and store snapshot data
+      await client.query(
+        `UPDATE data_batches
+         SET promoted_at = $2, promoted_by = $3, snapshot_data = $4
+         WHERE id = $1`,
+        [batch.id, promotedAt, req.user.email, JSON.stringify(snapshotData)]
+      );
+    });
+
+    res.json({
+      ok: true,
+      batchId: batch.id,
+      type,
+      promoted: stagingRows.length,
+      promoted_at: promotedAt.toISOString(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /admin/api/data-prep/:type/rollback -> Rollback a promoted batch (within 24 hours)
+adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
+  try {
+    const type = req.params.type;
+    const { batchId } = req.body;
+
+    if (!batchId) {
+      return res.status(400).json({ error: "BATCH_ID_REQUIRED" });
+    }
+
+    if (type === "admin-accounts" && req.adminRole !== "super_admin") {
+      return res.status(403).json({ error: "SUPER_ADMIN_REQUIRED_FOR_ADMIN_ACCOUNTS" });
+    }
+
+    const result = await query("SELECT * FROM data_batches WHERE id = $1 AND entity_type = $2", [batchId, type]);
+    if (!result.rowCount) return res.status(404).json({ error: "BATCH_NOT_FOUND" });
+    const batch = result.rows[0];
+
+    if (!batch.promoted_at) {
+      return res.status(400).json({ error: "BATCH_NOT_PROMOTED" });
+    }
+
+    // Check if 24 hours have passed
+    const promotedTime = new Date(batch.promoted_at).getTime();
+    const now = Date.now();
+    const hours24 = 24 * 60 * 60 * 1000;
+    if (now - promotedTime > hours24) {
+      return res.status(400).json({ error: "ROLLBACK_EXPIRED_24H" });
+    }
+
+    let snapshot = {};
+    try {
+      snapshot = typeof batch.snapshot_data === "string" ? JSON.parse(batch.snapshot_data) : batch.snapshot_data || {};
+    } catch (e) {
+      snapshot = {};
+    }
+
+    await withTransaction(async (client) => {
+      if (type === "courses") {
+        const { existing = [], promotedIds = [] } = snapshot;
+
+        // Delete newly created courses (those not in snapshot existing)
+        const existingIds = new Set(existing.map((c) => c.id));
+        const newIds = promotedIds.filter((id) => !existingIds.has(id));
+
+        if (newIds.length) {
+          const placeholders = newIds.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM courses WHERE id IN (${placeholders})`, newIds);
+        }
+
+        // Restore existing courses
+        for (const c of existing) {
+          await client.query(
+            `UPDATE courses
+             SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
+                 skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
+                 min_participants = $11, registration_url = $12, description = $13,
+                 xp_reward = $14, is_active = $15, updated_at = NOW()
+             WHERE id = $1`,
+            [
+              c.id,
+              c.title,
+              c.trainer,
+              c.trainer_type,
+              c.format,
+              c.duration_hours,
+              JSON.stringify(c.skill_tags),
+              JSON.stringify(c.rank_targets),
+              JSON.stringify(c.role_targets),
+              c.type,
+              c.min_participants,
+              c.registration_url,
+              c.description,
+              c.xp_reward,
+              c.is_active,
+            ]
+          );
+        }
+      }
+
+      else if (type === "sessions") {
+        const { createdSessionIds = [] } = snapshot;
+        if (createdSessionIds.length) {
+          const placeholders = createdSessionIds.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM course_sessions WHERE id IN (${placeholders})`, createdSessionIds);
+        }
+      }
+
+      else if (type === "policies") {
+        const { createdPolicyIds = [] } = snapshot;
+        if (createdPolicyIds.length) {
+          const placeholders = createdPolicyIds.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM policies WHERE id IN (${placeholders})`, createdPolicyIds);
+        }
+      }
+
+      else if (type === "admin-accounts") {
+        const { existing = [], promotedEmails = [] } = snapshot;
+
+        const existingEmails = new Set(existing.map((a) => a.email.toLowerCase()));
+        const newEmails = promotedEmails.filter((email) => !existingEmails.has(email.toLowerCase()));
+
+        // Delete newly created admin accounts
+        if (newEmails.length) {
+          const placeholders = newEmails.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM admin_accounts WHERE email IN (${placeholders})`, newEmails);
+        }
+
+        // Restore existing accounts
+        for (const a of existing) {
+          await client.query(
+            `UPDATE admin_accounts
+             SET full_name = $2, \`role\` = $3, is_active = $4
+             WHERE id = $1`,
+            [a.id, a.full_name, a.role, a.is_active]
+          );
+        }
+      }
+
+      // Reset promotion markers
+      await client.query(
+        `UPDATE data_batches
+         SET promoted_at = NULL, promoted_by = NULL, snapshot_data = NULL
+         WHERE id = $1`,
+        [batch.id]
+      );
+    });
+
+    res.json({
+      ok: true,
+      batchId,
+      rolledBack: true,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+

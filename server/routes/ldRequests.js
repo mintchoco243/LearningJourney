@@ -17,12 +17,15 @@ ldRequestsRouter.post("/", async (req, res) => {
     return res.status(400).json({ error: "DESCRIPTION_REQUIRED" });
   }
 
-  const result = await query(
+  await query(
     `INSERT INTO ld_requests
      (user_id, skills_needed, description, preferred_formats, weekly_hours, preferred_trainers, other_notes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING *`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
     [req.user.id, skills_needed, description, preferred_formats, weekly_hours, preferred_trainers, other_notes]
+  );
+  const result = await query(
+    `SELECT * FROM ld_requests WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1`,
+    [req.user.id]
   );
   res.status(201).json({ request: result.rows[0] });
 });

@@ -27,17 +27,17 @@ meRouter.get("/", async (req, res) => {
 
 meRouter.put("/", async (req, res) => {
   const { learning_formats, weekly_hours, preferred_trainers, learning_goals } = req.body;
-  const result = await query(
+  await query(
     `UPDATE users
      SET learning_formats = COALESCE($2, learning_formats),
          weekly_hours = COALESCE($3, weekly_hours),
          preferred_trainers = COALESCE($4, preferred_trainers),
          learning_goals = COALESCE($5, learning_goals),
          updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
+     WHERE id = $1`,
     [req.user.id, learning_formats, weekly_hours, preferred_trainers, learning_goals]
   );
+  const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0] });
 });
 
@@ -52,7 +52,7 @@ meRouter.post("/onboarding", async (req, res) => {
     learning_goals,
   } = req.body;
 
-  const result = await query(
+  await query(
     `UPDATE users
      SET rank = $2,
          role = $3,
@@ -64,9 +64,9 @@ meRouter.post("/onboarding", async (req, res) => {
          onboarding_done = TRUE,
          xp_total = GREATEST(xp_total, 50),
          updated_at = NOW()
-     WHERE id = $1
-     RETURNING *`,
+     WHERE id = $1`,
     [req.user.id, rank, role, class_archetype, learning_formats, weekly_hours, preferred_trainers, learning_goals]
   );
+  const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0], xp_earned: 50 });
 });

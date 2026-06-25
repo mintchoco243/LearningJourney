@@ -15,6 +15,12 @@ import { policiesRouter } from "./routes/policies.js";
 import { sessionsRouter } from "./routes/sessions.js";
 import { adminDataPrepRouter } from "./routes/admin/dataPrep.js";
 import { adminStatsRouter } from "./routes/admin/stats.js";
+import { adminCoursesRouter } from "./routes/admin/courses.js";
+import { adminSessionsRouter } from "./routes/admin/sessions.js";
+import { adminUsersRouter } from "./routes/admin/users.js";
+import { adminLdRequestsRouter } from "./routes/admin/ldRequests.js";
+import { adminPoliciesRouter } from "./routes/admin/policies.js";
+import { adminAccountsRouter } from "./routes/admin/accounts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -37,6 +43,12 @@ app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
 app.use("/api/policies", requireAuth, policiesRouter);
 app.use("/admin/api/data-prep", requireAuth, requireAdmin, adminDataPrepRouter);
 app.use("/admin/api/stats", requireAuth, requireAdmin, adminStatsRouter);
+app.use("/admin/api/courses", requireAuth, requireAdmin, adminCoursesRouter);
+app.use("/admin/api/sessions", requireAuth, requireAdmin, adminSessionsRouter);
+app.use("/admin/api/users", requireAuth, requireAdmin, adminUsersRouter);
+app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRouter);
+app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
+app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
 app.use(express.static(path.join(__dirname, "..", "public")));
 app.get("*", (req, res) => {

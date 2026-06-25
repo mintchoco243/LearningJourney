@@ -60,17 +60,18 @@ CREATE TABLE IF NOT EXISTS staging_admin_accounts (
   batch_id CHAR(36) NOT NULL,
   email VARCHAR(255),
   full_name VARCHAR(255),
-  role VARCHAR(50),
+  `role` VARCHAR(50),
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_staging_admin_accounts_batch FOREIGN KEY (batch_id) REFERENCES data_batches(id) ON DELETE CASCADE
 );
 
-INSERT INTO admin_accounts (email, full_name, role, is_active)
+INSERT INTO admin_accounts (email, full_name, `role`, is_active)
 VALUES
   ('demo@garena.vn', 'Demo Admin', 'super_admin', TRUE),
-  ('minhngoc.phamnguyen@garena.vn', 'Minh Ngoc Pham Nguyen', 'super_admin', TRUE)
+  ('minhngoc.phamnguyen@garena.vn', 'Minh Ngoc Pham Nguyen', 'super_admin', TRUE),
+  ('vananh.le@garena.vn', 'Van Anh Le', 'super_admin', TRUE)
 ON DUPLICATE KEY UPDATE
   full_name = VALUES(full_name),
-  role = VALUES(role),
+  `role` = VALUES(`role`),
   is_active = TRUE;

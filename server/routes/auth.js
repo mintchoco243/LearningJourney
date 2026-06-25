@@ -1,8 +1,19 @@
 import express from "express";
 import { clearAuthCookie, config, devLoginUser, getGoogleProfile, googleAuthUrl, setAuthCookie, signToken, upsertUser } from "../route-deps.js";
 import { query } from "../db.js";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 export const authRouter = express.Router();
+
+// GET /auth/me -> Get current authenticated user details
+authRouter.get("/me", requireAuth, async (req, res, next) => {
+  try {
+    const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
+});
 
 authRouter.get("/google", (req, res) => {
   if (!config.google.clientId || !config.google.clientSecret) {

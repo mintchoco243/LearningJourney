@@ -20,7 +20,14 @@ for (const file of files) {
     .map((statement) => statement.trim())
     .filter(Boolean);
   for (const statement of statements) {
-    await pool.query(statement);
+    try {
+      await pool.query(statement);
+    } catch (err) {
+      if (err.code === "ER_DUP_FIELDNAME" || err.code === "ER_DUP_KEYNAME") {
+        continue;
+      }
+      throw err;
+    }
   }
   process.stdout.write("done\n");
 }

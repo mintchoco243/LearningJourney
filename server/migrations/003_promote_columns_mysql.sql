@@ -1,0 +1,4 @@
+ALTER TABLE data_batches
+ADD COLUMN promoted_at TIMESTAMP NULL,
+ADD COLUMN promoted_by VARCHAR(255) NULL,
+ADD COLUMN snapshot_data JSON NULL;
