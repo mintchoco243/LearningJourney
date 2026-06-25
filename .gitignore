@@ -1,0 +1,11 @@
+node_modules/
+node_modules.broken.*/
+.env
+uploads/
+npm-debug.log*
+.DS_Store
+*.zip
+*.docx
+*.gdoc
+Garena Learning Hub*.html
+_tmp_*

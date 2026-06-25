@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Garena Learning Hub Admin</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script defer src="/app.js"></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Garena Learning Hub</p>
+        <h1>Data Prep Space</h1>
+      </div>
+      <div class="session">
+        <span id="userEmail">Not signed in</span>
+        <button id="logoutButton" class="ghost" type="button">Logout</button>
+      </div>
+    </header>
+
+    <main class="shell">
+      <section id="loginPanel" class="panel login-panel">
+        <h2>Admin login</h2>
+        <p>Use an admin-whitelisted Garena email to prepare course, session, policy, and admin account data.</p>
+        <form id="loginForm" class="login-form">
+          <label>
+            Email
+            <input id="emailInput" type="email" value="minhngoc.phamnguyen@garena.vn" autocomplete="email" />
+          </label>
+          <button type="submit">Login</button>
+        </form>
+        <p class="hint">This MVP uses dev login until Google OAuth is configured for Demo.</p>
+      </section>
+
+      <section id="appPanel" class="workspace hidden">
+        <nav id="tabs" class="tabs" aria-label="Data sections"></nav>
+
+        <section class="panel controls">
+          <div>
+            <h2 id="sectionTitle">Courses</h2>
+            <p id="sectionHint">Upload or paste data, preview validation, then save a draft batch.</p>
+          </div>
+          <div class="actions">
+            <a id="templateLink" class="button ghost" href="#">Template</a>
+            <a id="exportLink" class="button ghost" href="#">Export Draft</a>
+          </div>
+        </section>
+
+        <section class="grid">
+          <div class="panel">
+            <h3>Import</h3>
+            <label class="file-box">
+              <span>CSV/XLSX file</span>
+              <input id="fileInput" type="file" accept=".csv,.xlsx,.xls,text/csv" />
+            </label>
+            <label>
+              Paste spreadsheet rows
+              <textarea id="pasteInput" rows="10" spellcheck="false"></textarea>
+            </label>
+            <div class="actions">
+              <button id="parseButton" type="button">Preview</button>
+              <button id="saveButton" type="button" disabled>Save Draft</button>
+            </div>
+            <p id="statusText" class="status"></p>
+          </div>
+
+          <div class="panel">
+            <h3>Expected Columns</h3>
+            <div id="columnsList" class="columns"></div>
+            <p class="hint">CSV uses comma-separated headers. Paste can use tabs from Excel or Google Sheets.</p>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="table-head">
+            <h3>Preview</h3>
+            <span id="summaryText"></span>
+          </div>
+          <div id="tableWrap" class="table-wrap"></div>
+        </section>
+      </section>
+    </main>
+  </body>
+</html>
