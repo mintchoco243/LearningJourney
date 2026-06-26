@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "node --watch server/index.js",
-    "start": "npm install --omit=dev --prefer-offline && node server/migrate.js && node server/index.js",
+    "prestart": "node server/migrate.js",
+    "start": "node server/index.js",
     "db:migrate": "node server/migrate.js",
     "db:seed": "node server/seed.js",
     "cron:reminder": "node server/scripts/sessionReminder.js",
