@@ -8,18 +8,68 @@
   const { Badge, PageHeader, Modal, Toggle, SearchInput } = window.ADMComponents;
   const D = window.ADM_DATA;
 
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(path, { credentials: "include", ...opts });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.status); }
+    return res.json();
+  }
+
+  function mapSession(s) {
+    return {
+      id: s.id,
+      course_id: s.course_id,
+      course_title: s.course_title || s.title || s.course_id,
+      date: s.session_date || s.date || "",
+      time: s.session_time || s.time || "",
+      location: s.location || "",
+      trainer: s.trainer || "",
+      min_participants: s.min_participants || 0,
+      max_participants: s.max_participants || 0,
+      current_count: s.current_count || 0,
+      status: s.status || "open",
+    };
+  }
+
+  function mapRequest(r) {
+    const skills = r.skills_needed
+      ? (Array.isArray(r.skills_needed) ? r.skills_needed : (typeof r.skills_needed === "string" ? JSON.parse(r.skills_needed) : [])).join(", ")
+      : "";
+    return {
+      id: r.id,
+      user_name: r.full_name || r.email || "—",
+      email: r.email || "",
+      dept: "",
+      title: skills || r.description?.slice(0, 60) || "L&D Request",
+      reason: r.description || "",
+      submitted_at: (r.created_at || "").slice(0, 10),
+      status: r.status || "pending",
+      admin_note: r.admin_note || "",
+    };
+  }
+
   /* ===================== SESSIONS ===================== */
   function SessionsScreen() {
-    const [sessions, setSessions] = React.useState(D.ADMIN_SESSIONS);
+    const [sessions, setSessions] = React.useState(D.ADMIN_SESSIONS.map(mapSession));
+    const [loading, setLoading]   = React.useState(true);
     const [filterCourse, setFilterCourse] = React.useState("all");
     const [filterStatus, setFilterStatus] = React.useState("all");
     const [attendeesModal, setAttendeesModal] = React.useState(null);
     const [createModal, setCreateModal]     = React.useState(false);
     const [confirmId, setConfirmId]         = React.useState(null);
+    const [confirming, setConfirming]       = React.useState(false);
+    const [createError, setCreateError]     = React.useState("");
+    const [creating, setCreating]           = React.useState(false);
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/sessions")
+        .then(data => { if (data.sessions) setSessions(data.sessions.map(mapSession)); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
 
     const courseOptions = [...new Set(sessions.map(s => s.course_id))].map(id => {
       const s = sessions.find(x => x.course_id === id);
-      return { id, title: s.course_title };
+      return { id, title: s?.course_title || id };
     });
 
     const filtered = sessions.filter(s => {
@@ -28,13 +78,40 @@
       return true;
     });
 
-    function confirmSession(id) {
-      setSessions(ss => ss.map(s => s.id === id ? { ...s, status: "confirmed" } : s));
-      setConfirmId(null);
+    async function confirmSession(id) {
+      setConfirming(true);
+      try {
+        await apiFetch(`/admin/api/sessions/${id}/confirm`, { method: "POST" });
+        setSessions(ss => ss.map(s => s.id === id ? { ...s, status: "confirmed" } : s));
+        setConfirmId(null);
+      } catch (e) {
+        alert("Lỗi: " + e.message);
+      } finally {
+        setConfirming(false);
+      }
+    }
+
+    async function handleCreate(formData) {
+      setCreating(true); setCreateError("");
+      try {
+        const data = await apiFetch("/admin/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (data.session) setSessions(ss => [mapSession(data.session), ...ss]);
+        setCreateModal(false);
+      } catch (e) {
+        setCreateError(e.message || "Tạo session thất bại");
+      } finally {
+        setCreating(false);
+      }
     }
 
     function fmtDate(d) {
-      return new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+      if (!d) return "—";
+      try { return new Date(d).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" }); }
+      catch { return d; }
     }
 
     return (
@@ -43,19 +120,14 @@
           title="Quản lý Sessions"
           subtitle={`${sessions.length} sessions · ${sessions.filter(s => s.status === "open").length} đang mở đăng ký`}
           action={
-            <button className="adm-btn adm-btn--primary" onClick={() => setCreateModal(true)}>
+            <button className="adm-btn adm-btn--primary" onClick={() => { setCreateError(""); setCreateModal(true); }}>
               <Icon name="file-plus" size={14} /> Tạo session
             </button>
           }
         />
 
         <div className="adm-filter-row">
-          <select
-            className="adm-select"
-            style={{ width: "auto", fontSize: 12, padding: "7px 30px 7px 12px" }}
-            value={filterCourse}
-            onChange={e => setFilterCourse(e.target.value)}
-          >
+          <select className="adm-select" style={{ width: "auto", fontSize: 12, padding: "7px 30px 7px 12px" }} value={filterCourse} onChange={e => setFilterCourse(e.target.value)}>
             <option value="all">Tất cả khóa học</option>
             {courseOptions.map(c => (
               <option key={c.id} value={c.id}>{c.id} — {c.title}</option>
@@ -67,6 +139,8 @@
             ))}
           </div>
         </div>
+
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải...</div>}
 
         <div className="adm-table-wrap">
           <table className="adm-table">
@@ -83,28 +157,27 @@
             </thead>
             <tbody>
               {filtered.map(s => {
-                const pct = Math.min(Math.round((s.current_count / s.max_participants) * 100), 100);
-                const enoughForMin = s.current_count >= s.min_participants;
+                const pct = s.max_participants > 0 ? Math.min(Math.round((s.current_count / s.max_participants) * 100), 100) : 0;
+                const enoughForMin = s.min_participants === 0 || s.current_count >= s.min_participants;
                 return (
                   <tr key={s.id}>
                     <td>
                       <div style={{ fontWeight: 600, color: "#fff", fontSize: 13 }}>{s.course_title}</div>
-                      <div style={{ fontSize: 10, color: "var(--rpg-faint)", fontFamily: "monospace" }}>{s.id} · {s.trainer}</div>
+                      <div style={{ fontSize: 10, color: "var(--rpg-faint)", fontFamily: "monospace" }}>{s.id}</div>
                     </td>
                     <td style={{ fontVariantNumeric: "tabular-nums", fontSize: 13 }}>{fmtDate(s.date)}</td>
-                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{s.time}</td>
-                    <td style={{ fontSize: 12 }}>{s.location}</td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{s.time || "—"}</td>
+                    <td style={{ fontSize: 12 }}>{s.location || "—"}</td>
                     <td>
                       <div style={{ marginBottom: 5 }}>
-                        <span style={{ fontWeight: 700, color: enoughForMin ? "#2BB6A3" : "#F5A623" }}>
-                          {s.current_count}
-                        </span>
-                        <span style={{ color: "var(--rpg-muted)", fontSize: 11 }}>/{s.max_participants}</span>
-                        <span style={{ fontSize: 10, color: "var(--rpg-faint)", marginLeft: 4 }}>min {s.min_participants}</span>
+                        <span style={{ fontWeight: 700, color: enoughForMin ? "#2BB6A3" : "#F5A623" }}>{s.current_count}</span>
+                        <span style={{ color: "var(--rpg-muted)", fontSize: 11 }}>/{s.max_participants || "∞"}</span>
                       </div>
-                      <div style={{ height: 3, background: "rgba(255,255,255,.06)", borderRadius: 999, overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 999, transition: "width .5s", width: `${pct}%`, background: pct >= 100 ? "#F5A623" : "#2BB6A3" }} />
-                      </div>
+                      {s.max_participants > 0 && (
+                        <div style={{ height: 3, background: "rgba(255,255,255,.06)", borderRadius: 999, overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 999, transition: "width .5s", width: `${pct}%`, background: pct >= 100 ? "#F5A623" : "#2BB6A3" }} />
+                        </div>
+                      )}
                     </td>
                     <td><Badge status={s.status} /></td>
                     <td>
@@ -124,21 +197,17 @@
               })}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="adm-empty">Không có sessions nào phù hợp với bộ lọc</div>}
+          {!loading && filtered.length === 0 && <div className="adm-empty">Không có sessions nào phù hợp</div>}
         </div>
 
-        {/* Attendees modal */}
-        <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)}
-          title={attendeesModal ? `Danh sách đặt chỗ · ${attendeesModal.id}` : ""} width={600}>
+        <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)} title={attendeesModal ? `Danh sách đặt chỗ · ${attendeesModal.id}` : ""} width={600}>
           {attendeesModal && <AttendeesView session={attendeesModal} />}
         </Modal>
 
-        {/* Create session */}
         <Modal open={createModal} onClose={() => setCreateModal(false)} title="Tạo session mới" width={560}>
-          <SessionForm onClose={() => setCreateModal(false)} />
+          <SessionForm onClose={() => setCreateModal(false)} onCreate={handleCreate} creating={creating} error={createError} />
         </Modal>
 
-        {/* Confirm dialog */}
         <Modal open={!!confirmId} onClose={() => setConfirmId(null)} title="Xác nhận mở lớp" width={420}>
           {confirmId && (() => {
             const sess = sessions.find(s => s.id === confirmId);
@@ -149,9 +218,9 @@
                   và gửi email tự động đến <strong style={{ color: "#fff" }}>{sess?.current_count} người</strong> đã đặt chỗ.
                 </p>
                 <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-                  <button className="adm-btn adm-btn--sec" onClick={() => setConfirmId(null)}>Huỷ</button>
-                  <button className="adm-btn adm-btn--primary" onClick={() => confirmSession(confirmId)}>
-                    <Icon name="send" size={13} /> Xác nhận & Gửi email
+                  <button className="adm-btn adm-btn--sec" onClick={() => setConfirmId(null)} disabled={confirming}>Huỷ</button>
+                  <button className="adm-btn adm-btn--primary" onClick={() => confirmSession(confirmId)} disabled={confirming}>
+                    {confirming ? "Đang xử lý..." : <><Icon name="send" size={13} /> Xác nhận & Gửi email</>}
                   </button>
                 </div>
               </div>
@@ -163,54 +232,81 @@
   }
 
   function AttendeesView({ session }) {
-    const list = (D.SESSION_ATTENDEES[session.id] || []).concat(
-      session.current_count > (D.SESSION_ATTENDEES[session.id] || []).length
-        ? Array.from({ length: session.current_count - (D.SESSION_ATTENDEES[session.id]||[]).length }, (_, i) => ({
-            name: `Nhân viên #${i + (D.SESSION_ATTENDEES[session.id]||[]).length + 1}`,
-            email: `user${i + 10}@garena.vn`, dept: "Garena", booked_at: session.date,
-          }))
-        : []
-    ).slice(0, session.current_count);
+    const [list, setList]   = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      apiFetch(`/admin/api/sessions/${session.id}/reservations`)
+        .then(data => { if (data.reservations) setList(data.reservations); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, [session.id]);
 
     return (
       <div>
         <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
-          {[{ l: "Đặt chỗ", v: session.current_count, c: "#2BB6A3" }, { l: "Tối thiểu", v: session.min_participants, c: "#F5A623" }, { l: "Sức chứa", v: session.max_participants, c: "#8A93A8" }].map(i => (
+          {[
+            { l: "Đặt chỗ",  v: session.current_count,   c: "#2BB6A3" },
+            { l: "Tối thiểu", v: session.min_participants, c: "#F5A623" },
+            { l: "Sức chứa", v: session.max_participants || "∞", c: "#8A93A8" },
+          ].map(i => (
             <div key={i.l} style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 8px" }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: i.c }}>{i.v}</div>
               <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{i.l}</div>
             </div>
           ))}
         </div>
-        <div className="adm-table-wrap">
-          <table className="adm-table">
-            <thead><tr><th>Tên</th><th>Email</th><th>Phòng ban</th><th>Ngày đặt</th></tr></thead>
-            <tbody>
-              {list.map((a, i) => (
-                <tr key={i}>
-                  <td style={{ fontWeight: 600 }}>{a.name}</td>
-                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.email}</td>
-                  <td style={{ fontSize: 12 }}>{a.dept}</td>
-                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.booked_at}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
-          <button className="adm-btn adm-btn--sec adm-btn--sm"><Icon name="refresh-cw" size={12} /> Export CSV</button>
-        </div>
+        {loading ? (
+          <div style={{ textAlign: "center", color: "var(--rpg-muted)", padding: 24 }}>Đang tải...</div>
+        ) : (
+          <div className="adm-table-wrap">
+            <table className="adm-table">
+              <thead><tr><th>Tên</th><th>Email</th><th>Ngày đặt</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {list.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--rpg-muted)" }}>Chưa có ai đặt chỗ</td></tr>}
+                {list.map((a, i) => (
+                  <tr key={i}>
+                    <td style={{ fontWeight: 600 }}>{a.full_name || a.email}</td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.email}</td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{(a.reserved_at || "").slice(0, 10)}</td>
+                    <td><Badge status={a.status || "reserved"} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     );
   }
 
-  function SessionForm({ onClose }) {
+  function SessionForm({ onClose, onCreate, creating, error }) {
+    const [courses, setCourses] = React.useState(D.ADMIN_COURSES.filter(c => c.is_active));
+    const [form, setForm] = React.useState({
+      course_id: "",
+      session_date: "",
+      session_time: "09:00–12:00",
+      location: "",
+      max_participants: 25,
+      min_participants: 10,
+    });
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/courses")
+        .then(data => { if (data.courses) setCourses(data.courses.filter(c => c.is_active)); })
+        .catch(() => {});
+    }, []);
+
+    function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
     return (
       <div>
+        {error && <div style={{ background: "rgba(228,30,38,.1)", border: "1px solid rgba(228,30,38,.3)", borderRadius: 6, padding: "10px 14px", marginBottom: 14, color: "#ff6b6b", fontSize: 13 }}>{error}</div>}
         <div className="adm-form-group">
           <label className="adm-label">Khóa học</label>
-          <select className="adm-select">
-            {D.ADMIN_COURSES.filter(c => c.is_active).map(c => (
+          <select className="adm-select" value={form.course_id} onChange={e => set("course_id", e.target.value)}>
+            <option value="">-- Chọn khóa học --</option>
+            {courses.map(c => (
               <option key={c.id} value={c.id}>{c.id} — {c.title}</option>
             ))}
           </select>
@@ -218,35 +314,31 @@
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Ngày</label>
-            <input className="adm-input" type="date" defaultValue="2026-08-15" />
+            <input className="adm-input" type="date" value={form.session_date} onChange={e => set("session_date", e.target.value)} />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Khung giờ</label>
-            <input className="adm-input" placeholder="09:00–12:00" defaultValue="09:00–12:00" />
+            <input className="adm-input" placeholder="09:00–12:00" value={form.session_time} onChange={e => set("session_time", e.target.value)} />
           </div>
         </div>
         <div className="adm-form-group">
           <label className="adm-label">Địa điểm</label>
-          <input className="adm-input" placeholder="VD: HCM Office – P.501  hoặc  Online – Zoom" />
-        </div>
-        <div className="adm-form-group">
-          <label className="adm-label">Trainer</label>
-          <input className="adm-input" placeholder="Tên trainer" />
+          <input className="adm-input" placeholder="VD: HCM Office – P.501 hoặc Online – Zoom" value={form.location} onChange={e => set("location", e.target.value)} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Tối thiểu (người)</label>
-            <input className="adm-input" type="number" defaultValue={10} />
+            <input className="adm-input" type="number" min="1" value={form.min_participants} onChange={e => set("min_participants", parseInt(e.target.value) || 0)} />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Sức chứa tối đa</label>
-            <input className="adm-input" type="number" defaultValue={25} />
+            <input className="adm-input" type="number" min="1" value={form.max_participants} onChange={e => set("max_participants", parseInt(e.target.value) || 0)} />
           </div>
         </div>
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
-          <button className="adm-btn adm-btn--primary" onClick={onClose}>
-            <Icon name="check" size={13} /> Tạo session
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={creating}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={() => onCreate(form)} disabled={creating || !form.course_id || !form.session_date}>
+            {creating ? "Đang tạo..." : <><Icon name="check" size={13} /> Tạo session</>}
           </button>
         </div>
       </div>
@@ -256,9 +348,17 @@
   /* ===================== L&D REQUESTS ===================== */
   function RequestsScreen() {
     const [requests, setRequests] = React.useState(D.ADMIN_REQUESTS);
+    const [loading, setLoading]   = React.useState(true);
     const [filterStatus, setFilterStatus] = React.useState("all");
     const [search, setSearch]   = React.useState("");
     const [selected, setSelected] = React.useState(null);
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/ld-requests")
+        .then(data => { if (data.requests) setRequests(data.requests.map(mapRequest)); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
 
     const counts = {
       all: requests.length,
@@ -277,17 +377,23 @@
       return true;
     });
 
-    function updateRequest(id, patch) {
+    async function updateRequest(id, patch) {
       setRequests(rs => rs.map(r => r.id === id ? { ...r, ...patch } : r));
       setSelected(prev => prev?.id === id ? { ...prev, ...patch } : prev);
+      try {
+        await apiFetch(`/admin/api/ld-requests/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: patch.status, admin_note: patch.admin_note }),
+        });
+      } catch (e) {
+        console.error("Failed to update request:", e.message);
+      }
     }
 
     return (
       <div data-screen-label="L&D Requests">
-        <PageHeader
-          title="L&D Requests"
-          subtitle={`${counts.pending} chờ duyệt · ${counts.in_progress} đang xử lý`}
-        />
+        <PageHeader title="L&D Requests" subtitle={`${counts.pending} chờ duyệt · ${counts.in_progress} đang xử lý`} />
 
         <div className="adm-filter-row">
           <SearchInput value={search} onChange={setSearch} placeholder="Tìm theo tên hoặc tiêu đề..." />
@@ -306,6 +412,8 @@
           ))}
         </div>
 
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải...</div>}
+
         <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
@@ -313,7 +421,6 @@
                 <th style={{ width: 76 }}>ID</th>
                 <th style={{ width: 180 }}>Người gửi</th>
                 <th>Yêu cầu đào tạo</th>
-                <th style={{ width: 100 }}>Phòng ban</th>
                 <th style={{ width: 80 }}>Ngày</th>
                 <th style={{ width: 118 }}>Trạng thái</th>
               </tr>
@@ -321,7 +428,7 @@
             <tbody>
               {filtered.map(r => (
                 <tr key={r.id} className={`is-clickable${r.status==="pending"?" is-pending":""}`} onClick={() => setSelected(r)}>
-                  <td><code style={{ fontSize: 10 }}>{r.id}</code></td>
+                  <td><code style={{ fontSize: 10 }}>{(r.id || "").slice(0, 8)}</code></td>
                   <td>
                     <div style={{ fontWeight: 600, color: "#fff", fontSize: 13 }}>{r.user_name}</div>
                     <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{r.email}</div>
@@ -334,18 +441,16 @@
                       </div>
                     )}
                   </td>
-                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{r.dept}</td>
-                  <td style={{ fontSize: 12, color: "var(--rpg-faint)", fontVariantNumeric: "tabular-nums" }}>{r.submitted_at.slice(5).replace("-", "/")}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-faint)", fontVariantNumeric: "tabular-nums" }}>{(r.submitted_at || "").slice(5).replace("-", "/")}</td>
                   <td><Badge status={r.status} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {filtered.length === 0 && <div className="adm-empty">Không có requests nào phù hợp</div>}
+          {!loading && filtered.length === 0 && <div className="adm-empty">Không có requests nào phù hợp</div>}
         </div>
 
-        {/* Detail modal */}
-        <Modal open={!!selected} onClose={() => setSelected(null)} title={selected ? `${selected.id} · Chi tiết yêu cầu` : ""} width={640}>
+        <Modal open={!!selected} onClose={() => setSelected(null)} title={selected ? `Chi tiết yêu cầu` : ""} width={640}>
           {selected && <RequestDetail request={selected} onUpdate={updateRequest} onClose={() => setSelected(null)} />}
         </Modal>
       </div>
@@ -355,18 +460,23 @@
   function RequestDetail({ request, onUpdate, onClose }) {
     const [status, setStatus] = React.useState(request.status);
     const [note, setNote]     = React.useState(request.admin_note || "");
+    const [saving, setSaving] = React.useState(false);
 
-    function save() { onUpdate(request.id, { status, admin_note: note }); onClose(); }
+    async function save() {
+      setSaving(true);
+      await onUpdate(request.id, { status, admin_note: note });
+      setSaving(false);
+      onClose();
+    }
 
     return (
       <div>
         <div className="adm-detail-panel">
           {[
-            { l: "Người gửi",  v: request.user_name },
-            { l: "Email",      v: request.email },
-            { l: "Phòng ban",  v: request.dept },
-            { l: "Ngày gửi",   v: request.submitted_at },
-          ].map(f => (
+            { l: "Người gửi", v: request.user_name },
+            { l: "Email",     v: request.email },
+            { l: "Ngày gửi",  v: request.submitted_at },
+          ].filter(f => f.v).map(f => (
             <div key={f.l} className="adm-detail-field">
               <div className="adm-detail-field__label">{f.l}</div>
               <div className="adm-detail-field__val">{f.v}</div>
@@ -375,18 +485,20 @@
         </div>
 
         <div className="adm-form-group">
-          <label className="adm-label">Tên khóa học / yêu cầu</label>
+          <label className="adm-label">Kỹ năng / yêu cầu</label>
           <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", fontSize: 15, fontWeight: 700, color: "#fff" }}>
             {request.title}
           </div>
         </div>
 
-        <div className="adm-form-group">
-          <label className="adm-label">Lý do đề xuất</label>
-          <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", fontSize: 13, color: "var(--rpg-text)", lineHeight: 1.65 }}>
-            {request.reason}
+        {request.reason && (
+          <div className="adm-form-group">
+            <label className="adm-label">Mô tả chi tiết</label>
+            <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", fontSize: 13, color: "var(--rpg-text)", lineHeight: 1.65 }}>
+              {request.reason}
+            </div>
           </div>
-        </div>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "190px 1fr", gap: 14 }}>
           <div className="adm-form-group">
@@ -398,20 +510,15 @@
             </select>
           </div>
           <div className="adm-form-group">
-            <label className="adm-label">Admin note (gửi kèm email cho user)</label>
+            <label className="adm-label">Admin note</label>
             <textarea className="adm-textarea" style={{ minHeight: 72 }} value={note} onChange={e => setNote(e.target.value)} placeholder="Ghi chú lý do hoặc hướng dẫn tiếp theo..." />
           </div>
         </div>
 
-        <div className="adm-info-banner adm-info-banner--blue" style={{ marginBottom: 18 }}>
-          <Icon name="info" size={13} color="#6aa3e0" style={{ flexShrink: 0, marginTop: 1 }} />
-          Khi lưu, user sẽ tự động nhận email thông báo về trạng thái mới cùng admin note.
-        </div>
-
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-          <button className="adm-btn adm-btn--sec" onClick={onClose}>Đóng</button>
-          <button className="adm-btn adm-btn--primary" onClick={save}>
-            <Icon name="send" size={13} /> Lưu & Gửi thông báo
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={saving}>Đóng</button>
+          <button className="adm-btn adm-btn--primary" onClick={save} disabled={saving}>
+            {saving ? "Đang lưu..." : <><Icon name="send" size={13} /> Lưu & Gửi thông báo</>}
           </button>
         </div>
       </div>
