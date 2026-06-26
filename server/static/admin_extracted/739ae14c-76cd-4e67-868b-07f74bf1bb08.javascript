@@ -8,19 +8,104 @@
   const { Badge, PageHeader, Modal, Toggle } = window.ADMComponents;
   const D = window.ADM_DATA;
 
+  async function apiFetch(path, opts = {}) {
+    const res = await fetch(path, { credentials: "include", ...opts });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.status); }
+    return res.json();
+  }
+
+  function groupPolicies(flat) {
+    const map = {};
+    flat.forEach(p => {
+      if (!map[p.category]) map[p.category] = { id: p.category, category: p.category, order_index: p.order_index || 0, entries: [] };
+      map[p.category].entries.push({
+        id: p.id,
+        title: p.title,
+        preview: (p.content || "").slice(0, 120),
+        is_active: Boolean(p.is_active),
+        updated_at: (p.updated_at || "").slice(0, 10),
+        content: p.content || "",
+      });
+    });
+    return Object.values(map).sort((a, b) => a.order_index - b.order_index);
+  }
+
   /* ===================== POLICY ===================== */
   function PolicyScreen() {
-    const [policies, setPolicies] = React.useState(D.ADMIN_POLICIES);
+    const [policies, setPolicies] = React.useState(groupPolicies(D.ADMIN_POLICIES.flatMap(c => c.entries.map(e => ({ ...e, category: c.category })))));
+    const [loading, setLoading]   = React.useState(true);
     const [importModal, setImportModal] = React.useState(false);
     const [editEntry,   setEditEntry]   = React.useState(null);
 
-    function toggleEntry(catId, entryId) {
-      setPolicies(cats => cats.map(cat =>
-        cat.id !== catId ? cat : {
+    React.useEffect(() => {
+      apiFetch("/admin/api/policies")
+        .then(data => { if (data.policies?.length) setPolicies(groupPolicies(data.policies)); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
+
+    async function toggleEntry(entryId, currentVal) {
+      const newVal = !currentVal;
+      setPolicies(cats => cats.map(cat => ({
+        ...cat,
+        entries: cat.entries.map(e => e.id === entryId ? { ...e, is_active: newVal } : e),
+      })));
+      try {
+        await apiFetch(`/admin/api/policies/${entryId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_active: newVal }),
+        });
+      } catch {
+        setPolicies(cats => cats.map(cat => ({
           ...cat,
-          entries: cat.entries.map(e => e.id === entryId ? { ...e, is_active: !e.is_active } : e),
+          entries: cat.entries.map(e => e.id === entryId ? { ...e, is_active: currentVal } : e),
+        })));
+      }
+    }
+
+    async function handleSaveEntry(id, { title, content }) {
+      try {
+        const data = await apiFetch(`/admin/api/policies/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, content }),
+        });
+        if (data.policy) {
+          const p = data.policy;
+          setPolicies(cats => cats.map(cat => ({
+            ...cat,
+            entries: cat.entries.map(e => e.id === id ? { ...e, title: p.title, content: p.content, preview: (p.content || "").slice(0, 120), updated_at: (p.updated_at || "").slice(0, 10) } : e),
+          })));
         }
-      ));
+        setEditEntry(null);
+      } catch (e) {
+        alert("Lưu thất bại: " + e.message);
+      }
+    }
+
+    async function handleCreatePolicy(formData) {
+      try {
+        const data = await apiFetch("/admin/api/policies", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (data.policy) {
+          const p = data.policy;
+          setPolicies(cats => {
+            const existing = cats.find(c => c.category === p.category);
+            const newEntry = { id: p.id, title: p.title, preview: (p.content || "").slice(0, 120), is_active: Boolean(p.is_active), updated_at: (p.updated_at || "").slice(0, 10), content: p.content || "" };
+            if (existing) {
+              return cats.map(c => c.category === p.category ? { ...c, entries: [...c.entries, newEntry] } : c);
+            }
+            return [...cats, { id: p.category, category: p.category, order_index: 99, entries: [newEntry] }];
+          });
+        }
+        setImportModal(false);
+      } catch (e) {
+        alert("Tạo policy thất bại: " + e.message);
+      }
     }
 
     return (
@@ -30,28 +115,26 @@
           subtitle="Import, chỉnh sửa, sắp xếp policy L&D"
           action={
             <button className="adm-btn adm-btn--primary" onClick={() => setImportModal(true)}>
-              <Icon name="file-plus" size={14} /> Import policy
+              <Icon name="file-plus" size={14} /> Thêm policy
             </button>
           }
         />
+
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải...</div>}
 
         {policies.map(cat => (
           <div key={cat.id} className="adm-policy-category">
             <div className="adm-policy-cat-header">
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span className="adm-drag-handle"><Icon name="sliders-horizontal" size={13} /></span>
                 <h3 className="adm-policy-cat-title">{cat.category}</h3>
                 <span style={{ fontSize: 11, color: "var(--rpg-faint)" }}>{cat.entries.length} entries</span>
               </div>
             </div>
             {cat.entries.map(entry => (
               <div key={entry.id} className="adm-policy-entry">
-                <span className="adm-drag-handle"><Icon name="sliders" size={12} color="var(--rpg-faint)" /></span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontWeight: 600, color: entry.is_active ? "#fff" : "var(--rpg-muted)", fontSize: 13 }}>
-                      {entry.title}
-                    </span>
+                    <span style={{ fontWeight: 600, color: entry.is_active ? "#fff" : "var(--rpg-muted)", fontSize: 13 }}>{entry.title}</span>
                     {!entry.is_active && <Badge status="inactive" />}
                   </div>
                   <div style={{ fontSize: 12, color: "var(--rpg-muted)", lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "90%" }}>
@@ -60,7 +143,7 @@
                   <div style={{ fontSize: 10, color: "var(--rpg-faint)", marginTop: 4 }}>Cập nhật: {entry.updated_at}</div>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
-                  <Toggle value={entry.is_active} onChange={() => toggleEntry(cat.id, entry.id)} />
+                  <Toggle value={entry.is_active} onChange={() => toggleEntry(entry.id, entry.is_active)} />
                   <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => setEditEntry(entry)}>
                     <Icon name="edit-3" size={13} />
                   </button>
@@ -70,111 +153,102 @@
           </div>
         ))}
 
-        {/* Import modal */}
-        <Modal open={importModal} onClose={() => setImportModal(false)} title="Import Policy" width={560}>
-          <PolicyImport onClose={() => setImportModal(false)} />
+        {!loading && policies.length === 0 && (
+          <div className="adm-empty" style={{ marginTop: 40 }}>Chưa có policy nào. Nhấn "Thêm policy" để tạo mới.</div>
+        )}
+
+        <Modal open={importModal} onClose={() => setImportModal(false)} title="Thêm / Import Policy" width={580}>
+          <PolicyCreate onClose={() => setImportModal(false)} onSave={handleCreatePolicy} categories={policies.map(c => c.category)} />
         </Modal>
 
-        {/* Edit modal */}
-        <Modal open={!!editEntry} onClose={() => setEditEntry(null)} title={editEntry ? `Chỉnh sửa: ${editEntry.title}` : ""} width={680}>
-          {editEntry && <PolicyEditor entry={editEntry} onClose={() => setEditEntry(null)} />}
+        <Modal open={!!editEntry} onClose={() => setEditEntry(null)} title={editEntry ? `Chỉnh sửa: ${editEntry.title}` : ""} width={700}>
+          {editEntry && <PolicyEditor entry={editEntry} onSave={handleSaveEntry} onClose={() => setEditEntry(null)} />}
         </Modal>
       </div>
     );
   }
 
-  function PolicyImport({ onClose }) {
-    const [step, setStep]       = React.useState(1);
-    const [fileName, setFileName] = React.useState(null);
-    const PREVIEW_MD = `# Chính sách học phí & tài trợ khóa học\n\n## 1. Phạm vi áp dụng\n\nÁp dụng cho nhân viên chính thức Garena Việt Nam từ **6 tháng** trở lên.\n\n## 2. Mức hỗ trợ\n\n- Khóa học trong danh mục L&D: **100% học phí**\n- Ngoài danh mục (đã được duyệt): tối đa **5,000,000 VNĐ/năm**\n\n## 3. Quy trình\n\n1. Đăng nhập Learning Hub → chọn khóa học → đặt chỗ\n2. Nhận xác nhận qua email trong **24 giờ**`;
+  function PolicyCreate({ onClose, onSave, categories }) {
+    const [form, setForm] = React.useState({ title: "", category: categories[0] || "", content: "", newCategory: "", is_active: true });
+    const [useNew, setUseNew] = React.useState(false);
+
+    function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
+    function handleSave() {
+      onSave({
+        title: form.title,
+        category: useNew ? form.newCategory : form.category,
+        content: form.content,
+        is_active: form.is_active,
+      });
+    }
 
     return (
       <div>
-        {/* Step indicator */}
-        <div style={{ display: "flex", marginBottom: 22 }}>
-          {["Upload file", "Preview nội dung", "Xác nhận lưu"].map((s, i) => (
-            <div key={s} style={{ flex: 1, textAlign: "center", padding: "7px 0", fontSize: 12, fontWeight: 700,
-              color: step === i+1 ? "#E41E26" : step > i+1 ? "#2BB6A3" : "var(--rpg-faint)",
-              borderBottom: `2px solid ${step === i+1 ? "#E41E26" : step > i+1 ? "#2BB6A3" : "var(--rpg-border)"}`,
-            }}>
-              {step > i+1 ? "✓ " : ""}{s}
-            </div>
-          ))}
+        <div className="adm-form-group">
+          <label className="adm-label">Tiêu đề policy</label>
+          <input className="adm-input" value={form.title} onChange={e => set("title", e.target.value)} placeholder="VD: Chính sách học phí 2026" />
         </div>
-
-        {step === 1 && (
-          <>
-            <div className="adm-upload-zone" onClick={() => { setFileName("policy_hoc_phi_2026.docx"); }}>
-              <Icon name="file-plus" size={28} color="var(--rpg-muted)" style={{ margin: "0 auto 10px", display: "block" }} />
-              <div style={{ fontWeight: 700, color: "#fff", marginBottom: 5 }}>
-                {fileName ? fileName : "Kéo thả hoặc click để chọn file"}
-              </div>
-              <div style={{ fontSize: 12, color: "var(--rpg-muted)" }}>Hỗ trợ .DOCX và .PDF</div>
-            </div>
-            <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 16 }}>
-              <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
-              <button className="adm-btn adm-btn--primary" onClick={() => setStep(2)} disabled={!fileName}>
-                Parse nội dung →
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 16, maxHeight: 280, overflowY: "auto", marginBottom: 16 }}>
-              <pre style={{ fontFamily: "'Be Vietnam Pro', sans-serif", fontSize: 13, color: "var(--rpg-text)", whiteSpace: "pre-wrap", margin: 0, lineHeight: 1.75 }}>
-                {PREVIEW_MD}
-              </pre>
-            </div>
-            <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-              <button className="adm-btn adm-btn--sec" onClick={() => setStep(1)}>← Quay lại</button>
-              <button className="adm-btn adm-btn--primary" onClick={() => setStep(3)}>Nội dung OK →</button>
-            </div>
-          </>
-        )}
-
-        {step === 3 && (
-          <>
-            <div className="adm-form-group">
-              <label className="adm-label">Tiêu đề policy</label>
-              <input className="adm-input" defaultValue="Chính sách học phí & tài trợ khóa học" />
-            </div>
-            <div className="adm-form-group">
-              <label className="adm-label">Danh mục</label>
-              <select className="adm-select">
-                {D.ADMIN_POLICIES.map(c => <option key={c.id} value={c.id}>{c.category}</option>)}
+        <div className="adm-form-group">
+          <label className="adm-label">Danh mục</label>
+          {!useNew ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <select className="adm-select" style={{ flex: 1 }} value={form.category} onChange={e => set("category", e.target.value)}>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
+              <button type="button" className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setUseNew(true)}>+ Mới</button>
             </div>
-            <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-              <button className="adm-btn adm-btn--sec" onClick={() => setStep(2)}>← Quay lại</button>
-              <button className="adm-btn adm-btn--primary" onClick={onClose}>
-                <Icon name="check" size={13} /> Lưu policy
-              </button>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="adm-input" style={{ flex: 1 }} value={form.newCategory} onChange={e => set("newCategory", e.target.value)} placeholder="Tên danh mục mới..." />
+              <button type="button" className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setUseNew(false)}>← Chọn có sẵn</button>
             </div>
-          </>
-        )}
+          )}
+        </div>
+        <div className="adm-form-group">
+          <label className="adm-label">Nội dung (Markdown)</label>
+          <textarea className="adm-textarea" style={{ minHeight: 200, fontFamily: "monospace", fontSize: 12, lineHeight: 1.65 }} value={form.content} onChange={e => set("content", e.target.value)} placeholder="# Tiêu đề&#10;&#10;## Phần 1&#10;&#10;Nội dung..." />
+        </div>
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={handleSave} disabled={!form.title.trim() || (!form.category && !form.newCategory)}>
+            <Icon name="check" size={13} /> Lưu policy
+          </button>
+        </div>
       </div>
     );
   }
 
-  function PolicyEditor({ entry, onClose }) {
-    const [content, setContent] = React.useState(`# ${entry.title}\n\n${entry.preview}\n\n(Tiếp tục nội dung đầy đủ...)`);
+  function PolicyEditor({ entry, onSave, onClose }) {
+    const [title, setTitle]     = React.useState(entry.title);
+    const [content, setContent] = React.useState(entry.content || `# ${entry.title}\n\n${entry.preview}`);
+    const [saving, setSaving]   = React.useState(false);
+
+    async function handleSave() {
+      setSaving(true);
+      await onSave(entry.id, { title, content });
+      setSaving(false);
+    }
+
     return (
       <div>
+        <div className="adm-form-group">
+          <label className="adm-label">Tiêu đề</label>
+          <input className="adm-input" value={title} onChange={e => setTitle(e.target.value)} />
+        </div>
         <div className="adm-form-group">
           <label className="adm-label">Nội dung Markdown</label>
           <textarea
             className="adm-textarea"
-            style={{ minHeight: 260, fontFamily: "monospace", fontSize: 13, lineHeight: 1.65 }}
+            style={{ minHeight: 280, fontFamily: "monospace", fontSize: 13, lineHeight: 1.65 }}
             value={content}
             onChange={e => setContent(e.target.value)}
           />
         </div>
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
-          <button className="adm-btn adm-btn--primary" onClick={onClose}>
-            <Icon name="check" size={13} /> Lưu thay đổi
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={saving}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={handleSave} disabled={saving || !title.trim()}>
+            {saving ? "Đang lưu..." : <><Icon name="check" size={13} /> Lưu thay đổi</>}
           </button>
         </div>
       </div>
@@ -184,10 +258,44 @@
   /* ===================== ADMIN ACCOUNTS ===================== */
   function AccountsScreen() {
     const [accounts, setAccounts] = React.useState(D.ADMIN_ACCOUNTS);
+    const [loading, setLoading]   = React.useState(true);
     const [addModal, setAddModal] = React.useState(false);
+    const [addError, setAddError] = React.useState("");
 
-    function toggle(id) {
-      setAccounts(as => as.map(a => a.id === id ? { ...a, is_active: !a.is_active } : a));
+    React.useEffect(() => {
+      apiFetch("/admin/api/accounts")
+        .then(data => { if (data.accounts) setAccounts(data.accounts); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
+
+    async function toggle(id, currentVal) {
+      const newVal = !currentVal;
+      setAccounts(as => as.map(a => a.id === id ? { ...a, is_active: newVal } : a));
+      try {
+        await apiFetch(`/admin/api/accounts/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_active: newVal }),
+        });
+      } catch {
+        setAccounts(as => as.map(a => a.id === id ? { ...a, is_active: currentVal } : a));
+      }
+    }
+
+    async function handleAdd(formData) {
+      setAddError("");
+      try {
+        const data = await apiFetch("/admin/api/accounts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+        if (data.account) setAccounts(as => [...as, data.account]);
+        setAddModal(false);
+      } catch (e) {
+        setAddError(e.message || "Thêm thất bại");
+      }
     }
 
     return (
@@ -196,11 +304,13 @@
           title="Admin Accounts"
           subtitle="Whitelist email đăng nhập admin · Chỉ Super Admin thấy trang này"
           action={
-            <button className="adm-btn adm-btn--primary" onClick={() => setAddModal(true)}>
+            <button className="adm-btn adm-btn--primary" onClick={() => { setAddError(""); setAddModal(true); }}>
               <Icon name="user" size={14} /> Thêm admin
             </button>
           }
         />
+
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải...</div>}
 
         <div className="adm-table-wrap">
           <table className="adm-table">
@@ -217,16 +327,12 @@
               {accounts.map(a => (
                 <tr key={a.id} style={{ opacity: a.is_active ? 1 : 0.45 }}>
                   <td style={{ fontFamily: "monospace", fontSize: 12 }}>{a.email}</td>
-                  <td style={{ fontWeight: 600, color: "#fff" }}>{a.full_name}</td>
+                  <td style={{ fontWeight: 600, color: "#fff" }}>{a.full_name || "—"}</td>
                   <td><Badge status={a.role} /></td>
-                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.created_at}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{(a.created_at || "").slice(0, 10)}</td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                      <Toggle
-                        value={a.is_active}
-                        onChange={() => toggle(a.id)}
-                        disabled={a.email === "vananh.le@garena.vn"}
-                      />
+                      <Toggle value={Boolean(a.is_active)} onChange={() => toggle(a.id, a.is_active)} />
                       <span style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.is_active ? "Hoạt động" : "Tạm khoá"}</span>
                     </div>
                   </td>
@@ -242,38 +348,44 @@
         </div>
 
         <Modal open={addModal} onClose={() => setAddModal(false)} title="Thêm admin mới" width={460}>
-          <AddAdminForm onClose={() => setAddModal(false)} />
+          <AddAdminForm onClose={() => setAddModal(false)} onAdd={handleAdd} error={addError} />
         </Modal>
       </div>
     );
   }
 
-  function AddAdminForm({ onClose }) {
+  function AddAdminForm({ onClose, onAdd, error }) {
+    const [form, setForm] = React.useState({ email: "", full_name: "", role: "ld_admin" });
+    const [saving, setSaving] = React.useState(false);
+    function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
+    async function handleAdd() { setSaving(true); await onAdd(form); setSaving(false); }
+
     return (
       <div>
+        {error && <div style={{ background: "rgba(228,30,38,.1)", border: "1px solid rgba(228,30,38,.3)", borderRadius: 6, padding: "10px 14px", marginBottom: 14, color: "#ff6b6b", fontSize: 13 }}>{error}</div>}
         <div className="adm-form-group">
           <label className="adm-label">Email (@garena.vn)</label>
-          <input className="adm-input" type="email" placeholder="email@garena.vn" />
+          <input className="adm-input" type="email" value={form.email} onChange={e => set("email", e.target.value)} placeholder="email@garena.vn" />
         </div>
         <div className="adm-form-group">
           <label className="adm-label">Họ tên</label>
-          <input className="adm-input" placeholder="Nguyễn Văn A" />
+          <input className="adm-input" value={form.full_name} onChange={e => set("full_name", e.target.value)} placeholder="Nguyễn Văn A" />
         </div>
         <div className="adm-form-group">
           <label className="adm-label">Role</label>
-          <select className="adm-select">
+          <select className="adm-select" value={form.role} onChange={e => set("role", e.target.value)}>
             <option value="ld_admin">L&D Admin</option>
             <option value="super_admin">Super Admin</option>
           </select>
         </div>
         <div className="adm-info-banner adm-info-banner--amber" style={{ marginBottom: 18 }}>
           <Icon name="info" size={13} color="#F5A623" style={{ flexShrink: 0, marginTop: 1 }} />
-          Chỉ chấp nhận email @garena.vn. User sẽ nhận email hướng dẫn đăng nhập lần đầu qua Google OAuth.
+          Chỉ chấp nhận email @garena.vn. User sẽ đăng nhập bằng Google OAuth.
         </div>
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
-          <button className="adm-btn adm-btn--primary" onClick={onClose}>
-            <Icon name="check" size={13} /> Thêm vào whitelist
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={saving}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={handleAdd} disabled={saving || !form.email.includes("@garena.vn")}>
+            {saving ? "Đang lưu..." : <><Icon name="check" size={13} /> Thêm vào whitelist</>}
           </button>
         </div>
       </div>
@@ -286,7 +398,7 @@
     const [filterCourse, setFilterCourse] = React.useState("all");
 
     const courses = [...new Set(testimonials.map(t => t.course_id))].map(id => ({
-      id, title: testimonials.find(t => t.course_id === id).course_title,
+      id, title: (testimonials.find(t => t.course_id === id) || {}).course_title || id,
     }));
 
     const filtered = filterCourse === "all" ? testimonials : testimonials.filter(t => t.course_id === filterCourse);
@@ -328,15 +440,10 @@
               </div>
               <div style={{ display: "flex", gap: 2, marginBottom: 9 }}>
                 {Array.from({ length: 5 }, (_, i) => (
-                  <Icon key={i} name="star" size={13}
-                    color={i < t.rating ? "var(--amber)" : "var(--rpg-faint)"}
-                    fill={i < t.rating ? "var(--amber)" : "none"}
-                  />
+                  <Icon key={i} name="star" size={13} color={i < t.rating ? "var(--amber)" : "var(--rpg-faint)"} fill={i < t.rating ? "var(--amber)" : "none"} />
                 ))}
               </div>
-              <p style={{ fontSize: 12, color: "var(--rpg-text)", lineHeight: 1.65, margin: "0 0 11px" }}>
-                "{t.content}"
-              </p>
+              <p style={{ fontSize: 12, color: "var(--rpg-text)", lineHeight: 1.65, margin: "0 0 11px" }}>"{t.content}"</p>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--rpg-faint)" }}>
                 <span>{t.course_title}</span>
                 <span>{t.created_at}</span>
