@@ -2,8 +2,6 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import morgan from "morgan";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { assertRuntimeConfig, config } from "./config.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireAdmin } from "./middleware/requireAdmin.js";
@@ -22,7 +20,6 @@ import { adminLdRequestsRouter } from "./routes/admin/ldRequests.js";
 import { adminPoliciesRouter } from "./routes/admin/policies.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
@@ -50,12 +47,10 @@ app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRout
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
-app.use(express.static(path.join(__dirname, "static")));
-app.get(["/admin", "/admin/*"], (req, res) => {
-  res.sendFile(path.join(__dirname, "static", "admin.htm"));
-});
+const HTML_SHELL = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Garena Learning Hub</title></head><body><div id="app"></div></body></html>`;
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "static", "index.htm"));
+  res.setHeader("Content-Type", "text/html");
+  res.send(HTML_SHELL);
 });
 
 app.use((error, req, res, next) => {
