@@ -1,0 +1,5 @@
+[phases.install]
+cmds = ["npm install --omit=dev --prefer-offline"]
+
+[start]
+cmd = "node server/migrate.js && node server/index.js"
