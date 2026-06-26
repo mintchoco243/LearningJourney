@@ -50,12 +50,12 @@ app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRout
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
-app.use(express.static(path.join(__dirname, "..", "static")));
+app.use(express.static(path.join(__dirname, "static")));
 app.get(["/admin", "/admin/*"], (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "static", "admin.html"));
+  res.sendFile(path.join(__dirname, "static", "admin.html"));
 });
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "static", "index.html"));
+  res.sendFile(path.join(__dirname, "static", "index.html"));
 });
 
 app.use((error, req, res, next) => {
