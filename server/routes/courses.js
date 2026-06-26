@@ -11,48 +11,56 @@ function fitTag(course, user) {
   return null;
 }
 
-coursesRouter.get("/", async (req, res) => {
-  const page = Math.max(Number(req.query.page || 1), 1);
-  const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
-  const offset = (page - 1) * limit;
-  const params = [req.user.id, limit, offset];
-  const filters = ["c.is_active = TRUE"];
+coursesRouter.get("/", async (req, res, next) => {
+  try {
+    const page = Math.max(Number(req.query.page || 1), 1);
+    const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
+    const offset = (page - 1) * limit;
+    const params = [req.user.id, limit, offset];
+    const filters = ["c.is_active = TRUE"];
 
-  if (req.query.search) {
-    params.push(`%${req.query.search}%`);
-    filters.push(`(c.title ILIKE $${params.length} OR c.trainer ILIKE $${params.length} OR c.description ILIKE $${params.length})`);
+    if (req.query.search) {
+      params.push(`%${req.query.search}%`);
+      filters.push(`(c.title ILIKE $${params.length} OR c.trainer ILIKE $${params.length} OR c.description ILIKE $${params.length})`);
+    }
+    for (const [queryKey, column] of [["rank", "rank_targets"], ["role", "role_targets"], ["format", "format"], ["skill_tag", "skill_tags"], ["type", "type"]]) {
+      if (!req.query[queryKey]) continue;
+      params.push(req.query[queryKey]);
+      filters.push(column.endsWith("_targets") || column === "skill_tags" ? `$${params.length} = ANY(c.${column})` : `c.${column} = $${params.length}`);
+    }
+
+    const result = await query(
+      `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
+       FROM courses c
+       LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1
+       WHERE ${filters.join(" AND ")}
+       ORDER BY c.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      params
+    );
+
+    const userResult = await query("SELECT role, rank FROM users WHERE id = $1", [req.user.id]);
+    const user = userResult.rows[0] || {};
+    res.json({ courses: result.rows.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
+  } catch (err) {
+    next(err);
   }
-  for (const [queryKey, column] of [["rank", "rank_targets"], ["role", "role_targets"], ["format", "format"], ["skill_tag", "skill_tags"], ["type", "type"]]) {
-    if (!req.query[queryKey]) continue;
-    params.push(req.query[queryKey]);
-    filters.push(column.endsWith("_targets") || column === "skill_tags" ? `$${params.length} = ANY(c.${column})` : `c.${column} = $${params.length}`);
-  }
-
-  const result = await query(
-    `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
-     FROM courses c
-     LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1
-     WHERE ${filters.join(" AND ")}
-     ORDER BY c.created_at DESC
-     LIMIT $2 OFFSET $3`,
-    params
-  );
-
-  const userResult = await query("SELECT role, rank FROM users WHERE id = $1", [req.user.id]);
-  const user = userResult.rows[0] || {};
-  res.json({ courses: result.rows.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
 });
 
-coursesRouter.get("/:id", async (req, res) => {
-  const result = await query(
-    `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
-     FROM courses c
-     LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $2
-     WHERE c.id = $1 AND c.is_active = TRUE`,
-    [req.params.id, req.user.id]
-  );
-  if (!result.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
-  res.json({ course: result.rows[0] });
+coursesRouter.get("/:id", async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
+       FROM courses c
+       LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $2
+       WHERE c.id = $1 AND c.is_active = TRUE`,
+      [req.params.id, req.user.id]
+    );
+    if (!result.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+    res.json({ course: result.rows[0] });
+  } catch (err) {
+    next(err);
+  }
 });
 
 coursesRouter.post("/:id/complete", async (req, res, next) => {

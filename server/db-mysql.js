@@ -67,6 +67,15 @@ export function prepareMysqlQuery(sql, params = []) {
     "COALESCE($1, JSON_ARRAY())",
   );
 
+  // MySQL2 prepared statements don't support ? for LIMIT/OFFSET (ER_WRONG_ARGUMENTS).
+  // Inline LIMIT/OFFSET values directly before the general $N → ? substitution.
+  s = s.replace(/\bLIMIT\s+\$(\d+)(?:\s+OFFSET\s+\$(\d+))?/gi, (_, limitN, offsetN) => {
+    const limitVal = parseInt(params[Number(limitN) - 1]) || 20;
+    if (offsetN === undefined) return `LIMIT ${limitVal}`;
+    const offsetVal = parseInt(params[Number(offsetN) - 1]) || 0;
+    return `LIMIT ${limitVal} OFFSET ${offsetVal}`;
+  });
+
   // Collect param ordering and replace $N → ? (must be last)
   const paramOrder = [];
   s = s.replace(/\$(\d+)/g, (_, num) => {
