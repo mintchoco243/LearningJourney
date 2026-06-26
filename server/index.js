@@ -52,10 +52,10 @@ app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
 app.use(express.static(path.join(__dirname, "static")));
 app.get(["/admin", "/admin/*"], (req, res) => {
-  res.sendFile(path.join(__dirname, "static", "admin.html"));
+  res.sendFile(path.join(__dirname, "static", "admin.htm"));
 });
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "static", "index.html"));
+  res.sendFile(path.join(__dirname, "static", "index.htm"));
 });
 
 app.use((error, req, res, next) => {
