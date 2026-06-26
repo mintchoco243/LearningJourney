@@ -121,6 +121,16 @@
             title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
           }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--rpg-muted)" })),
+          // Logout button
+          React.createElement("button", {
+            title: "Đăng xuất",
+            onClick: () => {
+              if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
+              fetch("/auth/logout", { method: "POST", credentials: "include" })
+                .finally(() => { props.onLogout && props.onLogout(); });
+            },
+            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" })),
           React.createElement("button", { className: "appbar__mini", onClick: () => props.onNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
             React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
               React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
@@ -271,7 +281,7 @@
       body = React.createElement(S.Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); }, onReset: () => { setPhase("onboarding"); window.scrollTo(0, 0); } });
     } else if (phase === "store") {
       body = React.createElement("div", { className: "glh-light" },
-        React.createElement(AppBar, { tab: "store", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true) }),
+        React.createElement(AppBar, { tab: "store", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
         React.createElement(S.Store, {}));
     } else if (phase === "policy") {
       body = React.createElement(S.Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } });
@@ -279,7 +289,7 @@
       // app — single scrollable page, nav scrolls to sections
       const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenEvent: setEvent, onOpenLdRequest: () => setLdRequest(true) };
       body = React.createElement("div", { className: "glh-light" },
-        React.createElement(AppBar, { tab: activeSection, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true) }),
+        React.createElement(AppBar, { tab: activeSection, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
         React.createElement("main", null,
           React.createElement("div", { ref: dashRef },
             React.createElement(S.Dashboard, Object.assign({}, utilCommon))),

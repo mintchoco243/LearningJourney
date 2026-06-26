@@ -46,6 +46,21 @@
       result._answers = answers;
       result.quiz_extended = { learning_style: step4, availability: step5, trainers: step6 };
       actions.completeQuiz(result);
+      // Persist onboarding data to backend (fire-and-forget)
+      fetch("/api/me/onboarding", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rank: result.rank_id,
+          role: (answers[0] && answers[0].label) || "",
+          class_archetype: result.class_id,
+          learning_formats: step4 || [],
+          weekly_hours: step5 || null,
+          preferred_trainers: step6 || [],
+          learning_goals: (answers[2] && answers[2].label) || "",
+        }),
+      }).catch(() => {});
       props.onComplete();
     };
 

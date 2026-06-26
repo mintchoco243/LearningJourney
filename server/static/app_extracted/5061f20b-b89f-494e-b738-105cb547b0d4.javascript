@@ -214,7 +214,7 @@
   }
 
   function Policy(props) {
-    const categories = [
+    const STATIC_CATEGORIES = [
       {
         title: "Loại hình đào tạo",
         items: [
@@ -245,6 +245,26 @@
       },
     ];
 
+    const [categories, setCategories] = React.useState(STATIC_CATEGORIES);
+    React.useEffect(() => {
+      fetch("/api/policies", { credentials: "include" })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data || !data.policies || !data.policies.length) return;
+          const map = {};
+          data.policies.forEach(p => {
+            if (!p.is_active) return;
+            if (!map[p.category]) map[p.category] = { title: p.category, items: [] };
+            map[p.category].items.push({ title: p.title, desc: p.content || "" });
+          });
+          const cats = Object.values(map);
+          if (cats.length) setCategories(cats);
+        })
+        .catch(() => {});
+    }, []);
+
+    const categories_used = categories;
+
     return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 40 } },
       React.createElement("div", { className: "glh-container", style: { padding: "28px clamp(16px,4vw,40px)" } },
         React.createElement("button", {
@@ -258,7 +278,7 @@
         React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(26px,4vw,36px)" } }, "Chính sách & Hướng dẫn L&D"),
         React.createElement("p", { style: { color: "var(--rpg-muted)", marginBottom: 32, fontSize: 14 } }, "Tìm hiểu về các hình thức hỗ trợ học tập tại Garena"),
 
-        categories.map((cat, catIdx) =>
+        categories_used.map((cat, catIdx) =>
           React.createElement("div", { key: catIdx, className: "u-card", style: { marginBottom: 16, padding: 20 } },
             React.createElement("h3", { className: "u-eyebrow", style: { marginBottom: 12 } }, cat.title),
             cat.items.map((item, itemIdx) =>

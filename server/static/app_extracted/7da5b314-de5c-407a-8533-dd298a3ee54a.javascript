@@ -201,6 +201,10 @@
         }));
         setXpBurst({ amount: course.xp_reward || 20, label: "Hoàn thành khóa học", id: Date.now() });
         if (after > before) setLevelUp(D.RANKS[after]);
+        // Persist to backend (fire-and-forget — local state already updated)
+        if (course.course_id) {
+          fetch("/api/courses/" + course.course_id + "/complete", { method: "POST", credentials: "include" }).catch(() => {});
+        }
         return true;
       },
       registerEvent(ev) {
@@ -211,6 +215,10 @@
           registered_events: [...(user.registered_events || []), ev.event_id],
         }));
         setXpBurst({ amount: D.XP.event_register, label: "Đăng ký sự kiện", id: Date.now() });
+        // Persist to backend (fire-and-forget)
+        if (ev.event_id) {
+          fetch("/api/sessions/" + ev.event_id + "/reserve", { method: "POST", credentials: "include" }).catch(() => {});
+        }
         return true;
       },
       clearLevelUp() { setLevelUp(null); },
