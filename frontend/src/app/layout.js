@@ -1,4 +1,5 @@
 import "./globals.css";
+import { Agentation } from "agentation";
 
 export const metadata = {
   title: "Garena Learning Hub",
@@ -15,6 +16,7 @@ export default function RootLayout({ children }) {
       className="h-full antialiased"
     >
       <body className="min-h-full flex flex-col">{children}</body>
+      {process.env.NODE_ENV === "development" && <Agentation />}
     </html>
   );
 }
