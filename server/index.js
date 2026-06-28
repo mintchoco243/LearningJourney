@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import morgan from "morgan";
-import { createReadStream } from "node:fs";
+import { readFileSync, createReadStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertRuntimeConfig, config } from "./config.js";
@@ -53,7 +53,31 @@ app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
 const serveHtml = (file) => (req, res) => {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
-  createReadStream(path.join(__dirname, "static", file)).pipe(res);
+  if (config.nodeEnv === "development") {
+    try {
+      // Đọc nội dung file .dat thành chuỗi text HTML
+      let htmlContent = readFileSync(path.join(__dirname, "static", file), "utf8");
+
+      // Khai báo script CDN của Agentation
+      const agentationScript = `<script src="https://cdn.jsdelivr.net/npm/agentation@3.0.2/dist/index.min.js"></script>`;
+
+      // Chèn script vào ngay trước thẻ đóng </html> (hoặc </body> nếu file có)
+      if (htmlContent.includes("</html>")) {
+        htmlContent = htmlContent.replace("</html>", `${agentationScript}</html>`);
+      } else {
+        htmlContent += agentationScript; // Nếu không tìm thấy thẻ đóng, cộng dồn vào cuối file
+      }
+
+      res.send(htmlContent);
+    } catch (err) {
+      console.error("Lỗi khi chèn Agentation script:", err);
+      // Nếu lỗi thì quay về fallback đọc file bình thường
+      createReadStream(path.join(__dirname, "static", file)).pipe(res);
+    }
+  } else {
+    // Môi trường Production (Deploy thật) thì trả file gốc, không chèn Agentation để tối ưu hiệu năng
+    createReadStream(path.join(__dirname, "static", file)).pipe(res);
+  }
 };
 app.get(["/admin", "/admin/*"], serveHtml("admin.dat"));
 app.get("*", serveHtml("app.dat"));
