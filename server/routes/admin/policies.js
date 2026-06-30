@@ -4,7 +4,8 @@ import { query } from "../../db.js";
 
 const require = createRequire(import.meta.url);
 const mammoth = require("mammoth");
-const pdf = require("pdf-parse");
+let pdf = null;
+try { pdf = require("pdf-parse"); } catch {}
 
 export const adminPoliciesRouter = express.Router();
 
