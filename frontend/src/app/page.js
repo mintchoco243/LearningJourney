@@ -83,13 +83,79 @@ const D = GLH_DATA;
         React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: actions.clearLevelUp }, "Tiếp tục")));
   }
 
+  /* ---------- Q&A section ---------- */
+  const QA_SAMPLES = [
+    { id: 1, q: "Tôi có thể đăng ký bao nhiêu khóa học trong một tháng?", a: "Không giới hạn số lượng khóa đăng ký. Tuy nhiên, bạn nên cân nhắc lịch học để đảm bảo hoàn thành đúng hạn." },
+    { id: 2, q: "Điểm XP được tính như thế nào?", a: "XP được cộng sau khi hoàn thành khóa học và được xác nhận bởi trainer. Mỗi khóa có số XP khác nhau tùy theo độ dài và mức độ." },
+    { id: 3, q: "Tôi có thể đề xuất chủ đề đào tạo mới không?", a: "Có. Bạn có thể gửi đề xuất qua nút \"Gửi yêu cầu khóa học\" hoặc liên hệ trực tiếp team L&D qua email." },
+    { id: 4, q: "Chính sách hoàn trả XP khi hủy đăng ký là gì?", a: "XP chỉ được ghi nhận sau khi hoàn thành, do đó không phát sinh vấn đề hoàn trả khi hủy đăng ký trước khi khóa diễn ra." },
+    { id: 5, q: "Khóa học E-learning có hạn truy cập không?", a: "Hiện tại các khóa E-learning được mở truy cập không thời hạn. Thông tin này có thể thay đổi, bạn nên theo dõi mục Chính sách để cập nhật." },
+  ];
+
+  function QASection() {
+    const [expanded, setExpanded] = React.useState(null);
+    const [showForm, setShowForm] = React.useState(false);
+    const [question, setQuestion] = React.useState("");
+    const [submitted, setSubmitted] = React.useState(false);
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (!question.trim()) return;
+      setSubmitted(true);
+      setQuestion("");
+      setTimeout(() => { setSubmitted(false); setShowForm(false); }, 3000);
+    };
+
+    return React.createElement("section", { style: { padding: "clamp(16px,4vw,40px)" } },
+      React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 } },
+        React.createElement("h2", { style: { fontSize: "clamp(18px,2.5vw,22px)", fontWeight: 700, margin: 0 } }, "Câu hỏi thường gặp"),
+        React.createElement("button", {
+          className: "glh-btn glh-btn--secondary",
+          onClick: () => { setShowForm(v => !v); setSubmitted(false); },
+        }, showForm ? "Hủy" : "Gửi câu hỏi mới")),
+      showForm && React.createElement("form", {
+        onSubmit: handleSubmit,
+        style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 10, padding: 16, marginBottom: 20 },
+      },
+        submitted
+          ? React.createElement("p", { style: { color: "var(--glh-accent)", margin: 0 } }, "✓ Câu hỏi đã được gửi. Team L&D sẽ phản hồi sớm nhất!")
+          : React.createElement(React.Fragment, null,
+              React.createElement("textarea", {
+                value: question, onChange: e => setQuestion(e.target.value),
+                placeholder: "Nhập câu hỏi của bạn...",
+                rows: 3,
+                style: { width: "100%", resize: "vertical", background: "var(--rpg-bg)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--rpg-text)", fontSize: 14, boxSizing: "border-box" },
+              }),
+              React.createElement("button", { type: "submit", className: "glh-btn glh-btn--primary", style: { marginTop: 10 } }, "Gửi"))),
+      QA_SAMPLES.map(item =>
+        React.createElement("div", {
+          key: item.id,
+          style: { borderBottom: "1px solid var(--rpg-border)", padding: "14px 0" },
+        },
+          React.createElement("button", {
+            onClick: () => setExpanded(expanded === item.id ? null : item.id),
+            style: { width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--rpg-text)", fontWeight: 600, fontSize: 15 },
+          },
+            item.q,
+            React.createElement(Icon, { name: expanded === item.id ? "chevron-down" : "chevron-right", size: 16, color: "var(--rpg-muted)" })),
+          expanded === item.id && React.createElement("p", {
+            style: { margin: "10px 0 0", color: "var(--rpg-muted)", fontSize: 14, lineHeight: 1.6 },
+          }, item.a))));
+  }
+
   /* ---------- App bar (utility) ---------- */
   function AppBar(props) {
     const { user } = useGame();
     const cls = D.CLASSES[user.quiz_result.class_id];
     const rank = rankForXp(user.xp);
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
-    const tabs = [["dashboard", "Trang chủ"], ["catalog", "Khóa học"], ["calendar", "Lịch đào tạo"], ["store", "Kho đổi quà"], ["policy", "Chính sách L&D"]];
+    const tabs = [
+      ["home",    null],                    // icon only
+      ["library", "Thư viện đào tạo"],
+      ["policy",  "Chính sách đào tạo"],
+      ["store",   "Kho đổi quà"],           // disabled
+      ["qa",      "Q&A"],
+    ];
 
     const [isDark, setIsDark] = React.useState(() => {
       try { if (typeof window !== "undefined") { return localStorage.getItem("glh_theme") !== "light"; } } catch(e) {} return true;
@@ -109,18 +175,23 @@ const D = GLH_DATA;
 
     return React.createElement("header", { className: "appbar" },
       React.createElement("div", { className: "appbar__in" },
-        React.createElement("img", { className: "appbar__logo", src: ((typeof window !== "undefined" && window.__resources) && (typeof window !== "undefined" && window.__resources).logo) || "assets/logo_horizontal.png", alt: "Garena", onClick: () => props.onNav("dashboard"), style: { cursor: "pointer" } }),
         React.createElement("nav", { className: "appbar__nav" },
           tabs.map(([id, label]) => {
             const isStore = id === "store";
+            const isHome  = id === "home";
             return React.createElement("button", {
               key: id,
               className: "appbar__link" + (props.tab === id ? " is-active" : ""),
               onClick: () => props.onNav(id),
-              style: isStore ? { opacity: 0.45, display: "flex", alignItems: "center", gap: 5 } : {},
+              style: isStore ? { opacity: 0.45, display: "flex", alignItems: "center", gap: 5 }
+                   : isHome  ? { display: "flex", alignItems: "center" }
+                   : {},
             },
-              label,
-              isStore ? React.createElement(Icon, { name: "lock", size: 11, color: "currentColor", style: { marginTop: 1 } }) : null
+              isHome  ? React.createElement(React.Fragment, null,
+                  React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, display: "block" } }),
+                  React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" } }, "Garena Learning Hub"))
+            : isStore ? React.createElement(React.Fragment, null, label, React.createElement(Icon, { name: "lock", size: 11, color: "currentColor", style: { marginTop: 1 } }))
+            : label
             );
           })),
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
@@ -237,7 +308,7 @@ const D = GLH_DATA;
         })
         .catch(() => {});
     }, []);
-    const [activeSection, setActiveSection] = React.useState("dashboard");
+    const [activeTab, setActiveTab] = React.useState("home");
 
     const [course, setCourse] = React.useState(null);
     const [event, setEvent] = React.useState(null);
@@ -246,36 +317,24 @@ const D = GLH_DATA;
     const [showTutorial, setShowTutorial] = React.useState(() => {
       try { if (typeof window !== "undefined") { return !localStorage.getItem("glh_tutorial_done"); } } catch(e) {} return false;
     });
-    const dashRef = React.useRef(null);
-    const catalogRef = React.useRef(null);
-    const calRef = React.useRef(null);
-    const sectionRefs = { dashboard: dashRef, catalog: catalogRef, calendar: calRef };
 
+    const pendingScroll = React.useRef(null);
     React.useEffect(() => {
-      if (phase !== "app") return;
-      const OFFSET = 90;
-      const onScroll = () => {
-        let cur = "dashboard";
-        [["calendar", calRef], ["catalog", catalogRef], ["dashboard", dashRef]].forEach(([id, ref]) => {
-          if (ref.current && ref.current.getBoundingClientRect().top <= OFFSET) cur = id;
-        });
-        setActiveSection(cur);
-      };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      return () => window.removeEventListener("scroll", onScroll);
-    }, [phase]);
+      if (!pendingScroll.current) return;
+      const el = document.getElementById(pendingScroll.current);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      pendingScroll.current = null;
+    }, [activeTab]);
 
-    const scrollTo = React.useCallback((id) => {
-
-      if (id === "store") { setPhase("store"); window.scrollTo(0, 0); return; }
-      if (id === "policy") { setPhase("policy"); window.scrollTo(0, 0); return; }
+    const scrollTo = React.useCallback((id, section) => {
+      if (id === "store")   { setPhase("store");   window.scrollTo(0, 0); return; }
+      if (id === "policy")  { setPhase("policy");  window.scrollTo(0, 0); return; }
+      if (id === "qa")      { setPhase("qa");      window.scrollTo(0, 0); return; }
       if (id === "profile") { setPhase("profile"); window.scrollTo(0, 0); return; }
-      const ref = sectionRefs[id];
-      if (ref && ref.current) {
-        const top = ref.current.getBoundingClientRect().top + window.scrollY - 68;
-        window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-      }
-    }, [phase]);
+      if (section) pendingScroll.current = section;
+      setActiveTab(id);
+      window.scrollTo(0, 0);
+    }, []);
 
     // apply tweaks to :root
     React.useEffect(() => {
@@ -310,20 +369,32 @@ const D = GLH_DATA;
         React.createElement(Store, {}));
     } else if (phase === "policy") {
       body = React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } });
-    } else {
-      // app — single scrollable page, nav scrolls to sections
-      const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenEvent: setEvent, onOpenLdRequest: () => setLdRequest(true) };
+    } else if (phase === "qa") {
       body = React.createElement("div", { className: "glh-light" },
-        React.createElement(AppBar, { tab: activeSection, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement("main", null,
-          React.createElement("div", { ref: dashRef },
-            React.createElement(Dashboard, Object.assign({}, utilCommon))),
+        React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+        React.createElement(QASection, null));
+    } else {
+      // app — tab-based navigation
+      const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenEvent: setEvent, onOpenLdRequest: () => setLdRequest(true) };
+      const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
+      let tabContent;
+      if (activeTab === "home") {
+        tabContent = React.createElement(Dashboard, Object.assign({}, utilCommon));
+      } else if (activeTab === "library") {
+        tabContent = React.createElement("div", null,
+          React.createElement("div", { id: "calendar-section" },
+            React.createElement(Calendar, utilCommon)),
           React.createElement("div", { style: { height: 1, background: "var(--rpg-border)", margin: "20px clamp(16px,4vw,40px)" } }),
-          React.createElement("div", { ref: catalogRef },
-            React.createElement(Catalog, utilCommon)),
-          React.createElement("div", { style: { height: 1, background: "var(--rpg-border)", margin: "20px clamp(16px,4vw,40px)" } }),
-          React.createElement("div", { ref: calRef, "data-section": "calendar" },
-            React.createElement(Calendar, utilCommon))));
+          React.createElement(Catalog, utilCommon),
+          React.createElement("button", {
+            className: "library-fab",
+            onClick: utilCommon.onOpenLdRequest,
+            title: "Gửi yêu cầu học tập",
+          },
+            React.createElement(Icon, { name: "send", size: 18, color: "#fff" }),
+            React.createElement("span", { className: "library-fab__label" }, "Gửi yêu cầu")));
+      }
+      body = React.createElement("div", { className: "glh-light" }, appBar, React.createElement("main", null, tabContent));
     }
 
     return React.createElement(React.Fragment, null,

@@ -23,56 +23,51 @@ const { useGame } = GLHEngine;
     const displayEmail = user.email || "user@garena.vn";
 
     const [form, setForm] = React.useState({
-      skills: [],
-      description: "",
-      format: quizExt.learning_style || [],
-      availability: quizExt.availability || "",
-      trainers: quizExt.trainers || [],
+      topic: "",
+      goal: "",
+      format: "",
+      timing: "",
+      scope: "individual",
       notes: "",
     });
     const [submitted, setSubmitted] = React.useState(false);
 
-    const skillOptions = [
-      { id: "leadership", label: "Lãnh đạo" },
-      { id: "data", label: "Data Analysis" },
-      { id: "product", label: "Product Design" },
-      { id: "python", label: "Python / SQL" },
-      { id: "speaking", label: "Public Speaking" },
-      { id: "ai", label: "AI / Automation" },
-      { id: "project", label: "Quản lý dự án" },
-      { id: "comm", label: "Giao tiếp" },
-    ];
     const formatOptions = [
-      { id: "video", label: "Video tự học" },
-      { id: "workshop", label: "Workshop" },
-      { id: "coaching", label: "Coaching 1-1" },
-      { id: "reading", label: "Reading" },
+      { id: "online",    label: "Online (Zoom / Meet)" },
+      { id: "offline",   label: "Offline tại văn phòng" },
+      { id: "elearning", label: "E-learning tự học" },
+      { id: "any",       label: "Linh hoạt theo L&D" },
     ];
-    const availOptions = [
-      { id: "under1", label: "Dưới 1 giờ/tuần" },
-      { id: "1to2", label: "1–2 giờ/tuần" },
-      { id: "3plus", label: "3+ giờ/tuần" },
+    const timingOptions = [
+      { id: "morning",   label: "Sáng (8–12h)" },
+      { id: "afternoon", label: "Chiều (13–17h)" },
+      { id: "flexible",  label: "Linh hoạt" },
+    ];
+    const scopeOptions = [
+      { id: "individual", label: "Chỉ mình tôi" },
+      { id: "team",       label: "Cả team" },
     ];
 
-    const toggleArr = (field, id) => setForm((p) => ({
-      ...p,
-      [field]: p[field].includes(id) ? p[field].filter((x) => x !== id) : [...p[field], id],
-    }));
+    const toggleChip = (field, id, single) => setForm(p =>
+      single ? { ...p, [field]: p[field] === id ? "" : id }
+             : { ...p, [field]: Array.isArray(p[field]) ? (p[field].includes(id) ? p[field].filter(x => x !== id) : [...p[field], id]) : [id] }
+    );
 
     const handleSubmit = async () => {
-      if (!form.description.trim()) { alert("Vui lòng mô tả nhu cầu học tập"); return; }
+      if (!form.topic.trim()) { alert("Vui lòng nhập tên khóa học / chủ đề muốn học"); return; }
+      if (!form.goal.trim()) { alert("Vui lòng mô tả mục tiêu học tập"); return; }
       try {
         const res = await fetch("/api/ld-requests", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            skills_needed: form.skills,
-            description: form.description,
-            preferred_formats: form.format,
-            weekly_hours: form.availability,
-            preferred_trainers: form.trainers,
-            other_notes: form.notes,
+            topic: form.topic,
+            goal: form.goal,
+            preferred_format: form.format,
+            preferred_timing: form.timing,
+            scope: form.scope,
+            notes: form.notes,
           }),
         });
         if (!res.ok) throw new Error("Lỗi gửi yêu cầu");
@@ -140,74 +135,69 @@ const { useGame } = GLHEngine;
         // Form fields
         React.createElement("div", { style: { padding: "0 24px 24px" } },
 
-          // Skills
-          React.createElement(Field, { icon: "zap", label: "Kỹ năng muốn phát triển" },
-            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-              skillOptions.map((s) =>
-                React.createElement("button", {
-                  key: s.id,
-                  onClick: () => toggleArr("skills", s.id),
-                  style: {
-                    padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: form.skills.includes(s.id) ? "var(--glh-accent)" : "var(--rpg-border)",
-                    background: form.skills.includes(s.id) ? "rgba(228,30,38,0.15)" : "transparent",
-                    color: form.skills.includes(s.id) ? "#fff" : "var(--rpg-muted)",
-                    transition: "all 150ms",
-                  }
-                }, s.label)
-              )
-            )
+          // Topic
+          React.createElement(Field, { icon: "book-open", label: "Tên khóa học / Chủ đề muốn học", required: true },
+            React.createElement("input", {
+              className: "u-input",
+              placeholder: "Ví dụ: Kỹ năng thuyết trình, Python cơ bản, OKR...",
+              value: form.topic,
+              onChange: e => setForm(p => ({ ...p, topic: e.target.value })),
+            })
           ),
 
-          // Description
-          React.createElement(Field, { icon: "edit-3", label: "Mô tả nhu cầu", required: true },
+          // Goal
+          React.createElement(Field, { icon: "target", label: "Mục tiêu học tập", required: true },
             React.createElement("textarea", {
               className: "u-input",
-              placeholder: "Bạn muốn học gì? Áp dụng vào công việc như thế nào?",
-              value: form.description,
-              onChange: (e) => setForm((p) => ({ ...p, description: e.target.value })),
-              style: { minHeight: 90, resize: "vertical" },
+              placeholder: "Bạn muốn đạt được gì sau khoá học? Áp dụng vào công việc như thế nào?",
+              value: form.goal,
+              onChange: e => setForm(p => ({ ...p, goal: e.target.value })),
+              style: { minHeight: 80, resize: "vertical" },
             })
           ),
 
           // Format
-          React.createElement(Field, { icon: "layers", label: "Hình thức học" },
+          React.createElement(Field, { icon: "layers", label: "Hình thức mong muốn" },
             React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-              formatOptions.map((f) =>
-                React.createElement("button", {
-                  key: f.id,
-                  onClick: () => toggleArr("format", f.id),
-                  style: {
-                    padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: form.format.includes(f.id) ? "var(--glh-accent)" : "var(--rpg-border)",
-                    background: form.format.includes(f.id) ? "rgba(228,30,38,0.15)" : "transparent",
-                    color: form.format.includes(f.id) ? "#fff" : "var(--rpg-muted)",
-                    transition: "all 150ms",
-                  }
-                }, f.label)
-              )
+              formatOptions.map(f => React.createElement("button", {
+                key: f.id,
+                onClick: () => toggleChip("format", f.id, true),
+                style: { padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid", transition: "all 150ms",
+                  borderColor: form.format === f.id ? "var(--glh-accent)" : "var(--rpg-border)",
+                  background: form.format === f.id ? "rgba(228,30,38,0.15)" : "transparent",
+                  color: form.format === f.id ? "#fff" : "var(--rpg-muted)",
+                }
+              }, f.label))
             )
           ),
 
-          // Availability
-          React.createElement(Field, { icon: "clock", label: "Thời gian có thể học" },
+          // Timing
+          React.createElement(Field, { icon: "clock", label: "Khung giờ thuận tiện" },
             React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-              availOptions.map((a) =>
-                React.createElement("button", {
-                  key: a.id,
-                  onClick: () => setForm((p) => ({ ...p, availability: p.availability === a.id ? "" : a.id })),
-                  style: {
-                    padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer",
-                    border: "1px solid",
-                    borderColor: form.availability === a.id ? "var(--glh-accent)" : "var(--rpg-border)",
-                    background: form.availability === a.id ? "rgba(228,30,38,0.15)" : "transparent",
-                    color: form.availability === a.id ? "#fff" : "var(--rpg-muted)",
-                    transition: "all 150ms",
-                  }
-                }, a.label)
-              )
+              timingOptions.map(t => React.createElement("button", {
+                key: t.id,
+                onClick: () => toggleChip("timing", t.id, true),
+                style: { padding: "6px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid", transition: "all 150ms",
+                  borderColor: form.timing === t.id ? "var(--glh-accent)" : "var(--rpg-border)",
+                  background: form.timing === t.id ? "rgba(228,30,38,0.15)" : "transparent",
+                  color: form.timing === t.id ? "#fff" : "var(--rpg-muted)",
+                }
+              }, t.label))
+            )
+          ),
+
+          // Scope
+          React.createElement(Field, { icon: "users", label: "Đối tượng tham gia" },
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+              scopeOptions.map(s => React.createElement("button", {
+                key: s.id,
+                onClick: () => setForm(p => ({ ...p, scope: s.id })),
+                style: { padding: "6px 16px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "1px solid", transition: "all 150ms",
+                  borderColor: form.scope === s.id ? "var(--glh-accent)" : "var(--rpg-border)",
+                  background: form.scope === s.id ? "rgba(228,30,38,0.15)" : "transparent",
+                  color: form.scope === s.id ? "#fff" : "var(--rpg-muted)",
+                }
+              }, s.label))
             )
           ),
 
@@ -215,9 +205,9 @@ const { useGame } = GLHEngine;
           React.createElement(Field, { icon: "message-square", label: "Ghi chú thêm" },
             React.createElement("textarea", {
               className: "u-input",
-              placeholder: "Thời gian phù hợp, trainer yêu thích, ưu tiên khác...",
+              placeholder: "Số lượng người tham gia, yêu cầu đặc biệt...",
               value: form.notes,
-              onChange: (e) => setForm((p) => ({ ...p, notes: e.target.value })),
+              onChange: e => setForm(p => ({ ...p, notes: e.target.value })),
               style: { minHeight: 60, resize: "vertical" },
             })
           ),

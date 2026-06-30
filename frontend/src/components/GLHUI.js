@@ -57,6 +57,7 @@ import React from "react";
     "building-2": "M6 22V4a2 2 0 012-2h8a2 2 0 012 2v18zM6 12H4a2 2 0 00-2 2v6h4M18 9h2a2 2 0 012 2v9h-4M10 6h4M10 10h4M10 14h4M10 18h4",
     "book-open": "M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z",
     "layout-dashboard": "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10",
+    "home": "M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10",
     "message-circle": "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z",
     "party-popper": "M5.8 11.3L2 22l10.7-3.79M4 3h.01M22 8h.01M15 2l-1.5 3L11 6l3 1.5L15 11l1.5-3L20 6.5l-3-1-2-3.5zM20 17l-1 2-2-1 1-2 2 1zM9 8l-1 2-2-1 1-2 2 1z",
     info: "M12 22a10 10 0 100-20 10 10 0 000 20zM12 8h.01M11 12h1v4h1",
@@ -86,7 +87,7 @@ import React from "react";
     const h = Math.floor(min / 60), m = min % 60;
     return m ? `${h}g ${m}p` : `${h} giờ`;
   }
-  export const FORMAT_LABEL = { online: "Online", offline: "Trực tiếp", elearning: "E-learning", webinar: "Webinar", workshop: "Workshop", bootcamp: "Bootcamp", talk: "Talk" };
+  export const FORMAT_LABEL = { online: "Online", offline: "Offline", elearning: "E-learning", webinar: "Webinar", workshop: "Workshop", bootcamp: "Bootcamp", talk: "Talk" };
 
   // simple deterministic starfield as inline SVG circles
   function Starfield() {
