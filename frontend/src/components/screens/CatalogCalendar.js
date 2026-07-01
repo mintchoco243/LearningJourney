@@ -146,7 +146,7 @@ function ctaColor(cta) {
       filtered.length
         ? React.createElement("div", null,
             React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18, marginBottom: 24 } },
-              paginated.map(c => React.createElement(CourseCard, { key: c.course_id, course: c, onClick: props.onOpenCourse }))),
+              paginated.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse }))),
             // Pagination
             totalPages > 1 ? React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 32 } },
               React.createElement("button", {

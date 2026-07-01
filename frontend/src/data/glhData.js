@@ -268,8 +268,9 @@
         const { courses } = await coursesRes.json();
         if (courses && courses.length) {
           GLH_DATA.COURSES = courses.map((c) => ({
-            course_id: c.id,
+            course_id: c.course_code || c.id,
             course_code: c.course_code || c.id,
+            _id: c.id,
             title: c.title,
             description: c.description || "",
             class_ids: c.role_targets && c.role_targets.length ? c.role_targets.map((r) => r.toLowerCase()) : ["strategist", "builder", "connector", "operator", "explorer"],

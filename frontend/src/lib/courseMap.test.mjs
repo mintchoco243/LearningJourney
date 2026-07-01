@@ -22,8 +22,9 @@ const up = mapSessionToUpcoming(
   TODAY
 );
 assert.equal(up.session_id, "s1");
-assert.equal(up.course_id, "s1");
+assert.equal(up.course_id, "LC-001");
 assert.equal(up.course_code, "LC-001");
+assert.equal(up._id, "s1");
 assert.equal(up.format, "offline");
 assert.equal(up.duration_minutes, 120);
 assert.equal(up.xp_reward, 100);
@@ -45,8 +46,9 @@ assert.equal(range.end_time, "12:00");
 
 // course -> card (duration_hours -> minutes)
 const card = mapCourseToCard({ id: "row-002", course_code: "LC-002", title: "Data", trainer: "Data Guild", format: "Video", duration_hours: 1.5, xp_reward: 80, skill_tags: ["Data Analysis"], registration_url: null, fit_tag: "best_fit" });
-assert.equal(card.course_id, "row-002");
+assert.equal(card.course_id, "LC-002");
 assert.equal(card.course_code, "LC-002");
+assert.equal(card._id, "row-002");
 assert.equal(card.format, "elearning");
 assert.equal(card.duration_minutes, 90);
 assert.equal(card.url, "#");
@@ -86,5 +88,40 @@ const rec = pickRecommended([
   { id: "x", fit_tag: null }, { id: "y", fit_tag: "best_fit" }, { id: "z", fit_tag: "for_your_level" },
 ]);
 assert.deepEqual(rec.map((c) => c.course_id), ["y", "z", "x"]);
+
+// Imported DB rows: id is row UUID, course_code is the stable course identity.
+const importedSession = mapSessionToUpcoming({
+  id: "uuid-session-1",
+  course_code: "LC-04",
+  title: "ChatGPT",
+  type: "scheduled",
+  format: "online",
+  session_date: "2026-07-15",
+  status: "ended",
+}, TODAY);
+assert.equal(importedSession.course_id, "LC-04");
+assert.equal(importedSession._id, "uuid-session-1");
+assert.equal(importedSession.session_id, "uuid-session-1");
+assert.equal(importedSession.course_status, "upcoming_open");
+
+const importedCourse = mapCourseToCard({
+  id: "uuid-master-1",
+  course_code: "LC-04",
+  title: "ChatGPT",
+  type: "scheduled",
+  format: "online",
+  session_date: null,
+  status: "open",
+}, TODAY);
+assert.equal(importedCourse.course_id, "LC-04");
+assert.equal(importedCourse._id, "uuid-master-1");
+assert.equal(importedCourse.session_id, null);
+
+const deduped = pickRecommended([
+  { id: "uuid-session-2", course_code: "LC-20", title: "Session row", session_date: "2026-07-20", fit_tag: "best_fit" },
+  { id: "uuid-master-2", course_code: "LC-20", title: "Master row", session_date: null, fit_tag: "best_fit" },
+]);
+assert.equal(deduped.length, 1);
+assert.equal(deduped[0]._id, "uuid-master-2");
 
 console.log("courseMap.test.mjs: all assertions passed");

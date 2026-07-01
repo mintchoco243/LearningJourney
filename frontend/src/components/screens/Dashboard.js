@@ -83,7 +83,7 @@ function UpcomingList({ courses, onOpen }) {
         React.createElement("h3", { style: { fontSize: 16, fontWeight: 700, color: "var(--garena-red)", marginBottom: 10, marginTop: 0 } },
           `${MONTHS_VI[mm]} ${yy}`),
         React.createElement("div", { style: { display: "grid", gap: 8 } },
-          groups[key].map(c => React.createElement(UpcomingItem, { key: c.course_id, course: c, onOpen }))));
+          groups[key].map(c => React.createElement(UpcomingItem, { key: c.session_id || c._id || c.course_id, course: c, onOpen }))));
     }));
 }
 

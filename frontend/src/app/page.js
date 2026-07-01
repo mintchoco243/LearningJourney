@@ -291,6 +291,7 @@ const D = GLH_DATA;
 
     const { user, actions } = useGame();
     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+    const verifiedSessionRef = React.useRef(false);
 
     // initial phase — now starts with login check
     const [phase, setPhase] = React.useState(() => {
@@ -299,14 +300,14 @@ const D = GLH_DATA;
       return "app";
     });
 
-    // On mount: always verify session with /api/me
-    // If 401 → clear stale localStorage and force login
+    // On mount: verify server session without destroying local learning progress.
     React.useEffect(() => {
+      if (verifiedSessionRef.current) return;
+      verifiedSessionRef.current = true;
       fetch("/api/me", { credentials: "include" })
         .then((r) => {
           if (r.status === 401) {
-            actions.reset(); // clear stale localStorage
-            setPhase("login");
+            if (!user.email && !user.onboarded && !user.quiz_result) setPhase("login");
             return null;
           }
           return r.ok ? r.json() : null;
@@ -318,7 +319,7 @@ const D = GLH_DATA;
           }
         })
         .catch(() => {});
-    }, [actions, user.quiz_result]);
+    }, [actions, user.email, user.onboarded, user.quiz_result]);
     const [activeTab, setActiveTab] = React.useState("home");
 
     const [course, setCourse] = React.useState(null);
@@ -342,6 +343,7 @@ const D = GLH_DATA;
       if (id === "qa")      { setPhase("qa");      window.scrollTo(0, 0); return; }
       if (id === "profile") { setPhase("profile"); window.scrollTo(0, 0); return; }
       if (section) pendingScroll.current = section;
+      setPhase("app");
       setActiveTab(id);
       window.scrollTo(0, 0);
     }, []);

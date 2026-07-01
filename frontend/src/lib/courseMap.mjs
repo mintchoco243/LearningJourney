@@ -14,7 +14,7 @@ export function normalizeFormat(f) {
 
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 const courseCode = (row) => row.course_code || row.course_id || row.id;
-const courseRowId = (row) => row.id || row.course_id || row.course_code;
+const courseRowId = (row) => row.id || row._id || courseCode(row);
 const courseType = (row) => String(row.type || "").trim().toLowerCase();
 
 export function daysUntil(dateStr, today = new Date()) {
@@ -53,8 +53,9 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   const countdown = daysUntil(date, today);
   return {
     session_id: s.id || s.session_id || null,
-    course_id: courseRowId(s),
+    course_id: courseCode(s),
     course_code: courseCode(s),
+    _id: courseRowId(s),
     title: s.title,
     type: courseType(s) || "scheduled",
     format: normalizeFormat(s.format),
@@ -94,9 +95,9 @@ export function mapCourseToCard(c, today = new Date()) {
   const type = courseType(c) || (normalizeFormat(c.format) === "elearning" ? "elearning" : "scheduled");
   const usesReservationFlow = type === "scheduled" || type === "interest";
   return {
-    course_id: courseRowId(c),
+    course_id: courseCode(c),
     course_code: courseCode(c),
-    _id: c.id,
+    _id: courseRowId(c),
     title: c.title,
     type,
     description: c.description || "",
@@ -108,7 +109,7 @@ export function mapCourseToCard(c, today = new Date()) {
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
-    session_id: usesReservationFlow ? c.id : null,
+    session_id: usesReservationFlow && date ? courseRowId(c) : null,
     session_status: c.session_status || null,
     start_date: date,
     start_time: times[0] || null,
@@ -193,8 +194,18 @@ export function pickUpcoming(sessions, today = new Date()) {
 const FIT_RANK = { best_fit: 0, for_your_level: 1 };
 // Recommended = best-fit courses first, max 6.
 export function pickRecommended(courses) {
-  return (courses || [])
-    .map(mapCourseToCard)
+  const byCourse = new Map();
+  for (const course of (courses || []).map((item) => mapCourseToCard(item))) {
+    const existing = byCourse.get(course.course_id);
+    if (!existing) {
+      byCourse.set(course.course_id, course);
+      continue;
+    }
+    const existingScore = (existing.start_date ? 0 : 2) + (FIT_RANK[existing.fit_tag] != null ? 1 : 0);
+    const nextScore = (course.start_date ? 0 : 2) + (FIT_RANK[course.fit_tag] != null ? 1 : 0);
+    if (nextScore > existingScore) byCourse.set(course.course_id, course);
+  }
+  return [...byCourse.values()]
     .sort((a, b) => (FIT_RANK[a.fit_tag] ?? 2) - (FIT_RANK[b.fit_tag] ?? 2))
     .slice(0, 6);
 }

@@ -214,8 +214,9 @@ const D = GLH_DATA;
         setXpBurst({ amount: course.xp_reward || 20, label: "Hoàn thành khóa học", id: Date.now() });
         if (after > before) setLevelUp(D.RANKS[after]);
         // Persist to backend (fire-and-forget — local state already updated)
-        if (course.course_id) {
-          fetch("/api/courses/" + course.course_id + "/complete", { method: "POST", credentials: "include" }).catch(() => {});
+        const apiCourseId = course._id || course.course_id;
+        if (apiCourseId) {
+          fetch("/api/courses/" + apiCourseId + "/complete", { method: "POST", credentials: "include" }).catch(() => {});
         }
         return true;
       },
