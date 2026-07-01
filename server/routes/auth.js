@@ -5,6 +5,12 @@ import { requireAuth } from "../middleware/requireAuth.js";
 
 export const authRouter = express.Router();
 
+function safeReturnTo(value) {
+  if (typeof value !== "string") return "/";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  return value;
+}
+
 // GET /auth/me -> Get current authenticated user details
 authRouter.get("/me", requireAuth, async (req, res, next) => {
   try {
@@ -19,6 +25,12 @@ authRouter.get("/google", (req, res) => {
   if (!config.google.clientId || !config.google.clientSecret) {
     return res.status(503).json({ error: "GOOGLE_OAUTH_NOT_CONFIGURED" });
   }
+  res.cookie("glh_return_to", safeReturnTo(req.query.next), {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: config.nodeEnv === "production",
+    maxAge: 10 * 60 * 1000,
+  });
   res.redirect(googleAuthUrl());
 });
 
@@ -28,7 +40,9 @@ authRouter.get("/callback", async (req, res, next) => {
     const user = await upsertUser(profile);
     const token = signToken(user);
     setAuthCookie(res, token);
-    res.redirect("/");
+    const returnTo = safeReturnTo(req.cookies?.glh_return_to);
+    res.clearCookie("glh_return_to");
+    res.redirect(returnTo);
   } catch (error) {
     next(error);
   }

@@ -58,6 +58,7 @@ const { Icon } = GLHUI;
     return (
       <aside className="adm-sidebar">
         <div className="adm-sidebar__logo">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={((typeof window !== "undefined" && window.__resources) && (typeof window !== "undefined" && window.__resources).adminLogo) || "assets/logo_horizontal.png"} alt="Garena" height={20} />
           <span className="adm-sidebar__badge">Admin</span>
         </div>

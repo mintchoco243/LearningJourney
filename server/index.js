@@ -27,9 +27,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
 // ponytail: require next from frontend's own node_modules instead of duplicating
 // the dependency at the root — frontend/package.json already owns this version.
-const requireFromFrontend = createRequire(path.join(frontendDir, "package.json"));
-const nextApp = requireFromFrontend("next")({ dev: config.nodeEnv !== "production", dir: frontendDir });
-const handleNextRequest = nextApp.getRequestHandler();
+let nextApp = null;
+let handleNextRequest = null;
+if (!config.apiOnly) {
+  const requireFromFrontend = createRequire(path.join(frontendDir, "package.json"));
+  nextApp = requireFromFrontend("next")({ dev: config.nodeEnv !== "production", dir: frontendDir });
+  handleNextRequest = nextApp.getRequestHandler();
+}
 
 const app = express();
 
@@ -49,6 +53,16 @@ app.use("/api/courses", requireAuth, coursesRouter);
 app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
 app.use("/api/policies", requireAuth, policiesRouter);
+app.get("/admin/api/me", requireAuth, requireAdmin, (req, res) => {
+  res.json({
+    user: {
+      id: req.user.id,
+      email: req.user.email,
+      full_name: req.user.full_name,
+    },
+    role: req.adminRole,
+  });
+});
 app.use("/admin/api/data-prep", requireAuth, requireAdmin, adminDataPrepRouter);
 app.use("/admin/api/stats", requireAuth, requireAdmin, adminStatsRouter);
 app.use("/admin/api/courses", requireAuth, requireAdmin, adminCoursesRouter);
@@ -59,7 +73,11 @@ app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
 // Next.js (App Router, includes /admin) handles every remaining route.
-app.all("*", (req, res) => handleNextRequest(req, res));
+if (config.apiOnly) {
+  app.use((req, res) => res.status(404).json({ error: "NOT_FOUND" }));
+} else {
+  app.all("*", (req, res) => handleNextRequest(req, res));
+}
 
 app.use((error, req, res, next) => {
   const status = error.status || 500;
@@ -71,8 +89,14 @@ for (const warning of assertRuntimeConfig()) {
   console.warn(`[config] ${warning}`);
 }
 
-nextApp.prepare().then(() => {
+function startServer() {
   app.listen(config.port, () => {
     console.log(`Garena Learning Hub listening on :${config.port}`);
   });
-});
+}
+
+if (config.apiOnly) {
+  startServer();
+} else {
+  nextApp.prepare().then(startServer);
+}

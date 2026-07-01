@@ -104,7 +104,16 @@ const { Avatar } = GLHAvatar;
     const items = React.useMemo(() => {
       const arr = []; for (let i = 0; i < 14; i++) {
         const ang = (i / 14) * Math.PI * 2;
-        arr.push({ x: 50 + Math.cos(ang) * (38 + Math.random() * 16), y: 50 + Math.sin(ang) * (38 + Math.random() * 16), d: Math.random() * 0.4, s: 5 + Math.random() * 7 });
+        const noise = (salt) => {
+          const x = Math.sin((i + 1) * salt) * 10000;
+          return x - Math.floor(x);
+        };
+        arr.push({
+          x: 50 + Math.cos(ang) * (38 + noise(17) * 16),
+          y: 50 + Math.sin(ang) * (38 + noise(31) * 16),
+          d: noise(47) * 0.4,
+          s: 5 + noise(61) * 7,
+        });
       }
       return arr;
     }, []);

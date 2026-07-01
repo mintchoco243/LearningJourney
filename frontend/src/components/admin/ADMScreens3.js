@@ -159,7 +159,7 @@ const D = ADM_DATA;
         ))}
 
         {!loading && policies.length === 0 && (
-          <div className="adm-empty" style={{ marginTop: 40 }}>Chưa có policy nào. Nhấn "Thêm policy" để tạo mới.</div>
+          <div className="adm-empty" style={{ marginTop: 40 }}>Chưa có policy nào. Nhấn &quot;Thêm policy&quot; để tạo mới.</div>
         )}
 
         <Modal open={importModal} onClose={() => setImportModal(false)} title="Thêm / Import Policy" width={580}>
@@ -448,7 +448,7 @@ const D = ADM_DATA;
                   <Icon key={i} name="star" size={13} color={i < t.rating ? "var(--amber)" : "var(--rpg-faint)"} fill={i < t.rating ? "var(--amber)" : "none"} />
                 ))}
               </div>
-              <p style={{ fontSize: 12, color: "var(--rpg-text)", lineHeight: 1.65, margin: "0 0 11px" }}>"{t.content}"</p>
+              <p style={{ fontSize: 12, color: "var(--rpg-text)", lineHeight: 1.65, margin: "0 0 11px" }}>&quot;{t.content}&quot;</p>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--rpg-faint)" }}>
                 <span>{t.course_title}</span>
                 <span>{t.created_at}</span>

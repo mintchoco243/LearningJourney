@@ -9,6 +9,32 @@ import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
 const { Sidebar } = ADMComponents;
 
+function AdminGateMessage({ title, message, action }) {
+  return (
+    <div className="adm-layout">
+      <main className="adm-main" style={{ marginLeft: 0 }}>
+        <div className="adm-content" style={{ display: "grid", minHeight: "100vh", placeItems: "center" }}>
+          <section
+            style={{
+              width: "min(460px, calc(100vw - 32px))",
+              border: "1px solid var(--rpg-border)",
+              borderRadius: 8,
+              background: "var(--rpg-panel)",
+              padding: 28,
+              textAlign: "center",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.28)",
+            }}
+          >
+            <h1 style={{ margin: "0 0 10px", fontSize: 22, color: "var(--rpg-text)" }}>{title}</h1>
+            <p style={{ margin: "0 0 18px", color: "var(--rpg-muted)", lineHeight: 1.6 }}>{message}</p>
+            {action}
+          </section>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 
   
   
@@ -27,7 +53,11 @@ const { Sidebar } = ADMComponents;
 
   export default function AdminApp() {
     const [mounted, setMounted] = React.useState(false);
-    React.useEffect(() => { setMounted(true); }, []);
+    React.useEffect(() => {
+      const frame = requestAnimationFrame(() => setMounted(true));
+      return () => cancelAnimationFrame(frame);
+    }, []);
+    const [adminSession, setAdminSession] = React.useState({ status: "loading", user: null, role: null });
 
     const [page, setPage] = React.useState(
       () => {
@@ -40,7 +70,34 @@ const { Sidebar } = ADMComponents;
         return "dashboard";
       }
     );
-    const adminRole = "super_admin"; // mock: in prod read from session
+    React.useEffect(() => {
+      if (!mounted) return;
+      let cancelled = false;
+      fetch("/admin/api/me", { credentials: "include" })
+        .then(async (res) => {
+          if (cancelled) return;
+          if (res.status === 401) {
+            setAdminSession({ status: "unauthenticated", user: null, role: null });
+            return;
+          }
+          if (res.status === 403) {
+            setAdminSession({ status: "forbidden", user: null, role: null });
+            return;
+          }
+          if (!res.ok) {
+            setAdminSession({ status: "error", user: null, role: null });
+            return;
+          }
+          const data = await res.json();
+          if (!cancelled) {
+            setAdminSession({ status: "ready", user: data.user, role: data.role });
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setAdminSession({ status: "error", user: null, role: null });
+        });
+      return () => { cancelled = true; };
+    }, [mounted]);
 
     React.useEffect(() => {
       localStorage.setItem("adm_page", page);
@@ -54,6 +111,43 @@ const { Sidebar } = ADMComponents;
     }
 
     if (!mounted) return null;
+    if (adminSession.status === "loading") {
+      return (
+        <AdminGateMessage
+          title="Dang kiem tra quyen admin"
+          message="Vui long cho trong giay lat."
+        />
+      );
+    }
+    if (adminSession.status === "unauthenticated") {
+      return (
+        <AdminGateMessage
+          title="Can dang nhap"
+          message="Dang nhap bang tai khoan Garena de tiep tuc vao man admin."
+          action={<a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Dang nhap Garena</a>}
+        />
+      );
+    }
+    if (adminSession.status === "forbidden") {
+      return (
+        <AdminGateMessage
+          title="Khong co quyen admin"
+          message="Tai khoan cua ban chua nam trong danh sach admin duoc phe duyet."
+          action={<button className="adm-btn" onClick={() => { window.location.href = "/"; }}>Ve trang chinh</button>}
+        />
+      );
+    }
+    if (adminSession.status === "error") {
+      return (
+        <AdminGateMessage
+          title="Khong kiem tra duoc quyen"
+          message="Thu tai lai trang hoac kiem tra backend dang chay."
+          action={<button className="adm-btn adm-btn--primary" onClick={() => window.location.reload()}>Tai lai</button>}
+        />
+      );
+    }
+
+    const adminRole = adminSession.role;
     const screens = {
       dashboard:    <Dashboard />,
       users:        <UsersScreen />,
@@ -75,6 +169,9 @@ const { Sidebar } = ADMComponents;
           <div className="adm-topbar">
             <span className="adm-topbar__breadcrumb">
               Garena Learning Hub · Admin &nbsp;/&nbsp; <strong>{meta.label}</strong>
+            </span>
+            <span style={{ color: "var(--rpg-muted)", fontSize: 13 }}>
+              {adminSession.user?.email} · {adminRole}
             </span>
           </div>
 

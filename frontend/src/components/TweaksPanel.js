@@ -273,7 +273,7 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
     <>
       <style>{__TWEAKS_STYLE}</style>
       <div ref={dragRef} className="twk-panel" data-omelette-chrome=""
-           style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+           style={{ right: 16, bottom: 16 }}>
         <div className="twk-hd" onMouseDown={onDragStart}>
           <b>{title}</b>
           <button className="twk-x" aria-label="Close tweaks"
@@ -339,7 +339,9 @@ export function TweakRadio({ label, value, options, onChange }) {
   // The active value is read by pointer-move handlers attached for the lifetime
   // of a drag — ref it so a stale closure doesn't fire onChange for every move.
   const valueRef = React.useRef(value);
-  valueRef.current = value;
+  React.useEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   // Segments wrap mid-word once per-segment width runs out. The track is
   // ~248px (280 panel − 28 body pad − 4 seg pad), each button loses 12px
@@ -373,11 +375,17 @@ export function TweakRadio({ label, value, options, onChange }) {
   const onPointerDown = (e) => {
     setDragging(true);
     const v0 = segAt(e.clientX);
-    if (v0 !== valueRef.current) onChange(v0);
+    if (v0 !== valueRef.current) {
+      valueRef.current = v0;
+      onChange(v0);
+    }
     const move = (ev) => {
       if (!trackRef.current) return;
       const v = segAt(ev.clientX);
-      if (v !== valueRef.current) onChange(v);
+      if (v !== valueRef.current) {
+        valueRef.current = v;
+        onChange(v);
+      }
     };
     const up = () => {
       setDragging(false);

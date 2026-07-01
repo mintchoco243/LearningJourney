@@ -38,6 +38,11 @@ const D = GLH_DATA;
     "Press Start 2P": '"Press Start 2P", "Be Vietnam Pro", sans-serif',
   };
 
+  function seededNoise(seed) {
+    const x = Math.sin(seed * 999) * 10000;
+    return x - Math.floor(x);
+  }
+
   /* ---------- XP burst toast ---------- */
   function XpToast() {
     const { xpBurst, actions } = useGame();
@@ -45,7 +50,7 @@ const D = GLH_DATA;
       if (!xpBurst) return;
       const t = setTimeout(() => actions.clearXpBurst(), 1700);
       return () => clearTimeout(t);
-    }, [xpBurst]);
+    }, [actions, xpBurst]);
     if (!xpBurst) return null;
     return React.createElement("div", { className: "xp-burst", key: xpBurst.id },
       React.createElement(Icon, { name: "zap", size: 18, color: "var(--amber)" }),
@@ -56,18 +61,21 @@ const D = GLH_DATA;
   /* ---------- Level-up overlay ---------- */
   function LevelUp(props) {
     const { user, levelUp, actions } = useGame();
-    if (!levelUp) return null;
     const cls = user.quiz_result ? D.CLASSES[user.quiz_result.class_id] : null;
-    const opts = Object.assign({}, user.character, { classColor: cls ? cls.color : null, rank: levelUp.level });
+    const opts = Object.assign({}, user.character, { classColor: cls ? cls.color : null, rank: levelUp?.level });
     const intensity = props.intensity || "normal";
     const confettiN = intensity === "celebratory" ? 90 : intensity === "subtle" ? 0 : 44;
     const confetti = React.useMemo(() => {
       const cols = ["#FFBA00", "#E41E26", "#7C5CFF", "#2BB6A3", "#fff"];
       return Array.from({ length: confettiN }, (_, i) => ({
-        left: Math.random() * 100, delay: Math.random() * 0.5, dur: 1.6 + Math.random() * 1.4,
-        col: cols[i % cols.length], rot: Math.random() * 360,
+        left: seededNoise(i + 1) * 100,
+        delay: seededNoise(i + 101) * 0.5,
+        dur: 1.6 + seededNoise(i + 201) * 1.4,
+        col: cols[i % cols.length],
+        rot: seededNoise(i + 301) * 360,
       }));
-    }, [levelUp.id, confettiN]);
+    }, [confettiN]);
+    if (!levelUp) return null;
     return React.createElement("div", { className: "lvlup", onClick: actions.clearLevelUp },
       intensity !== "subtle" ? React.createElement("div", { className: "lvlup__flash" }) : null,
       confetti.map((c, i) => React.createElement("div", {
@@ -276,7 +284,10 @@ const D = GLH_DATA;
   /* ---------- Root App ---------- */
   function AppInner() {
     const [mounted, setMounted] = React.useState(false);
-    React.useEffect(() => { setMounted(true); }, []);
+    React.useEffect(() => {
+      const frame = requestAnimationFrame(() => setMounted(true));
+      return () => cancelAnimationFrame(frame);
+    }, []);
 
     const { user, actions } = useGame();
     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
@@ -307,7 +318,7 @@ const D = GLH_DATA;
           }
         })
         .catch(() => {});
-    }, []);
+    }, [actions, user.quiz_result]);
     const [activeTab, setActiveTab] = React.useState("home");
 
     const [course, setCourse] = React.useState(null);
@@ -378,7 +389,12 @@ const D = GLH_DATA;
       const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
       let tabContent;
       if (activeTab === "home") {
-        tabContent = React.createElement(Dashboard, Object.assign({}, utilCommon));
+        tabContent = React.createElement(Dashboard, {
+          crisp,
+          onNav: scrollTo,
+          onOpenCourse: setCourse,
+          onOpenLdRequest: () => setLdRequest(true),
+        });
       } else if (activeTab === "library") {
         tabContent = React.createElement("div", null,
           React.createElement("div", { id: "calendar-section" },

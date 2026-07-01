@@ -74,7 +74,8 @@ const { useGame } = GLHEngine;
 
   // Step 5: Availability (single-select tiles)
   export function Step5Availability(props) {
-    const [selected, setSelected] = React.useState(props.value || "");
+    const { onChange, value } = props;
+    const [selected, setSelected] = React.useState(value || "");
     
     const options = [
       { id: "under1", icon: "⚡", label: "Dưới 1 giờ", desc: "Học nhanh, tập trung" },
@@ -83,8 +84,8 @@ const { useGame } = GLHEngine;
     ];
 
     React.useEffect(() => {
-      props.onChange(selected);
-    }, [selected]);
+      onChange(selected);
+    }, [onChange, selected]);
 
     return React.createElement("div", { className: "qz-step" },
       React.createElement("div", { className: "qz-group" },

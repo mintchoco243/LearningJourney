@@ -190,9 +190,15 @@ const { useGame } = GLHEngine;
 
     // Update spotlight when step changes
     React.useEffect(() => {
-      if (!cur.selector) { setSpotlight(null); return; }
+      if (!cur.selector) {
+        const frame = requestAnimationFrame(() => setSpotlight(null));
+        return () => cancelAnimationFrame(frame);
+      }
       const el = document.querySelector(cur.selector);
-      if (!el) { setSpotlight(null); return; }
+      if (!el) {
+        const frame = requestAnimationFrame(() => setSpotlight(null));
+        return () => cancelAnimationFrame(frame);
+      }
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       const update = () => {
         const rect = el.getBoundingClientRect();
@@ -205,8 +211,9 @@ const { useGame } = GLHEngine;
           right: rect.right + 8,
         });
       };
-      setTimeout(update, 350); // wait for scroll
-    }, [step]);
+      const timer = setTimeout(update, 350); // wait for scroll
+      return () => clearTimeout(timer);
+    }, [step, cur.selector]);
 
     const finish = () => {
       localStorage.setItem("glh_tutorial_done", "1");

@@ -4,6 +4,7 @@ dotenv.config();
 
 export const config = {
   nodeEnv: process.env.NODE_ENV || "development",
+  apiOnly: (process.env.API_ONLY || "false").toLowerCase() === "true",
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET || "gLh2xK9mNpQrVwYzA4bDfJtSuCeHiOkR7vXnMqWsZyBcFjUlPdTgEaImKoNhLw",

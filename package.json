@@ -7,7 +7,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "node --watch server/index.js",
+    "dev": "node scripts/dev-local.mjs",
+    "dev:server": "node --watch server/index.js",
     "prestart": "node server/migrate.js && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
     "start": "node server/index.js",
     "db:migrate": "node server/migrate.js",

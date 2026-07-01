@@ -86,7 +86,10 @@ function ctaColor(cta) {
 
     const [page, setPage] = React.useState(1);
     const PAGE_SIZE = 9;
-    React.useEffect(() => { setPage(1); }, [q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
+    React.useEffect(() => {
+      const frame = requestAnimationFrame(() => setPage(1));
+      return () => cancelAnimationFrame(frame);
+    }, [q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
