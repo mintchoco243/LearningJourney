@@ -12,7 +12,21 @@ const files = (await fs.readdir(dir))
   .filter((file) => (isMysqlUrl() ? file.includes("mysql") : !file.includes("mysql")))
   .sort();
 
+// One-shot migrations that DROP/RENAME tables can't be re-run safely (e.g. on
+// container restart). Skip them once their target state already exists.
+async function shouldSkip(file) {
+  if (file.startsWith("008_merge_courses_sessions")) {
+    const result = await pool.query("SHOW TABLES LIKE 'course_sessions'");
+    return result.rowCount === 0; // already merged
+  }
+  return false;
+}
+
 for (const file of files) {
+  if (await shouldSkip(file)) {
+    console.log(`Skipping ${file} (already applied)`);
+    continue;
+  }
   const sql = await fs.readFile(path.join(dir, file), "utf8");
   process.stdout.write(`Running ${file}... `);
   const statements = sql
