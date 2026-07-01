@@ -2,7 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import morgan from "morgan";
-import { readFileSync, createReadStream } from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { assertRuntimeConfig, config } from "./config.js";
@@ -24,6 +24,13 @@ import { adminPoliciesRouter } from "./routes/admin/policies.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDir = path.join(__dirname, "..", "frontend");
+// ponytail: require next from frontend's own node_modules instead of duplicating
+// the dependency at the root — frontend/package.json already owns this version.
+const requireFromFrontend = createRequire(path.join(frontendDir, "package.json"));
+const nextApp = requireFromFrontend("next")({ dev: config.nodeEnv !== "production", dir: frontendDir });
+const handleNextRequest = nextApp.getRequestHandler();
+
 const app = express();
 
 app.use(cors({ origin: true, credentials: true }));
@@ -51,36 +58,8 @@ app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRout
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 
-const serveHtml = (file) => (req, res) => {
-  res.setHeader("Content-Type", "text/html; charset=utf-8");
-  if (config.nodeEnv === "development") {
-    try {
-      // Đọc nội dung file .dat thành chuỗi text HTML
-      let htmlContent = readFileSync(path.join(__dirname, "static", file), "utf8");
-
-      // Khai báo script CDN của Agentation
-      const agentationScript = `<script src="https://cdn.jsdelivr.net/npm/agentation@3.0.2/dist/index.min.js"></script>`;
-
-      // Chèn script vào ngay trước thẻ đóng </html> (hoặc </body> nếu file có)
-      if (htmlContent.includes("</html>")) {
-        htmlContent = htmlContent.replace("</html>", `${agentationScript}</html>`);
-      } else {
-        htmlContent += agentationScript; // Nếu không tìm thấy thẻ đóng, cộng dồn vào cuối file
-      }
-
-      res.send(htmlContent);
-    } catch (err) {
-      console.error("Lỗi khi chèn Agentation script:", err);
-      // Nếu lỗi thì quay về fallback đọc file bình thường
-      createReadStream(path.join(__dirname, "static", file)).pipe(res);
-    }
-  } else {
-    // Môi trường Production (Deploy thật) thì trả file gốc, không chèn Agentation để tối ưu hiệu năng
-    createReadStream(path.join(__dirname, "static", file)).pipe(res);
-  }
-};
-app.get(["/admin", "/admin/*"], serveHtml("admin.dat"));
-app.get("*", serveHtml("app.dat"));
+// Next.js (App Router, includes /admin) handles every remaining route.
+app.all("*", (req, res) => handleNextRequest(req, res));
 
 app.use((error, req, res, next) => {
   const status = error.status || 500;
@@ -92,6 +71,8 @@ for (const warning of assertRuntimeConfig()) {
   console.warn(`[config] ${warning}`);
 }
 
-app.listen(config.port, () => {
-  console.log(`Garena Learning Hub listening on :${config.port}`);
+nextApp.prepare().then(() => {
+  app.listen(config.port, () => {
+    console.log(`Garena Learning Hub listening on :${config.port}`);
+  });
 });
