@@ -164,9 +164,13 @@ const D = ADM_DATA;
     const [loading, setLoading]   = React.useState(true);
     const [search, setSearch]     = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState("all");
+    const [selected, setSelected] = React.useState(new Set());
     const [editModal, setEditModal]   = React.useState(false);
     const [importModal, setImportModal] = React.useState(false);
     const [syncModal, setSyncModal] = React.useState(false);
+    const [batchActionModal, setBatchActionModal] = React.useState(null); // null | {type, title} where type = 'format'|'is_active'|'rank_targets'|'xp_reward'
+    const [batchValue, setBatchValue] = React.useState("");
+    const [batchRanks, setBatchRanks] = React.useState([]);
     const [editTarget, setEditTarget] = React.useState(null);
     const [saving, setSaving]     = React.useState(false);
     const [error, setError]       = React.useState("");
@@ -271,6 +275,89 @@ const D = ADM_DATA;
       }
     }
 
+    function toggleSelectCourse(id) {
+      setSelected(s => {
+        const next = new Set(s);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+
+    function selectAllFiltered() {
+      setSelected(new Set(filtered.map(c => c.id)));
+    }
+
+    function clearSelection() {
+      setSelected(new Set());
+    }
+
+    async function handleBatchDelete() {
+      if (!confirm(`Xóa ${selected.size} khóa học? Hành động này không thể hoàn tác.`)) return;
+      try {
+        setSaving(true);
+        for (const id of selected) {
+          await apiFetch(`/admin/api/courses/${id}`, { method: "DELETE" });
+        }
+        setCourses(cs => cs.filter(c => !selected.has(c.id)));
+        setSelected(new Set());
+        alert(`Đã xóa ${selected.size} khóa học.`);
+      } catch (e) {
+        alert("Xóa thất bại: " + e.message);
+      } finally {
+        setSaving(false);
+      }
+    }
+
+    async function handleBatchUpdate() {
+      if (!batchActionModal) return;
+      const { type } = batchActionModal;
+
+      try {
+        setSaving(true);
+        for (const id of selected) {
+          const course = courses.find(c => c.id === id);
+          if (!course) continue;
+
+          const payload = {
+            title: course.title,
+            trainer: course.trainer,
+            trainer_type: course.trainer_type,
+            format: course.format,
+            duration_hours: course.duration_hours,
+            rank_targets: type === 'rank_targets' ? batchRanks : course.rank_targets,
+            role_targets: course.role_targets,
+            skill_tags: course.skill_tags,
+            type: course.type,
+            xp_reward: type === 'xp_reward' ? parseInt(batchValue) || course.xp_reward : course.xp_reward,
+            description: course.description,
+            registration_url: course.registration_url,
+            status: course.status,
+            material_url: course.material_url,
+            min_participants: course.min_participants ?? null,
+            is_active: type === 'is_active' ? batchValue === 'true' : course.is_active,
+            format: type === 'format' ? batchValue : course.format,
+          };
+
+          await apiFetch(`/admin/api/courses/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+        }
+        await reloadCourses();
+        setBatchActionModal(null);
+        setBatchValue("");
+        setBatchRanks([]);
+        setSelected(new Set());
+        alert(`Cập nhật thành công cho ${selected.size} khóa học.`);
+      } catch (e) {
+        alert("Cập nhật thất bại: " + e.message);
+      } finally {
+        setSaving(false);
+      }
+    }
+
     async function handleRollbackLastSync() {
       if (!confirm("Hoàn tác lần đồng bộ CSV gần nhất? Chỉ áp dụng được trong vòng 24h sau khi đẩy lên live.")) return;
       try {
@@ -320,10 +407,42 @@ const D = ADM_DATA;
 
         {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải...</div>}
 
+        {selected.size > 0 && (
+          <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 16, justifyContent: "space-between" }}>
+            <div style={{ color: "var(--rpg-text)", fontSize: 13 }}>
+              Đã chọn <strong>{selected.size}</strong> khóa học
+              {selected.size < filtered.length && (
+                <button onClick={selectAllFiltered} style={{ marginLeft: 12, background: "none", border: "none", color: "#2BB6A3", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Chọn tất cả ({filtered.length})</button>
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'format', title: 'Chọn format' })}>
+                <Icon name="layers" size={13} /> Format
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'is_active', title: 'Chọn hiển thị' })}>
+                <Icon name="eye" size={13} /> Hiển thị
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'rank_targets', title: 'Chọn rank target' })}>
+                <Icon name="award" size={13} /> Rank
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'xp_reward', title: 'Chọn XP' })}>
+                <Icon name="zap" size={13} /> XP
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={handleBatchDelete} style={{ color: "#E41E26" }}>
+                <Icon name="trash-2" size={13} /> Xóa
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={clearSelection}>Bỏ chọn</button>
+            </div>
+          </div>
+        )}
+
         <div className="adm-table-wrap">
           <table className="adm-table">
             <thead>
               <tr>
+                <th style={{ width: 40 }}>
+                  <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={() => selected.size === filtered.length ? clearSelection() : selectAllFiltered()} />
+                </th>
                 <th style={{ width: 100 }}>Mã</th>
                 <th>Tên khóa học</th>
                 <th style={{ width: 108 }}>Format</th>
@@ -337,6 +456,9 @@ const D = ADM_DATA;
             <tbody>
               {filtered.map(c => (
                 <tr key={c.id}>
+                  <td>
+                    <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelectCourse(c.id)} />
+                  </td>
                   <td><code style={{ fontSize: 11 }}>{c.id}</code></td>
                   <td>
                     <div style={{ fontWeight: 600, color: "#fff" }}>{c.title}</div>
@@ -378,6 +500,66 @@ const D = ADM_DATA;
             <div className="adm-empty">Không tìm thấy khóa học nào phù hợp</div>
           )}
         </div>
+
+        {batchActionModal && (
+          <Modal open={!!batchActionModal} onClose={() => setBatchActionModal(null)} title={`Cập nhật ${batchActionModal.title} cho ${selected.size} khóa học`} width={400}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {batchActionModal.type === 'format' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">Format</label>
+                  <select className="adm-select" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+                    <option value="">-- Chọn format --</option>
+                    {["online","offline","elearning","webinar","workshop","bootcamp","talk"].map(f => (
+                      <option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {batchActionModal.type === 'is_active' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">Hiển thị cho người dùng</label>
+                  <select className="adm-select" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+                    <option value="">-- Chọn --</option>
+                    <option value="true">Hiển thị</option>
+                    <option value="false">Ẩn</option>
+                  </select>
+                </div>
+              )}
+
+              {batchActionModal.type === 'rank_targets' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">Rank targets</label>
+                  <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+                    {RANKS_ALL.map(r => (
+                      <button key={r.id} type="button" onClick={() => setBatchRanks(prev => prev.includes(r.id) ? prev.filter(x => x !== r.id) : [...prev, r.id])} style={{
+                        padding: "5px 13px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                        background: batchRanks.includes(r.id) ? "rgba(228,30,38,.15)" : "rgba(255,255,255,.04)",
+                        border: `1px solid ${batchRanks.includes(r.id) ? "var(--glh-accent)" : "var(--rpg-border)"}`,
+                        color: batchRanks.includes(r.id) ? "#E41E26" : "var(--rpg-muted)",
+                        cursor: "pointer", transition: "all .12s",
+                      }}>{r.name}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {batchActionModal.type === 'xp_reward' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">XP reward</label>
+                  <input className="adm-input" type="number" min="0" value={batchValue} onChange={e => setBatchValue(e.target.value)} placeholder="Nhập giá trị XP" />
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+                <button className="adm-btn adm-btn--sec" onClick={() => setBatchActionModal(null)} disabled={saving}>Huỷ</button>
+                <button className="adm-btn adm-btn--primary" onClick={handleBatchUpdate} disabled={saving || (!batchValue && batchActionModal.type !== 'rank_targets') || (batchActionModal.type === 'rank_targets' && batchRanks.length === 0)}>
+                  {saving ? "Đang cập nhật..." : "Cập nhật"}
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
 
         <Modal open={editModal} onClose={() => setEditModal(false)} title={editTarget ? `Chỉnh sửa — ${editTarget.id}` : "Tạo khóa học mới"} width={660}>
           <CourseForm course={editTarget} onSave={handleSave} onClose={() => setEditModal(false)} saving={saving} error={error} />

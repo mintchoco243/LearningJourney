@@ -9,15 +9,13 @@ import { Step4LearningStyle, Step5Availability, Step6TrainerPreference } from '.
 
 const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
-const { useGame, scoreQuiz, rankForXp } = GLHEngine;
+const { useGame } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 
   
   
   
-  const KEYS = ["A", "B", "C", "D"];
-
   /* ---------------- Quiz (3 preference steps) ---------------- */
   export function Quiz(props) {
     const { user, actions } = useGame();
