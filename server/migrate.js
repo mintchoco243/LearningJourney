@@ -27,15 +27,24 @@ function splitStatements(sql) {
 }
 
 async function tableExists(tableName) {
-  const result = await pool.query("SHOW TABLES LIKE $1", [tableName]);
+  const result = await pool.query(
+    `SELECT TABLE_NAME
+     FROM information_schema.TABLES
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = $1`,
+    [tableName],
+  );
   return result.rowCount > 0;
 }
 
 async function columnExists(tableName, columnName) {
-  if (!(await tableExists(tableName))) return false;
   const result = await pool.query(
-    `SHOW COLUMNS FROM ${quoteIdent(tableName)} LIKE $1`,
-    [columnName],
+    `SELECT COLUMN_NAME
+     FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = $1
+       AND COLUMN_NAME = $2`,
+    [tableName, columnName],
   );
   return result.rowCount > 0;
 }
