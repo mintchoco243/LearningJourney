@@ -108,23 +108,24 @@ const D = GLH_DATA;
 
     React.useEffect(() => {
       if (!c) return;
+      let active = true;
       const id = c._id || c.course_id;
-      setSession(null);
-      setTestimonials(null);
       fetch(`/api/sessions?course_id=${encodeURIComponent(id)}`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
+          if (!active) return;
           const upcoming = (data?.sessions || [])
             .filter((s) => s.status !== "cancelled")
             .sort((a, b) => new Date(a.session_date) - new Date(b.session_date))[0];
-          if (upcoming) setSession(upcoming);
+          setSession(upcoming || null);
         })
         .catch(() => {});
       fetch(`/api/courses/${encodeURIComponent(id)}/testimonials`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (data?.testimonials?.length) setTestimonials(data.testimonials); })
+        .then((data) => { if (active) setTestimonials(data?.testimonials?.length ? data.testimonials : null); })
         .catch(() => {});
-    }, [c?._id, c?.course_id]);
+      return () => { active = false; };
+    }, [c]);
 
     if (!c) return null;
     const done = (user.completed_courses || []).includes(c.course_id);
