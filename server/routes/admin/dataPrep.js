@@ -12,6 +12,7 @@ const specs = {
       "title",
       "description",
       "trainer",
+      "trainer_type",
       "format",
       "duration_hours",
       "skill_tags",
@@ -84,6 +85,48 @@ function isDateText(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(clean(value));
 }
 
+// RFC4180 CSV parser: handles quoted fields with embedded commas/quotes/newlines.
+export function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+  const pushField = () => { row.push(field); field = ""; };
+  const pushRow = () => { pushField(); rows.push(row); row = []; };
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ",") pushField();
+    else if (c === "\r") continue;
+    else if (c === "\n") pushRow();
+    else field += c;
+  }
+  if (field.length || row.length) pushRow();
+  return rows;
+}
+
+// CSV text -> array of { column: value } objects keyed by header row.
+export function csvToRows(csvText) {
+  const grid = parseCsv(csvText).filter((r) => r.length > 1 || r[0] !== "");
+  const [header, ...dataRows] = grid;
+  if (!header) return [];
+  return dataRows.map((cells) => {
+    const obj = {};
+    header.forEach((h, i) => { obj[h.trim()] = cells[i]; });
+    return obj;
+  });
+}
+
+// Sheet multi-value cell ("A, B, C") -> JSON array text for MySQL JSON columns.
+export function toJsonArray(text) {
+  return JSON.stringify(String(text || "").split(",").map((s) => s.trim()).filter(Boolean));
+}
+
 async function knownCourseIds() {
   const [live, staged] = await Promise.all([
     query("SELECT id AS course_id FROM courses"),
@@ -108,10 +151,15 @@ async function validateRows(type, inputRows) {
       if (seenCourseIds.has(row.course_id)) errors.push("course_id is duplicated in this import");
       seenCourseIds.add(row.course_id);
       if (!row.title) errors.push("title is required");
+      if (!row.trainer) errors.push("trainer is required");
+      if (!row.format) errors.push("format is required");
       if (row.format && !validFormats.has(row.format)) errors.push("format must be online/offline/elearning/webinar/workshop/bootcamp/talk");
+      if (!row.type) errors.push("type is required");
       if (row.type && !validTypes.has(row.type)) errors.push("type must be open/scheduled/waitlist");
+      if (!row.duration_hours) errors.push("duration_hours is required");
       if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
+      if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
     }
@@ -224,33 +272,62 @@ adminDataPrepRouter.post("/:type/validate", async (req, res, next) => {
   }
 });
 
-adminDataPrepRouter.post("/:type/save", async (req, res, next) => {
+async function saveBatch(type, results, source, createdBy) {
+  const spec = getSpec(type);
+  return withTransaction(async (client) => {
+    const id = crypto.randomUUID();
+    await client.query(
+      `INSERT INTO data_batches (id, entity_type, source, row_count, created_by)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [id, type, source, results.length, createdBy]
+    );
+
+    for (const item of results) {
+      const columns = ["batch_id", ...spec.columns];
+      const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");
+      const values = [id, ...spec.columns.map((column) => toStoredValue(column, item.row[column]))];
+      await client.query(`INSERT INTO ${spec.table} (${columns.join(", ")}) VALUES (${placeholders})`, values);
+    }
+
+    return id;
+  });
+}
+
+// POST /admin/api/data-prep/:type/import-csv -> Parse raw CSV text, validate, save as draft batch.
+adminDataPrepRouter.post("/:type/import-csv", async (req, res, next) => {
   try {
     const type = req.params.type;
     const spec = getSpec(type);
+    const csvText = req.body?.csvText;
+    if (!csvText || typeof csvText !== "string") return res.status(400).json({ error: "CSV_TEXT_REQUIRED" });
+
+    const parsedRows = csvToRows(csvText).map((r) => {
+      const row = {};
+      for (const column of spec.columns) row[column] = r[column] ?? "";
+      return row;
+    });
+
+    const results = await validateRows(type, parsedRows);
+    const hasErrors = results.some((item) => item.errors.length > 0);
+    if (hasErrors) return res.status(400).json({ ok: false, results });
+
+    const source = clean(req.body?.source) || "csv import";
+    const batchId = await saveBatch(type, results, source, req.user.email);
+    res.json({ ok: true, batchId, savedRows: results.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
+adminDataPrepRouter.post("/:type/save", async (req, res, next) => {
+  try {
+    const type = req.params.type;
     const results = await validateRows(type, req.body?.rows);
     const hasErrors = results.some((item) => item.errors.length > 0);
     if (hasErrors) return res.status(400).json({ ok: false, results });
 
     const source = clean(req.body?.source) || "manual import";
-    const batchId = await withTransaction(async (client) => {
-      const id = crypto.randomUUID();
-      await client.query(
-        `INSERT INTO data_batches (id, entity_type, source, row_count, created_by)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [id, type, source, results.length, req.user.email]
-      );
-
-      for (const item of results) {
-        const columns = ["batch_id", ...spec.columns];
-        const placeholders = columns.map((_, index) => `$${index + 1}`).join(", ");
-        const values = [id, ...spec.columns.map((column) => toStoredValue(column, item.row[column]))];
-        await client.query(`INSERT INTO ${spec.table} (${columns.join(", ")}) VALUES (${placeholders})`, values);
-      }
-
-      return id;
-    });
-
+    const batchId = await saveBatch(type, results, source, req.user.email);
     res.json({ ok: true, batchId, savedRows: results.length });
   } catch (error) {
     next(error);
@@ -317,11 +394,12 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
         for (const row of stagingRows) {
           await client.query(
             `INSERT INTO courses
-               (id, title, trainer, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+               (id, title, trainer, trainer_type, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
              ON DUPLICATE KEY UPDATE
                title = VALUES(title),
                trainer = VALUES(trainer),
+               trainer_type = VALUES(trainer_type),
                format = VALUES(format),
                duration_hours = VALUES(duration_hours),
                skill_tags = VALUES(skill_tags),
@@ -338,14 +416,16 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
               row.course_id,
               row.title,
               row.trainer,
+              row.trainer_type || "internal",
               row.format,
               row.duration_hours,
-              row.skill_tags,
-              row.rank_targets,
-              row.role_targets,
+              toJsonArray(row.skill_tags),
+              toJsonArray(row.rank_targets),
+              toJsonArray(row.role_targets),
               row.type,
               row.min_participants,
               row.registration_url,
+              row.description,
               row.xp_reward,
               row.is_active,
             ]

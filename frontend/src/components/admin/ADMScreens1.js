@@ -164,16 +164,18 @@ const D = ADM_DATA;
     const [statusFilter, setStatusFilter] = React.useState("all");
     const [editModal, setEditModal]   = React.useState(false);
     const [importModal, setImportModal] = React.useState(false);
+    const [syncModal, setSyncModal] = React.useState(false);
     const [editTarget, setEditTarget] = React.useState(null);
     const [saving, setSaving]     = React.useState(false);
     const [error, setError]       = React.useState("");
 
-    React.useEffect(() => {
-      apiFetch("/admin/api/courses")
+    function reloadCourses() {
+      return apiFetch("/admin/api/courses")
         .then(data => { if (data.courses) setCourses(data.courses.map(mapCourse)); })
         .catch(() => {})
         .finally(() => setLoading(false));
-    }, []);
+    }
+    React.useEffect(() => { reloadCourses(); }, []);
 
     const filtered = courses.filter(c => {
       const q = search.toLowerCase();
@@ -253,6 +255,9 @@ const D = ADM_DATA;
           subtitle={`${courses.filter(c => c.is_active).length} hoạt động · ${courses.filter(c => !c.is_active).length} ẩn`}
           action={
             <div style={{ display: "flex", gap: 8 }}>
+              <button className="adm-btn adm-btn--sec" onClick={() => setSyncModal(true)}>
+                <Icon name="refresh-cw" size={14} /> Đồng bộ CSV
+              </button>
               <button className="adm-btn adm-btn--sec" onClick={() => setImportModal(true)}>
                 <Icon name="users" size={14} /> Import participants
               </button>
@@ -339,6 +344,10 @@ const D = ADM_DATA;
 
         <Modal open={importModal} onClose={() => setImportModal(false)} title="Import Participants" width={520}>
           <ImportForm onClose={() => setImportModal(false)} courses={courses} />
+        </Modal>
+
+        <Modal open={syncModal} onClose={() => setSyncModal(false)} title="Đồng bộ khóa học từ CSV" width={640}>
+          <SyncCoursesForm onClose={() => setSyncModal(false)} onSynced={reloadCourses} />
         </Modal>
       </div>
     );
@@ -546,6 +555,139 @@ const D = ADM_DATA;
           <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
           <button className="adm-btn adm-btn--primary" onClick={handleImport} disabled={!courseId || !fileData || loading}>
             {loading ? "Đang xử lý..." : <><Icon name="refresh-cw" size={13} /> Import</>}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  function SyncCoursesForm({ onClose, onSynced }) {
+    const [fileName, setFileName] = React.useState(null);
+    const [csvText, setCsvText]   = React.useState(null);
+    const [step, setStep]         = React.useState("upload"); // upload | errors | ready | done
+    const [batch, setBatch]       = React.useState(null);
+    const [errorRows, setErrorRows] = React.useState([]);
+    const [loading, setLoading]   = React.useState(false);
+    const [error, setError]       = React.useState("");
+
+    function handleFile(e) {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      setFileName(f.name);
+      setStep("upload");
+      const reader = new FileReader();
+      reader.onload = ev => setCsvText(ev.target.result);
+      reader.readAsText(f);
+    }
+
+    async function handleCheck() {
+      if (!csvText) return;
+      setLoading(true); setError("");
+      try {
+        const res = await fetch("/admin/api/data-prep/courses/import-csv", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ csvText, source: `CSV upload — ${fileName}` }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          setErrorRows((data.results || []).filter(r => r.errors.length));
+          setStep("errors");
+          return;
+        }
+        setBatch({ id: data.batchId, savedRows: data.savedRows });
+        setStep("ready");
+      } catch (e) {
+        setError(e.message || "Kiểm tra thất bại");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function handlePromote() {
+      if (!batch) return;
+      setLoading(true); setError("");
+      try {
+        const res = await fetch("/admin/api/data-prep/courses/promote", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchId: batch.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Promote thất bại");
+        setStep("done");
+        onSynced?.();
+      } catch (e) {
+        setError(e.message || "Promote thất bại");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (step === "done") return (
+      <div>
+        <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "14px 16px", marginBottom: 18, color: "#2BB6A3", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="check-circle" size={16} /> Đã đồng bộ {batch.savedRows} khóa học lên hệ thống.
+        </div>
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+          <button className="adm-btn adm-btn--primary" onClick={onClose}><Icon name="check" size={13} /> Xong</button>
+        </div>
+      </div>
+    );
+
+    if (step === "errors") return (
+      <div>
+        <div style={{ color: "var(--rpg-muted)", fontSize: 13, marginBottom: 12 }}>
+          {errorRows.length} dòng có lỗi — sửa trong Sheet rồi tải lại CSV, chưa có gì được lưu.
+        </div>
+        <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--rpg-border)", borderRadius: 8 }}>
+          {errorRows.map(r => (
+            <div key={r.index} style={{ padding: "10px 14px", borderBottom: "1px solid var(--rpg-border)", fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Dòng {r.index + 2} — {r.row.course_id || "(không có mã)"}</div>
+              <div style={{ color: "#ff6b6b" }}>{r.errors.join("; ")}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 18 }}>
+          <button className="adm-btn adm-btn--sec" onClick={() => setStep("upload")}>Chọn file khác</button>
+          <button className="adm-btn adm-btn--sec" onClick={onClose}>Đóng</button>
+        </div>
+      </div>
+    );
+
+    if (step === "ready") return (
+      <div>
+        <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "14px 16px", marginBottom: 18, color: "#2BB6A3", fontSize: 13 }}>
+          Đã lưu nháp {batch.savedRows} khóa học, chưa hiển thị cho người dùng. Bấm &quot;Đẩy lên live&quot; để áp dụng.
+        </div>
+        {error && <div style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 10 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={loading}>Để sau</button>
+          <button className="adm-btn adm-btn--primary" onClick={handlePromote} disabled={loading}>
+            {loading ? "Đang đẩy lên..." : <><Icon name="upload" size={13} /> Đẩy lên live</>}
+          </button>
+        </div>
+      </div>
+    );
+
+    return (
+      <div>
+        <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+          Cột cần có: <code>course_id, title, trainer, format, duration_hours, type, xp_reward</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, is_active, trainer_type).
+        </div>
+        <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
+          <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />
+          <Icon name="file-plus" size={30} color="var(--rpg-muted)" style={{ margin: "0 auto 10px", display: "block" }} />
+          <div style={{ fontWeight: 700, color: "#fff", marginBottom: 5 }}>{fileName || "Click để chọn file CSV"}</div>
+          <div style={{ fontSize: 12, color: "var(--rpg-muted)" }}>Export từ Google Sheet: File → Download → Comma Separated Values</div>
+        </label>
+        {error && <div style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 18 }}>
+          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={handleCheck} disabled={!csvText || loading}>
+            {loading ? "Đang kiểm tra..." : <><Icon name="refresh-cw" size={13} /> Kiểm tra & Lưu nháp</>}
           </button>
         </div>
       </div>
