@@ -27,6 +27,32 @@ const specs = {
       "material_url",
     ],
   },
+  catalog: {
+    table: "staging_catalog",
+    columns: [
+      "course_code",
+      "title",
+      "description",
+      "trainer",
+      "trainer_type",
+      "format",
+      "duration_hours",
+      "skill_tags",
+      "rank_targets",
+      "role_targets",
+      "type",
+      "min_participants",
+      "registration_url",
+      "xp_reward",
+      "is_active",
+      "status",
+      "material_url",
+      "session_date",
+      "session_time",
+      "location",
+      "max_participants",
+    ],
+  },
   sessions: {
     table: "staging_sessions",
     columns: [
@@ -189,6 +215,26 @@ async function validateRows(type, inputRows) {
       if (!row.session_date) errors.push("session_date is required");
       if (row.session_date && !isDateText(row.session_date)) errors.push("session_date must be YYYY-MM-DD");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
+      if (row.max_participants && numberValue(row.max_participants) === null) errors.push("max_participants must be a number");
+    }
+
+    if (type === "catalog") {
+      // course_code repeats across rows on purpose (one course, many sessions) — no duplicate check.
+      if (!row.course_code) errors.push("course_code is required");
+      if (!row.title) errors.push("title is required");
+      if (!row.trainer) errors.push("trainer is required");
+      if (!row.format) errors.push("format is required");
+      if (row.format && !validFormats.has(row.format)) errors.push("format must be online/offline/elearning/webinar/workshop/bootcamp/talk");
+      if (!row.type) errors.push("type is required");
+      if (row.type && !validTypes.has(row.type)) errors.push("type must be open/scheduled/waitlist");
+      if (!row.duration_hours) errors.push("duration_hours is required");
+      if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
+      if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
+      if (!row.xp_reward) errors.push("xp_reward is required");
+      if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
+      if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
+      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be open/ended");
+      if (row.session_date && !isDateText(row.session_date)) errors.push("session_date must be YYYY-MM-DD");
       if (row.max_participants && numberValue(row.max_participants) === null) errors.push("max_participants must be a number");
     }
 
@@ -482,6 +528,83 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
         snapshotData = { createdSessionIds };
       }
 
+      else if (type === "catalog") {
+        const codes = [...new Set(stagingRows.map((r) => r.course_code))];
+        const placeholders = codes.map((_, i) => `$${i + 1}`).join(", ");
+
+        const existingCourses = await client.query(
+          `SELECT * FROM courses WHERE course_code IN (${placeholders}) AND session_date IS NULL`,
+          codes
+        );
+        const createdSessionIds = [];
+
+        // One master row per distinct course_code (first row's fields win).
+        for (const code of codes) {
+          const row = stagingRows.find((r) => r.course_code === code);
+          const existing = await client.query(
+            "SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1",
+            [code]
+          );
+          if (existing.rowCount) {
+            await client.query(
+              `UPDATE courses
+               SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
+                   skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
+                   min_participants = $11, registration_url = $12, description = $13,
+                   xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
+               WHERE course_code = $1`,
+              [
+                code, row.title, row.trainer, row.trainer_type || "internal",
+                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
+                row.min_participants, row.registration_url, row.description, row.xp_reward,
+                row.is_active, row.status || "open", row.material_url || null,
+              ]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO courses
+                 (id, course_code, title, trainer, trainer_type, format, duration_hours,
+                  skill_tags, rank_targets, role_targets, type, min_participants,
+                  registration_url, description, xp_reward, is_active, status, material_url, session_date)
+               VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NULL)`,
+              [
+                code, row.title, row.trainer, row.trainer_type || "internal",
+                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
+                row.min_participants, row.registration_url, row.description, row.xp_reward,
+                row.is_active, row.status || "open", row.material_url || null,
+              ]
+            );
+          }
+        }
+
+        // One session row per staging row that actually has a session_date.
+        for (const row of stagingRows) {
+          if (!row.session_date) continue;
+          const sessionId = crypto.randomUUID();
+          createdSessionIds.push(sessionId);
+          await client.query(
+            `INSERT INTO courses
+               (id, course_code, title, trainer, trainer_type, format, duration_hours,
+                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                description, xp_reward, is_active, status, material_url,
+                session_date, session_time, location, max_participants, current_count, session_status)
+             SELECT $1, course_code, title, trainer, trainer_type, format, duration_hours,
+                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                description, xp_reward, is_active, status, material_url,
+                $3, $4, $5, $6, 0, 'open'
+             FROM courses WHERE course_code = $2 AND session_date IS NULL LIMIT 1`,
+            [
+              sessionId, row.course_code, row.session_date,
+              row.session_time || null, row.location || null, row.max_participants || null,
+            ]
+          );
+        }
+
+        snapshotData = { existing: existingCourses.rows, promotedCodes: codes, createdSessionIds };
+      }
+
       else if (type === "policies") {
         const createdPolicyIds = [];
         for (const row of stagingRows) {
@@ -636,16 +759,23 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
     }
 
     await withTransaction(async (client) => {
-      if (type === "courses") {
-        const { existing = [], promotedIds = [] } = snapshot;
+      if (type === "courses" || type === "catalog") {
+        const { existing = [], promotedIds = [], promotedCodes = [], createdSessionIds = [] } = snapshot;
+        const codesToCheck = type === "catalog" ? promotedCodes : promotedIds;
 
         // Delete newly created master rows (course_codes not in snapshot)
         const existingCodes = new Set(existing.map((c) => c.course_code));
-        const newCodes = promotedIds.filter((code) => !existingCodes.has(code));
+        const newCodes = codesToCheck.filter((code) => !existingCodes.has(code));
 
         if (newCodes.length) {
           const placeholders = newCodes.map((_, i) => `$${i + 1}`).join(", ");
           await client.query(`DELETE FROM courses WHERE course_code IN (${placeholders})`, newCodes);
+        }
+
+        // catalog also created session rows alongside master rows — remove those too.
+        if (createdSessionIds.length) {
+          const sPlaceholders = createdSessionIds.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM courses WHERE id IN (${sPlaceholders}) AND session_date IS NOT NULL`, createdSessionIds);
         }
 
         // Restore existing courses

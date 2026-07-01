@@ -367,7 +367,7 @@ const D = ADM_DATA;
     async function handleRollbackLastSync() {
       if (!confirm("Hoàn tác lần đồng bộ CSV gần nhất? Chỉ áp dụng được trong vòng 24h sau khi đẩy lên live.")) return;
       try {
-        await apiFetch("/admin/api/data-prep/courses/rollback", {
+        await apiFetch("/admin/api/data-prep/catalog/rollback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({}),
@@ -866,7 +866,7 @@ const D = ADM_DATA;
       if (!csvText) return;
       setLoading(true); setError("");
       try {
-        const res = await fetch("/admin/api/data-prep/courses/import-csv", {
+        const res = await fetch("/admin/api/data-prep/catalog/import-csv", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -891,7 +891,7 @@ const D = ADM_DATA;
       if (!batch) return;
       setLoading(true); setError("");
       try {
-        const res = await fetch("/admin/api/data-prep/courses/promote", {
+        const res = await fetch("/admin/api/data-prep/catalog/promote", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -927,7 +927,7 @@ const D = ADM_DATA;
         <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--rpg-border)", borderRadius: 8 }}>
           {errorRows.map(r => (
             <div key={r.index} style={{ padding: "10px 14px", borderBottom: "1px solid var(--rpg-border)", fontSize: 12 }}>
-              <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Dòng {r.index + 2} — {r.row.course_id || "(không có mã)"}</div>
+              <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Dòng {r.index + 2} — {r.row.course_code || "(không có mã)"}</div>
               <div style={{ color: "#ff6b6b" }}>{r.errors.join("; ")}</div>
             </div>
           ))}
@@ -957,7 +957,7 @@ const D = ADM_DATA;
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>course_id, title, trainer, format, duration_hours, type, xp_reward</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, is_active, trainer_type, status, material_url).
+          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />
