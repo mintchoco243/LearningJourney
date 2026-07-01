@@ -125,8 +125,9 @@ const D = GLH_DATA;
     React.useEffect(() => {
       if (!c) return;
       let active = true;
-      const id = c._id || c.course_id;
-      fetch(`/api/sessions?course_id=${encodeURIComponent(id)}`, { credentials: "include" })
+      const rowId = c._id || c.course_id;
+      const courseQueryId = c.course_code || c.course_id || rowId;
+      fetch(`/api/sessions?course_id=${encodeURIComponent(courseQueryId)}`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (!active) return;
@@ -139,7 +140,7 @@ const D = GLH_DATA;
           setSession(selected || upcoming || null);
         })
         .catch(() => {});
-      fetch(`/api/courses/${encodeURIComponent(id)}/testimonials`, { credentials: "include" })
+      fetch(`/api/courses/${encodeURIComponent(rowId)}/testimonials`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => { if (active) setTestimonials(data?.testimonials?.length ? data.testimonials : null); })
         .catch(() => {});
@@ -204,6 +205,7 @@ const D = GLH_DATA;
             c.trainer ? React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }) : null,
             c.audience ? React.createElement(DetailItem, { icon: "users", label: "Đối tượng", value: c.audience }) : null,
             c.duration_minutes ? React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }) : null,
+            modalCourse.material_url ? React.createElement(DetailItem, { icon: "book-open", label: "Tài liệu", value: "Có tài liệu / recording" }) : null,
             modalCourse.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: modalCourse.location }) : null,
             modalCourse.start_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(modalCourse.start_date) }) : null,
             modalCourse.start_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: modalCourse.start_time }) : null,

@@ -81,7 +81,7 @@ function calendarAsSessions() {
 }
 
 export function getStaticCalendarCourses() {
-  return calendarAsSessions().map(mapSessionToCourse).filter((c) => c.start_date);
+  return calendarAsSessions().map((session) => mapSessionToCourse(session)).filter((c) => c.start_date);
 }
 
 export async function getUpcomingCourses() {
@@ -118,7 +118,10 @@ export async function getCalendarEvents() {
     const res = await fetch("/api/sessions", { credentials: "include" });
     if (res.ok) {
       const { sessions } = await res.json();
-      const mapped = (sessions || []).map(enrichSessionWithStaticCourse).map(mapSessionToCourse).filter((c) => c.start_date);
+      const mapped = (sessions || [])
+        .map(enrichSessionWithStaticCourse)
+        .map((session) => mapSessionToCourse(session))
+        .filter((c) => c.start_date);
       if (mapped.length) return mapped;
     }
   } catch {

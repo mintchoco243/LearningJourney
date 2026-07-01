@@ -27,6 +27,27 @@ const COURSE_TYPES = [
     return res.json();
   }
 
+  function toList(value) {
+    if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+    if (!value) return [];
+    const raw = String(value).trim();
+    if (!raw) return [];
+    if (raw.startsWith("[")) {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (_) {
+        parsed = null;
+      }
+      if (Array.isArray(parsed)) return parsed.map(item => String(item).trim()).filter(Boolean);
+    }
+    return raw.split(/[,;\n]/).map(item => item.trim()).filter(Boolean);
+  }
+
+  function formatListInput(value) {
+    return Array.isArray(value) ? value.join(", ") : (value || "");
+  }
+
   function mapCourse(c) {
     return {
       id: c.id,
@@ -37,9 +58,10 @@ const COURSE_TYPES = [
       format: c.format,
       duration: Math.round((parseFloat(c.duration_hours) || 0) * 60),
       duration_hours: parseFloat(c.duration_hours) || 0,
-      rank_targets: Array.isArray(c.rank_targets) ? c.rank_targets : (c.rank_targets ? JSON.parse(c.rank_targets) : []),
-      role_targets: Array.isArray(c.role_targets) ? c.role_targets : (c.role_targets ? JSON.parse(c.role_targets) : []),
-      skill_tags: Array.isArray(c.skill_tags) ? c.skill_tags : (c.skill_tags ? JSON.parse(c.skill_tags) : []),
+      rating: c.rating == null ? "" : parseFloat(c.rating),
+      rank_targets: toList(c.rank_targets),
+      role_targets: toList(c.role_targets),
+      skill_tags: toList(c.skill_tags),
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),
@@ -237,6 +259,7 @@ const COURSE_TYPES = [
             skill_tags: course.skill_tags,
             type: course.type,
             xp_reward: course.xp_reward,
+            rating: course.rating || 0,
             description: course.description,
             registration_url: course.registration_url,
             status: course.status,
@@ -265,11 +288,12 @@ const COURSE_TYPES = [
           trainer_type: formData.trainer_type || "internal",
           format: formData.format,
           duration_hours: parseFloat(formData.duration_hours) || 1,
-          rank_targets: formData.rank_targets,
-          role_targets: formData.role_targets || [],
-          skill_tags: formData.skill_tags || [],
+          rank_targets: toList(formData.rank_targets),
+          role_targets: toList(formData.role_targets),
+          skill_tags: toList(formData.skill_tags),
           type: formData.type || "scheduled",
           xp_reward: parseInt(formData.xp_reward) || 100,
+          rating: formData.rating === "" ? 0 : parseFloat(formData.rating) || 0,
           description: formData.description || "",
           registration_url: formData.registration_url || "",
           is_active: formData.is_active !== false,
@@ -362,6 +386,7 @@ const COURSE_TYPES = [
             skill_tags: course.skill_tags,
             type: course.type,
             xp_reward: type === 'xp_reward' ? parseInt(batchValue) || course.xp_reward : course.xp_reward,
+            rating: course.rating || 0,
             description: course.description,
             registration_url: course.registration_url,
             status: course.status,
@@ -665,6 +690,7 @@ const COURSE_TYPES = [
       skill_tags: course?.skill_tags || [],
       type: course?.type || "scheduled",
       xp_reward: course?.xp_reward || course?.xp || 100,
+      rating: course?.rating ?? "",
       description: course?.description || "",
       registration_url: course?.registration_url || "",
       is_active: course ? course.is_active : true,
@@ -678,9 +704,6 @@ const COURSE_TYPES = [
     });
 
     function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
-    function toggleRank(id) {
-      set("rank_targets", form.rank_targets.includes(id) ? form.rank_targets.filter(r => r !== id) : [...form.rank_targets, id]);
-    }
 
     const isEdit = Boolean(course);
     const canSave = form.title.trim() && form.trainer.trim() && (isEdit || form.id.trim());
@@ -714,7 +737,7 @@ const COURSE_TYPES = [
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Format</label>
             <select className="adm-select" value={form.format} onChange={e => set("format", e.target.value)}>
@@ -731,6 +754,10 @@ const COURSE_TYPES = [
             <label className="adm-label">XP reward</label>
             <input className="adm-input" type="number" min="0" value={form.xp_reward} onChange={e => set("xp_reward", e.target.value)} />
           </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Rating</label>
+            <input className="adm-input" type="number" min="0" max="5" step="0.1" value={form.rating} onChange={e => set("rating", e.target.value)} placeholder="VD: 4.5" />
+          </div>
         </div>
 
         <div className="adm-form-group" style={{ marginBottom: 14 }}>
@@ -742,16 +769,32 @@ const COURSE_TYPES = [
 
         <div className="adm-form-group" style={{ marginBottom: 14 }}>
           <label className="adm-label">Rank targets</label>
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-            {RANKS_ALL.map(r => (
-              <button key={r.id} type="button" onClick={() => toggleRank(r.id)} style={{
-                padding: "5px 13px", borderRadius: 999, fontSize: 12, fontWeight: 600,
-                background: form.rank_targets.includes(r.id) ? "rgba(228,30,38,.15)" : "rgba(255,255,255,.04)",
-                border: `1px solid ${form.rank_targets.includes(r.id) ? "var(--glh-accent)" : "var(--rpg-border)"}`,
-                color: form.rank_targets.includes(r.id) ? "#E41E26" : "var(--rpg-muted)",
-                cursor: "pointer", transition: "all .12s",
-              }}>{r.name}</button>
-            ))}
+          <input
+            className="adm-input"
+            value={formatListInput(form.rank_targets)}
+            onChange={e => set("rank_targets", e.target.value)}
+            placeholder="VD: Associate, Senior Associate, Manager"
+          />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Role targets</label>
+            <input
+              className="adm-input"
+              value={formatListInput(form.role_targets)}
+              onChange={e => set("role_targets", e.target.value)}
+              placeholder="VD: General, People Manager, Product"
+            />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Skill tags</label>
+            <input
+              className="adm-input"
+              value={formatListInput(form.skill_tags)}
+              onChange={e => set("skill_tags", e.target.value)}
+              placeholder="VD: Communication, Leadership, AI"
+            />
           </div>
         </div>
 
@@ -801,12 +844,10 @@ const COURSE_TYPES = [
               <option value="cancelled">Đã hủy</option>
             </select>
           </div>
-          {["ended", "material_only"].includes(form.status) || form.type === "material_only" ? (
-            <div className="adm-form-group">
-              <label className="adm-label">Link tài liệu</label>
-              <input className="adm-input" value={form.material_url} onChange={e => set("material_url", e.target.value)} placeholder="https://..." />
-            </div>
-          ) : null}
+          <div className="adm-form-group">
+            <label className="adm-label">Link tài liệu</label>
+            <input className="adm-input" value={form.material_url} onChange={e => set("material_url", e.target.value)} placeholder="https://..." />
+          </div>
         </div>
 
         <div className="adm-form-group" style={{ marginBottom: 18 }}>
@@ -1023,7 +1064,7 @@ const COURSE_TYPES = [
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — <code>type</code> dùng scheduled/interest/elearning/external/material_only. Các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
+          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — <code>rating</code> là tuỳ chọn (0-5, ví dụ 4.5). <code>type</code> dùng scheduled/interest/elearning/external/material_only. Các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, rating, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />

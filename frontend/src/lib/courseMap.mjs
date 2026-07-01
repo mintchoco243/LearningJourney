@@ -17,11 +17,27 @@ const courseCode = (row) => row.course_code || row.course_id || row.id;
 const courseRowId = (row) => row.id || row._id || courseCode(row);
 const courseType = (row) => String(row.type || "").trim().toLowerCase();
 
+function listValue(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (value == null || value === "") return [];
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {}
+    return text.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
 export function daysUntil(dateStr, today = new Date()) {
   if (!dateStr) return null;
+  const baseDate = today instanceof Date && !Number.isNaN(today.getTime()) ? today : new Date();
   const [y, m, d] = dateStr.split("-").map(Number);
   const target = Date.UTC(y, m - 1, d);
-  const base = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+  const base = Date.UTC(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
   return Math.round((target - base) / 86400000);
 }
 
@@ -69,6 +85,9 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     min_participants: s.min_participants ?? null,
     max_participants: s.max_participants ?? null,
     current_count: s.current_count ?? null,
+    class_ids: listValue(s.class_ids || s.role_targets),
+    rank_ids: listValue(s.rank_ids || s.rank_targets),
+    skill_tags: listValue(s.skill_tags),
     start_date: date,
     start_time: times[0] || null,
     end_time: times[1] || null,
@@ -105,7 +124,9 @@ export function mapCourseToCard(c, today = new Date()) {
     format: normalizeFormat(c.format),
     duration_minutes: c.duration_hours != null ? Math.round(Number(c.duration_hours) * 60) : null,
     xp_reward: c.xp_reward,
-    skill_tags: c.skill_tags || [],
+    skill_tags: listValue(c.skill_tags),
+    class_ids: listValue(c.class_ids || c.role_targets),
+    rank_ids: listValue(c.rank_ids || c.rank_targets),
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,

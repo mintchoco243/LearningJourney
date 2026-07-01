@@ -51,7 +51,7 @@ function ctaColor(cta) {
       fetch("/api/courses?limit=100", { credentials: "include" })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          if (data?.courses?.length) setCourses(data.courses.map(mapCourseToCard));
+          if (data?.courses?.length) setCourses(data.courses.map((course) => mapCourseToCard(course)));
         })
         .catch(() => {});
     }, []);
@@ -69,7 +69,7 @@ function ctaColor(cta) {
     let filtered = courses.filter(c => {
       if ((user.completed_courses || []).includes(c.course_id)) return false;
       if (fmtFilter !== "all" && c.format !== fmtFilter) return false;
-      if (cmFilter !== "all" && !(c.class_ids || []).includes(cmFilter)) return false;
+      if (cmFilter !== "all" && (c.class_ids || []).length && !(c.class_ids || []).includes(cmFilter)) return false;
       if (trainerFilter !== "all" && c.trainer !== trainerFilter) return false;
       if (durationFilter !== "all") { const opt = durationOptions.find(o => o.id === durationFilter); if (opt && !opt.test(c.duration_minutes)) return false; }
       if (tagFilter !== "all" && !(c.skill_tags || []).includes(tagFilter)) return false;

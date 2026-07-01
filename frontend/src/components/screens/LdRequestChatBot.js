@@ -268,7 +268,7 @@ const { useGame } = GLHEngine;
       // Helper button removed — CTA now lives in Catalog section
 
       // Chat button
-      !open ? React.createElement("div", { style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
+      !open ? React.createElement("div", { "data-tour": "learning-support", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
         // Speech bubble
         React.createElement("div", {
           style: {

@@ -1,6 +1,6 @@
 // Run: node src/lib/courseMap.test.mjs   (from frontend/)
 import assert from "node:assert/strict";
-import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapCourseToCard, getCourseCta, pickUpcoming, pickRecommended } from "./courseMap.mjs";
+import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToCourse, mapCourseToCard, getCourseCta, pickUpcoming, pickRecommended } from "./courseMap.mjs";
 
 const TODAY = new Date(2026, 6, 1); // 2026-07-01 (local)
 
@@ -43,6 +43,11 @@ assert.equal(mapSessionToUpcoming({ session_date: "2026-07-08", status: "open", 
 const range = mapSessionToUpcoming({ session_date: "2026-07-08", session_time: "10:00 - 12:00", status: "open" }, TODAY);
 assert.equal(range.start_time, "10:00");
 assert.equal(range.end_time, "12:00");
+
+// Array.map passes (item, index, array); mapper aliases must not treat index as a Date.
+assert.doesNotThrow(() => [
+  { id: "s-map", course_id: "LC-MAP", title: "Mapped", format: "Workshop", session_date: "2026-07-08", status: "open" },
+].map(mapSessionToCourse));
 
 // course -> card (duration_hours -> minutes)
 const card = mapCourseToCard({ id: "row-002", course_code: "LC-002", title: "Data", trainer: "Data Guild", format: "Video", duration_hours: 1.5, xp_reward: 80, skill_tags: ["Data Analysis"], registration_url: null, fit_tag: "best_fit" });
@@ -116,6 +121,17 @@ const importedCourse = mapCourseToCard({
 assert.equal(importedCourse.course_id, "LC-04");
 assert.equal(importedCourse._id, "uuid-master-1");
 assert.equal(importedCourse.session_id, null);
+
+const jsonBackedCourse = mapCourseToCard({
+  id: "uuid-master-json",
+  course_code: "LC-JSON",
+  skill_tags: '["data","ai"]',
+  role_targets: '["General"]',
+  rank_targets: "Associate, Senior Associate",
+});
+assert.deepEqual(jsonBackedCourse.skill_tags, ["data", "ai"]);
+assert.deepEqual(jsonBackedCourse.class_ids, ["General"]);
+assert.deepEqual(jsonBackedCourse.rank_ids, ["Associate", "Senior Associate"]);
 
 const deduped = pickRecommended([
   { id: "uuid-session-2", course_code: "LC-20", title: "Session row", session_date: "2026-07-20", fit_tag: "best_fit" },

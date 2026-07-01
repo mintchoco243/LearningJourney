@@ -15,6 +15,7 @@ const specs = {
       "trainer_type",
       "format",
       "duration_hours",
+      "rating",
       "skill_tags",
       "rank_targets",
       "role_targets",
@@ -37,6 +38,7 @@ const specs = {
       "trainer_type",
       "format",
       "duration_hours",
+      "rating",
       "skill_tags",
       "rank_targets",
       "role_targets",
@@ -219,6 +221,7 @@ async function validateRows(type, inputRows) {
       if (row.type && !validTypes.has(row.type)) errors.push("type must be scheduled/interest/elearning/external/material_only");
       if (!row.duration_hours) errors.push("duration_hours is required");
       if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
+      if (row.rating && (numberValue(row.rating) === null || numberValue(row.rating) < 0 || numberValue(row.rating) > 5)) errors.push("rating must be a number from 0 to 5");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
       if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
@@ -246,6 +249,7 @@ async function validateRows(type, inputRows) {
       if (row.type && !validTypes.has(row.type)) errors.push("type must be scheduled/interest/elearning/external/material_only");
       if (!row.duration_hours) errors.push("duration_hours is required");
       if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
+      if (row.rating && (numberValue(row.rating) === null || numberValue(row.rating) < 0 || numberValue(row.rating) > 5)) errors.push("rating must be a number from 0 to 5");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
       if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
@@ -281,7 +285,7 @@ async function validateRows(type, inputRows) {
 
 function toStoredValue(column, value) {
   if (["is_active"].includes(column)) return boolValue(value);
-  if (["duration_hours", "min_participants", "max_participants", "xp_reward", "order_index"].includes(column)) {
+  if (["duration_hours", "rating", "min_participants", "max_participants", "xp_reward", "order_index"].includes(column)) {
     return numberValue(value);
   }
   return clean(value) || null;
@@ -488,13 +492,13 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
             await client.query(
               `UPDATE courses
                SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
-                   skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
-                   min_participants = $11, registration_url = $12, description = $13,
-                   xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
+                   rating = $7, skill_tags = $8, rank_targets = $9, role_targets = $10, type = $11,
+                   min_participants = $12, registration_url = $13, description = $14,
+                   xp_reward = $15, is_active = $16, status = $17, material_url = $18, updated_at = NOW()
                WHERE course_code = $1`,
               [
                 row.course_id, row.title, row.trainer, row.trainer_type || "internal",
-                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                row.format, row.duration_hours, row.rating || 0, toJsonArray(row.skill_tags),
                 toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
                 row.min_participants, row.registration_url, row.description, row.xp_reward,
                 row.is_active, row.status || "open", row.material_url || null,
@@ -504,12 +508,12 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
             await client.query(
               `INSERT INTO courses
                  (id, course_code, title, trainer, trainer_type, format, duration_hours,
-                  skill_tags, rank_targets, role_targets, type, min_participants,
+                  rating, skill_tags, rank_targets, role_targets, type, min_participants,
                   registration_url, description, xp_reward, is_active, status, material_url, session_date)
-               VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NULL)`,
+               VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, NULL)`,
               [
                 row.course_id, row.title, row.trainer, row.trainer_type || "internal",
-                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                row.format, row.duration_hours, row.rating || 0, toJsonArray(row.skill_tags),
                 toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
                 row.min_participants, row.registration_url, row.description, row.xp_reward,
                 row.is_active, row.status || "open", row.material_url || null,
@@ -528,11 +532,11 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
           await client.query(
             `INSERT INTO courses
                (id, course_code, title, trainer, trainer_type, format, duration_hours,
-                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
                 description, xp_reward, is_active, status, material_url,
                 session_date, session_time, location, max_participants, current_count, session_status)
              SELECT $1, course_code, title, trainer, trainer_type, format, duration_hours,
-                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
                 description, xp_reward, is_active, status, material_url,
                 $3, $4, $5, $6, 0, 'open'
              FROM courses WHERE course_code = $2 AND session_date IS NULL LIMIT 1`,
@@ -553,14 +557,14 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
           await client.query(
             `INSERT INTO courses
                (id, course_code, title, trainer, trainer_type, format, duration_hours,
-                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
                 description, xp_reward, is_active, status, material_url,
                 session_date, session_time, location, max_participants, current_count, session_status)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21, $22, 0, 'open')`,
+                $15, $16, $17, $18, $19, $20, $21, $22, $23, 0, 'open')`,
             [
               courseId, row.course_code, row.title, row.trainer, row.trainer_type || "internal",
-              row.format, row.duration_hours, toJsonArray(row.skill_tags),
+              row.format, row.duration_hours, row.rating || 0, toJsonArray(row.skill_tags),
               toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
               row.min_participants, row.registration_url, row.description, row.xp_reward,
               row.is_active, row.status || "open", row.material_url || null,
@@ -598,7 +602,7 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
       else if (type === "users") {
         const createdUserIds = [];
         for (const row of stagingRows) {
-          const userId = row.id || require('crypto').randomUUID();
+          const userId = crypto.randomUUID();
           createdUserIds.push(userId);
           await client.query(
             `INSERT INTO users
@@ -759,13 +763,14 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
           await client.query(
             `UPDATE courses
              SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
-                 skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
-                 min_participants = $11, registration_url = $12, description = $13,
-                 xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
+                 rating = $7, skill_tags = $8, rank_targets = $9, role_targets = $10, type = $11,
+                 min_participants = $12, registration_url = $13, description = $14,
+                 xp_reward = $15, is_active = $16, status = $17, material_url = $18, updated_at = NOW()
              WHERE course_code = $1`,
             [
               c.course_code,
               c.title, c.trainer, c.trainer_type ?? null, c.format, c.duration_hours,
+              c.rating ?? 0,
               JSON.stringify(c.skill_tags ?? []), JSON.stringify(c.rank_targets ?? []),
               JSON.stringify(c.role_targets ?? []), c.type, c.min_participants ?? null,
               c.registration_url ?? null, c.description ?? null, c.xp_reward,

@@ -125,43 +125,31 @@ const { useGame } = GLHEngine;
   /* ---------- Tutorial Overlay (Guided Tour) ---------- */
   const STEPS = [
     {
-      title: "Chào mừng đến với Learning Hub! 👋",
-      desc: "Hãy để chúng tôi chỉ bạn các tính năng chính trong 6 bước nhanh.",
-      selector: null,
-      placement: "center",
-    },
-    {
-      title: "Trang chủ — Dashboard",
-      desc: "Xem tổng quan hành trình học tập, khóa được gợi ý và XP của bạn.",
-      selector: ".dash-hero",
+      title: "Trang chủ",
+      desc: "Nơi hiển thị lịch đào tạo và các nội dung đào tạo được gợi ý cho cá nhân bạn theo hồ sơ và sở thích.",
+      selector: "[data-tour='nav-home']",
       placement: "bottom",
     },
     {
-      title: "Khám phá Khóa học",
-      desc: "Dùng bộ lọc đa chiều để tìm khóa phù hợp theo vai trò, cấp độ và kỹ năng.",
-      selector: ".glh-container .u-eyebrow",
-      placement: "bottom",
-    },
-    {
-      title: "Lịch đào tạo",
-      desc: "Xem lịch workshop, webinar sắp tới và đặt chỗ tham gia.",
-      selector: "[data-section='calendar']",
-      placement: "top",
-    },
-    {
-      title: "AppBar điều hướng",
-      desc: "Dùng thanh menu này để chuyển giữa Dashboard, Khóa học, Lịch và Chính sách L&D.",
-      selector: ".appbar",
+      title: "Thư viện đào tạo",
+      desc: "Khám phá kho khóa học của Garena với nhiều hình thức, chủ đề khác nhau cho bạn lựa chọn.",
+      selector: "[data-tour='nav-library']",
       placement: "bottom",
     },
     {
       title: "Trang cá nhân",
       desc: "Click vào tên bạn để xem thông tin, khóa đã học và thay đổi cài đặt.",
-      selector: ".appbar__mini",
+      selector: "[data-tour='profile']",
       placement: "bottom",
     },
     {
-      title: "Bạn đã sẵn sàng! 🎉",
+      title: "Bot Hộ giá và Form gửi nhu cầu đào tạo",
+      desc: "Dùng bot hỗ trợ để hỏi nhanh về khóa học, rank hoặc chính sách L&D. Nếu chưa thấy khóa phù hợp, bạn có thể gửi nhu cầu đào tạo để L&D team xem xét và phản hồi.",
+      selector: "[data-tour='learning-support']",
+      placement: "top",
+    },
+    {
+      title: "Bạn đã sẵn sàng!",
       desc: "Chúc bạn học vui và hiệu quả. Bấm vào chat bubble góc phải nếu cần hỗ trợ!",
       selector: null,
       placement: "center",

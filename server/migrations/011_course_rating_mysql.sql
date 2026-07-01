@@ -1,0 +1,3 @@
+ALTER TABLE courses ADD COLUMN rating DECIMAL(3,1) DEFAULT 0;
+ALTER TABLE staging_courses ADD COLUMN rating DECIMAL(3,1) NULL;
+ALTER TABLE staging_catalog ADD COLUMN rating DECIMAL(3,1) NULL;

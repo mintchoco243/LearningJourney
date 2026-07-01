@@ -5,6 +5,12 @@ import { sendMail } from "../../services/mail.js";
 
 export const adminCoursesRouter = express.Router();
 
+function normalizeRating(value) {
+  if (value === undefined || value === null || value === "") return 0;
+  const rating = Number(value);
+  return Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null;
+}
+
 // GET /admin/api/courses -> List all course rows. One row is one manageable offering.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
@@ -28,25 +34,27 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       id: course_code,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
-      registration_url, description, xp_reward, is_active, status, material_url,
+      registration_url, description, xp_reward, rating, is_active, status, material_url,
       session_date, session_time, location, max_participants,
     } = req.body;
 
     if (!course_code || !title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
     }
+    const normalizedRating = normalizeRating(rating);
+    if (normalizedRating === null) return res.status(400).json({ error: "INVALID_RATING" });
 
     await query(
       `INSERT INTO courses
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
-          skill_tags, rank_targets, role_targets, type, min_participants,
+          rating, skill_tags, rank_targets, role_targets, type, min_participants,
           registration_url, description, xp_reward, is_active, status, material_url,
           session_date, session_time, location, max_participants, current_count, session_status)
        VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, 0, 'open')`,
+          $18, $19, $20, $21, $22, 0, 'open')`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
-        skill_tags, rank_targets, role_targets, type, min_participants,
+        normalizedRating, skill_tags, rank_targets, role_targets, type, min_participants,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
@@ -69,13 +77,15 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       course_code,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
-      registration_url, description, xp_reward, is_active, status, material_url,
+      registration_url, description, xp_reward, rating, is_active, status, material_url,
       session_date, session_time, location, max_participants,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
     }
+    const normalizedRating = normalizeRating(rating);
+    if (normalizedRating === null) return res.status(400).json({ error: "INVALID_RATING" });
 
     const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
     if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
@@ -83,15 +93,15 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
     await query(
       `UPDATE courses
        SET course_code = $2, title = $3, trainer = $4, trainer_type = $5, format = $6, duration_hours = $7,
-           skill_tags = $8, rank_targets = $9, role_targets = $10, type = $11,
-           min_participants = $12, registration_url = $13, description = $14,
-           xp_reward = $15, is_active = $16, status = $17, material_url = $18,
-           session_date = $19, session_time = $20, location = $21, max_participants = $22,
+           rating = $8, skill_tags = $9, rank_targets = $10, role_targets = $11, type = $12,
+           min_participants = $13, registration_url = $14, description = $15,
+           xp_reward = $16, is_active = $17, status = $18, material_url = $19,
+           session_date = $20, session_time = $21, location = $22, max_participants = $23,
            updated_at = NOW()
        WHERE id = $1`,
       [
         id, course_code || id, title, trainer, trainer_type || "internal", format, duration_hours,
-        skill_tags, rank_targets, role_targets, type, min_participants,
+        normalizedRating, skill_tags, rank_targets, role_targets, type, min_participants,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
@@ -129,7 +139,13 @@ adminCoursesRouter.delete("/:id", async (req, res, next) => {
 adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { emails } = req.body;
+    const emails = Array.isArray(req.body?.emails)
+      ? req.body.emails
+      : String(req.body?.csv || req.body?.csvText || "")
+          .split(/\r?\n|,/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+          .filter((item) => item.toLowerCase() !== "email");
 
     if (!Array.isArray(emails)) {
       return res.status(400).json({ error: "EMAILS_ARRAY_REQUIRED" });
@@ -194,6 +210,9 @@ adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
       matched_and_enrolled: matched_count,
       already_existed: existed_count,
       not_found_in_system: not_found_count,
+      enrolled: matched_count,
+      already_enrolled: existed_count,
+      not_found: not_found_count,
       not_found_emails,
     });
   } catch (error) {

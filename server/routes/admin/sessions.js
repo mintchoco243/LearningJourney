@@ -8,8 +8,9 @@ export const adminSessionsRouter = express.Router();
 adminSessionsRouter.get("/", async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT id, course_code, title AS course_title, session_date, session_time,
-              location, max_participants, current_count, session_status AS status, created_at
+      `SELECT id, course_code, title AS course_title, trainer, min_participants,
+              session_date, session_time, location, max_participants, current_count,
+              session_status AS status, created_at
        FROM courses
        WHERE session_date IS NOT NULL
        ORDER BY session_date DESC, session_time DESC`
@@ -39,11 +40,11 @@ adminSessionsRouter.post("/", async (req, res, next) => {
     await query(
       `INSERT INTO courses
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
-          skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+          rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
           description, xp_reward, is_active, status, material_url,
           session_date, session_time, location, max_participants, current_count, session_status)
        SELECT UUID(), course_code, title, trainer, trainer_type, format, duration_hours,
-          skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+          rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
           description, xp_reward, is_active, status, material_url,
           $2, $3, $4, $5, 0, 'open'
        FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1`,
