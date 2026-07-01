@@ -248,6 +248,23 @@ async function runCourseRowIdentityMigration(file) {
   }
 }
 
+async function runCourseRatingMigration(file) {
+  const targets = [
+    { table: "courses", definition: "rating DECIMAL(3,1) DEFAULT 0" },
+    { table: "staging_courses", definition: "rating DECIMAL(3,1) NULL" },
+    { table: "staging_catalog", definition: "rating DECIMAL(3,1) NULL" },
+  ];
+
+  for (const target of targets) {
+    if (!(await tableExists(target.table))) continue;
+    if (await columnExists(target.table, "rating")) continue;
+    await executeStatement(
+      file,
+      `ALTER TABLE ${quoteIdent(target.table)} ADD COLUMN ${target.definition}`,
+    );
+  }
+}
+
 // One-shot migrations that DROP/RENAME tables can't be re-run safely (e.g. on
 // container restart). Skip them once their target state already exists.
 async function shouldSkip(file) {
@@ -275,6 +292,11 @@ for (const file of files) {
   }
   if (isMysqlUrl() && file.startsWith("010_course_row_identity")) {
     await runCourseRowIdentityMigration(file);
+    process.stdout.write("done\n");
+    continue;
+  }
+  if (isMysqlUrl() && file.startsWith("011_course_rating")) {
+    await runCourseRatingMigration(file);
     process.stdout.write("done\n");
     continue;
   }
