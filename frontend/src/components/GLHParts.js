@@ -61,7 +61,8 @@ const D = GLH_DATA;
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
-    const done = (user.completed_courses || []).includes(c.course_id) || c.course_status === "ended";
+    const isEnded = c.course_status === "ended";
+    const done = (user.completed_courses || []).includes(c.course_id);
     const cta = c.course_status
       ? ({ upcoming_open: { text: "Đăng ký →", color: "var(--glh-accent)" }, upcoming_closed: { text: "Đặt chỗ →", color: "#FF9E00" }, elearning: { text: "Học ngay →", color: "#A38BFF" }, ended: { text: "Xem tài liệu →", color: "var(--rpg-muted)" } })[c.course_status]
       : ({ offline: { text: "Đăng ký →", color: "var(--glh-accent)" }, online: { text: "Đăng ký →", color: "var(--glh-accent)" }, elearning: { text: "Học ngay →", color: "#A38BFF" } })[c.format] || { text: "Xem thêm →", color: "var(--rpg-muted)" };
@@ -71,7 +72,7 @@ const D = GLH_DATA;
       className: "u-card u-card--hover",
       style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
       onClick: () => {
-        if (c.course_status === "ended" && c.material_url) {
+        if (isEnded && c.material_url) {
           window.open(c.material_url, "_blank", "noreferrer");
           return;
         }
@@ -83,6 +84,8 @@ const D = GLH_DATA;
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
           React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
             FORMAT_LABEL[c.format] || c.format),
+          isEnded && React.createElement("span", { style: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: "rgba(138,147,168,0.18)", color: "var(--rpg-muted)", border: "1px solid rgba(138,147,168,0.25)" } },
+            "Đã kết thúc"),
           React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--amber)" } },
             React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")),
         // date + countdown (dashboard recommended only)
@@ -147,6 +150,7 @@ const D = GLH_DATA;
             React.createElement(Icon, { name: "x", size: 18, color: "#fff" })),
           React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } },
             React.createElement("span", { className: "u-pill", style: { background: "rgba(255,255,255,0.12)", color: "#fff" } }, FORMAT_LABEL[c.format] || c.format),
+            isEnded ? React.createElement("span", { className: "u-pill", style: { background: "rgba(255,255,255,0.12)", color: "var(--rpg-muted)", border: "1px solid rgba(255,255,255,0.18)" } }, "Đã kết thúc") : null,
             rec ? React.createElement("span", { className: "u-pill u-pill--match" }, "Phù hợp với bạn") : null,
             rating ? React.createElement(Stars, { value: rating }) : null),
           React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.2, color: "#fff" } }, c.title),
@@ -167,12 +171,17 @@ const D = GLH_DATA;
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
               React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
               React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
-          (isEnded || done)
+          isEnded
+            ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: 14, background: "rgba(138,147,168,0.12)", border: "1px solid rgba(138,147,168,0.28)", borderRadius: 8, color: "var(--rpg-text)", fontWeight: 700, flexWrap: "wrap" } },
+                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--rpg-muted)" }),
+                React.createElement("span", { style: { flex: "1 1 180px" } }, "Khóa học đã kết thúc"),
+                c.material_url ? React.createElement("a", { href: c.material_url, className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center", padding: "8px 12px" }, target: "_blank", rel: "noreferrer" }, "Xem tài liệu") : null)
+            : done
             ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
-                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), isEnded ? "Khóa học đã kết thúc" : "Bạn đã hoàn thành khóa học này")
+                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), "Bạn đã hoàn thành khóa học này")
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
                 React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành"),
-                React.createElement("a", { href: (c.course_status === "ended" ? c.material_url : null) || c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, c.course_status === "ended" ? "Xem tài liệu" : "Mở khóa học")))));
+                React.createElement("a", { href: c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, "Mở khóa học")))));
   }
 
   /* ---------- Event modal ---------- */
