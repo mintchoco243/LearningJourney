@@ -56,6 +56,7 @@ export function mapSessionToEvent(s) {
 }
 
 export function mapCourseToCard(c) {
+  const status = String(c.status || "").trim().toLowerCase();
   return {
     course_id: courseCode(c),
     title: c.title,
@@ -67,7 +68,7 @@ export function mapCourseToCard(c) {
     skill_tags: c.skill_tags || [],
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
-    course_status: c.status === "ended" ? "ended" : null,
+    course_status: status === "ended" ? "ended" : null,
     material_url: c.material_url || null,
     audience: c.audience || "Mọi cấp độ",
     rating: c.rating != null ? Number(c.rating) : null,

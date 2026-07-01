@@ -56,6 +56,7 @@ assert.equal(card.course_status, null);
 const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended", material_url: "https://docs.example/lc-003" });
 assert.equal(endedCard.course_status, "ended");
 assert.equal(endedCard.material_url, "https://docs.example/lc-003");
+assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, "ended");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

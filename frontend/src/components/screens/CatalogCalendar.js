@@ -6,6 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
 import { getCalendarEvents } from '@/lib/mockApi';
+import { mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
 const { Icon, fmtDate, fmtDuration, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
@@ -27,6 +28,7 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
   /* ---------------- Catalog ---------------- */
   export function Catalog(props) {
     const { user } = useGame();
+    const [courses, setCourses] = React.useState(D.COURSES);
     const [q, setQ] = React.useState("");
     const [fmtFilter,      setFmtFilter]      = React.useState("all");
     const [cmFilter,       setCmFilter]       = React.useState("all"); // Chuyên môn
@@ -35,8 +37,17 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
     const [tagFilter,      setTagFilter]      = React.useState("all"); // skill TAGS chips
     const [sortMode,       setSortMode]       = React.useState("newest");
 
-    const allTrainers = [...new Set(D.COURSES.map(c => c.trainer))].sort();
-    const allSkillIds = [...new Set(D.COURSES.flatMap(c => c.skill_tags || []))];
+    React.useEffect(() => {
+      fetch("/api/courses?limit=100", { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.courses?.length) setCourses(data.courses.map(mapCourseToCard));
+        })
+        .catch(() => {});
+    }, []);
+
+    const allTrainers = [...new Set(courses.map(c => c.trainer))].sort();
+    const allSkillIds = [...new Set(courses.flatMap(c => c.skill_tags || []))];
     const durationOptions = [
       { id: "short",  label: "< 1 giờ",  test: m => m < 60 },
       { id: "medium", label: "1–2 giờ",  test: m => m >= 60 && m <= 120 },
@@ -45,7 +56,7 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
     const activeFilterCount = [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter].filter(v => v !== "all").length;
     const clearAll = () => { setFmtFilter("all"); setCmFilter("all"); setTrainerFilter("all"); setDurationFilter("all"); setTagFilter("all"); setQ(""); };
 
-    let filtered = D.COURSES.filter(c => {
+    let filtered = courses.filter(c => {
       if ((user.completed_courses || []).includes(c.course_id)) return false;
       if (fmtFilter !== "all" && c.format !== fmtFilter) return false;
       if (cmFilter !== "all" && !(c.class_ids || []).includes(cmFilter)) return false;
@@ -116,7 +127,7 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
 
       // Result count
       React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", marginBottom: 16 } },
-        filtered.length + " / " + D.COURSES.length + " khóa học"
+        filtered.length + " / " + courses.length + " khóa học"
         + (activeFilterCount > 0 || q.trim() ? " · đang lọc" : "")),
 
       filtered.length

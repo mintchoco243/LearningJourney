@@ -70,7 +70,13 @@ const D = GLH_DATA;
     return React.createElement("button", {
       className: "u-card u-card--hover",
       style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
-      onClick: () => onClick(c),
+      onClick: () => {
+        if (c.course_status === "ended" && c.material_url) {
+          window.open(c.material_url, "_blank", "noreferrer");
+          return;
+        }
+        onClick(c);
+      },
     },
       React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
         // format chip + XP
@@ -128,6 +134,7 @@ const D = GLH_DATA;
     }, [c]);
 
     if (!c) return null;
+    const isEnded = c.course_status === "ended";
     const done = (user.completed_courses || []).includes(c.course_id);
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
@@ -160,9 +167,9 @@ const D = GLH_DATA;
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
               React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
               React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
-          done
+          (isEnded || done)
             ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
-                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), "Bạn đã hoàn thành khóa học này")
+                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), isEnded ? "Khóa học đã kết thúc" : "Bạn đã hoàn thành khóa học này")
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
                 React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành"),
                 React.createElement("a", { href: (c.course_status === "ended" ? c.material_url : null) || c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, c.course_status === "ended" ? "Xem tài liệu" : "Mở khóa học")))));
