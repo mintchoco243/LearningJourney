@@ -1,0 +1,7 @@
+email,full_name,rank,role,team,class_archetype,learning_formats,weekly_hours,preferred_trainers,learning_goals
+alice.nguyen@garena.vn,Alice Nguyen,Associate,Marketing,Publishing,Explorer,"workshop, elearning",1-2h,"People Growth, Data Guild","Build stronger campaign analytics habits."
+binh.tran@garena.vn,Binh Tran,Senior Associate,Product,Game Studio,Strategist,"workshop, coaching",3h+,"Product Coaches","Improve discovery and stakeholder alignment."
+chi.le@garena.vn,Chi Le,Lead,Operations,Live Ops,Operator,"webinar, offline",1-2h,"Tech Ops, Comms Team","Run incidents with clearer communication."
+dung.pham@garena.vn,Dung Pham,Manager,Engineering,Platform,Builder,"elearning, bootcamp",3h+,People Growth,"Coach first-time leads."
+inactive.test@garena.vn,Inactive Test,Associate,Finance,Finance,Connector,elearning,<1h,Compliance Team,"Validate import for low-engagement learner."
+

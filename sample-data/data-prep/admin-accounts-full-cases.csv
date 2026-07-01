@@ -1,0 +1,5 @@
+email,full_name,role,is_active
+sample.superadmin@garena.vn,Sample Super Admin,super_admin,true
+sample.ldadmin@garena.vn,Sample L&D Admin,admin,true
+sample.editor@garena.vn,Sample Editor,editor,true
+sample.inactive@garena.vn,Sample Inactive Admin,editor,false

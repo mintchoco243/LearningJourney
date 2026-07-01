@@ -1,0 +1,6 @@
+category,title,content,is_active,order_index
+Learning Budget,Annual Budget,"Each employee may request external learning support through the L&D review flow.",true,1
+Attendance,No-show Handling,"If a learner misses a confirmed workshop without notice, L&D may deprioritize future limited-seat sessions.",true,2
+Certification,External Certificate Claim,"Upload proof of completion and reimbursement evidence within 30 days.",true,3
+Legacy,Deprecated Offline Claim,"This policy is inactive and kept only to test inactive policy rendering.",false,99
+

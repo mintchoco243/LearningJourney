@@ -155,6 +155,9 @@ export function getCourseCta(course, user = {}) {
   const status = effectiveLifecycle(c.course_status, c.start_date);
 
   if (completed) {
+    if ((type === "elearning" || c.format === "elearning") && hasUrl) {
+      return { key: "review", text: "Xem lại →", modalText: "Xem lại", tone: "purple", action: "url", disabled: false };
+    }
     return hasMaterial
       ? { key: "completed_material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
       : { key: "completed", text: "Đã hoàn thành", modalText: "Đã hoàn thành", tone: "success", action: "none", disabled: true };

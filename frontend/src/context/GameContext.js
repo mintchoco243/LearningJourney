@@ -12,8 +12,9 @@ const D = GLH_DATA;
     onboarded: false,
     email: "",
     full_name: "",
-    db_role: "",   // department from DB (pre-populated by admin)
-    db_rank: "",   // rank_id from DB (e.g. "rank_02")
+    db_role: "",   // role from DB (pre-populated by admin)
+    db_team: "",   // team/department from DB (pre-populated by admin)
+    db_rank: "",   // rank from DB (rank_id or imported label)
     character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
     quiz_result: null, // { class_id, rank_id, personality, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
@@ -37,28 +38,9 @@ const D = GLH_DATA;
   }
   function clearUser() { try { localStorage.removeItem(KEY); } catch (e) {} }
 
-  /* ---------- progression math ---------- */
-  function rankIndexForXp(xp) {
-    let idx = 0;
-    for (let i = 0; i < D.RANKS.length; i++) {
-      if (xp >= D.RANKS[i].required_xp) idx = i;
-    }
-    return idx;
-  }
-  function rankForXp(xp) { return D.RANKS[rankIndexForXp(xp)]; }
-  function nextRankForXp(xp) {
-    const i = rankIndexForXp(xp);
-    return i < D.RANKS.length - 1 ? D.RANKS[i + 1] : null;
-  }
-  // progress (0..1) toward next rank, plus xp numbers for the bar
-  function levelProgress(xp) {
-    const i = rankIndexForXp(xp);
-    const cur = D.RANKS[i];
-    const next = D.RANKS[i + 1];
-    if (!next) return { pct: 1, into: xp - cur.required_xp, span: 0, cur, next: null };
-    const span = next.required_xp - cur.required_xp;
-    const into = xp - cur.required_xp;
-    return { pct: Math.max(0, Math.min(1, into / span)), into, span, cur, next };
+  /* ---------- profile rank ---------- */
+  function rankForUser(user = {}) {
+    return D.RANKS.find((r) => r.id === (user.db_rank || user.quiz_result?.rank_id)) || D.RANKS[0];
   }
 
   /* ---------- quiz scoring ---------- */
@@ -89,7 +71,7 @@ const D = GLH_DATA;
       class_id,
       personality,
       rank_id: rank.id,
-      start_xp: rank.required_xp + 50, // quiz completion bonus seeds XP into the rank
+      start_xp: D.XP.quiz_complete,
       completed_at: new Date().toISOString(),
     };
   }
@@ -127,7 +109,7 @@ const D = GLH_DATA;
   function recommendCourses(user, limit) {
     if (!user.quiz_result) return D.COURSES.slice(0, limit || 3);
     const cls = user.quiz_result.class_id;
-    const curRank = rankForXp(user.xp || 0);
+    const curRank = rankForUser(user);
     const done = new Set(user.completed_courses || []);
     const scored = D.COURSES
       .filter((c) => !done.has(c.course_id))
@@ -135,9 +117,6 @@ const D = GLH_DATA;
         let score = 0;
         if ((c.class_ids || []).includes(cls)) score += 3;
         if ((c.rank_ids || []).includes(curRank.id)) score += 2;
-        // mild preference for adjacent rank
-        const next = nextRankForXp(user.xp || 0);
-        if (next && (c.rank_ids || []).includes(next.id)) score += 1;
         return { c, score };
       })
       .sort((a, b) => b.score - a.score);
@@ -146,10 +125,9 @@ const D = GLH_DATA;
   function isRecommended(course, user) {
     if (!user.quiz_result) return false;
     const cls = user.quiz_result.class_id;
-    const curRank = rankForXp(user.xp || 0);
+    const curRank = rankForUser(user);
     return (course.class_ids || []).includes(cls) &&
-      ((course.rank_ids || []).includes(curRank.id) ||
-       (nextRankForXp(user.xp || 0) && (course.rank_ids || []).includes(nextRankForXp(user.xp || 0).id)));
+      (course.rank_ids || []).includes(curRank.id);
   }
 
   function upcomingEvents(limit) {
@@ -165,8 +143,6 @@ const D = GLH_DATA;
 
   export function GameProvider(props) {
     const [user, setUser] = React.useState(() => load() || Object.assign({}, DEFAULT_USER));
-    // levelUp holds the rank object you just reached, or null
-    const [levelUp, setLevelUp] = React.useState(null);
     // xpBurst: a transient {amount} for the XP gain toast
     const [xpBurst, setXpBurst] = React.useState(null);
 
@@ -180,6 +156,7 @@ const D = GLH_DATA;
           email: profile.email || user.email,
           full_name: profile.full_name || user.full_name,
           db_role: profile.role || user.db_role,
+          db_team: profile.team || user.db_team,
           db_rank: profile.rank || user.db_rank,
           onboarded: true,
         }));
@@ -195,24 +172,18 @@ const D = GLH_DATA;
         }));
       },
       addXp(amount, label) {
-        const before = rankIndexForXp(user.xp || 0);
         const nextXp = (user.xp || 0) + amount;
-        const after = rankIndexForXp(nextXp);
         persist(Object.assign({}, user, { xp: nextXp }));
         setXpBurst({ amount, label, id: Date.now() });
-        if (after > before) setLevelUp(D.RANKS[after]);
       },
       completeCourse(course) {
         if ((user.completed_courses || []).includes(course.course_id)) return false;
-        const before = rankIndexForXp(user.xp || 0);
         const nextXp = (user.xp || 0) + (course.xp_reward || D.XP.course_complete_default);
-        const after = rankIndexForXp(nextXp);
         persist(Object.assign({}, user, {
           xp: nextXp,
           completed_courses: [...(user.completed_courses || []), course.course_id],
         }));
         setXpBurst({ amount: course.xp_reward || 20, label: "Hoàn thành khóa học", id: Date.now() });
-        if (after > before) setLevelUp(D.RANKS[after]);
         // Persist to backend (fire-and-forget — local state already updated)
         const apiCourseId = course._id || course.course_id;
         if (apiCourseId) {
@@ -246,11 +217,10 @@ const D = GLH_DATA;
         }
         return true;
       },
-      clearLevelUp() { setLevelUp(null); },
       clearXpBurst() { setXpBurst(null); },
     }), [user, persist]);
 
-    const value = { user, actions, levelUp, xpBurst };
+    const value = { user, actions, xpBurst };
     return React.createElement(GameContext.Provider, { value }, props.children);
   }
 
@@ -262,7 +232,7 @@ const D = GLH_DATA;
 
   export const GLHEngine = {
     DEFAULT_USER, load, save, clearUser,
-    rankForXp, nextRankForXp, rankIndexForXp, levelProgress,
+    rankForUser,
     scoreQuiz, skillStatus, recommendCourses, isRecommended, upcomingEvents,
     GameProvider, useGame,
   };

@@ -220,7 +220,7 @@ const D = GLH_DATA;
                 React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
                 React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText),
-                !done && !["learn", "complete"].includes(cta.key) ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
+                !done && cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

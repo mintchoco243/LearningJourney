@@ -67,7 +67,6 @@ function ctaColor(cta) {
     const clearAll = () => { setFmtFilter("all"); setCmFilter("all"); setTrainerFilter("all"); setDurationFilter("all"); setTagFilter("all"); setQ(""); };
 
     let filtered = courses.filter(c => {
-      if ((user.completed_courses || []).includes(c.course_id)) return false;
       if (fmtFilter !== "all" && c.format !== fmtFilter) return false;
       if (cmFilter !== "all" && (c.class_ids || []).length && !(c.class_ids || []).includes(cmFilter)) return false;
       if (trainerFilter !== "all" && c.trainer !== trainerFilter) return false;

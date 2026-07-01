@@ -133,7 +133,8 @@ const { Avatar } = GLHAvatar;
     const qr = user.quiz_result;
 
     const quizExt = qr.quiz_extended || {};
-    const deptAnswer = user.db_role || null;
+    const roleAnswer = user.db_role || null;
+    const teamAnswer = user.db_team || null;
     const rankObj = D.RANKS.find((r) => r.id === (user.db_rank || qr.rank_id));
     const rankAnswer = rankObj ? rankObj.name : (user.db_rank || null);
 
@@ -143,7 +144,8 @@ const { Avatar } = GLHAvatar;
     const availabilityLabel = { under1: "Dưới 1 giờ/tuần", "1to2": "1–2 giờ/tuần", "3plus": "3+ giờ/tuần" };
 
     const summaryItems = [
-      deptAnswer ? { icon: "building-2", label: "Bộ phận", value: deptAnswer } : null,
+      roleAnswer ? { icon: "briefcase", label: "Vai trò", value: roleAnswer } : null,
+      teamAnswer ? { icon: "building-2", label: "Bộ phận", value: teamAnswer } : null,
       rankAnswer ? { icon: "bar-chart-2", label: "Cấp bậc", value: rankAnswer } : null,
       quizExt.learning_style && quizExt.learning_style.length > 0 ? {
         icon: "book-open", label: "Hình thức học",

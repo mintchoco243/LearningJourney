@@ -18,7 +18,7 @@ import { RatingModal, Tutorial } from '@/components/screens/RatingTutorial';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
-const { useGame, rankForXp } = GLHEngine;
+const { useGame, rankForUser } = GLHEngine;
 const { Icon } = GLHUI;
 const { Avatar } = GLHAvatar;
 const { CourseModal } = GLHParts;
@@ -56,39 +56,6 @@ const D = GLH_DATA;
       React.createElement(Icon, { name: "zap", size: 18, color: "var(--amber)" }),
       "+" + xpBurst.amount + " XP",
       xpBurst.label ? React.createElement("span", { style: { fontWeight: 400, color: "var(--rpg-muted)", fontSize: 13 } }, "· " + xpBurst.label) : null);
-  }
-
-  /* ---------- Level-up overlay ---------- */
-  function LevelUp(props) {
-    const { user, levelUp, actions } = useGame();
-    const cls = user.quiz_result ? D.CLASSES[user.quiz_result.class_id] : null;
-    const opts = Object.assign({}, user.character, { classColor: cls ? cls.color : null, rank: levelUp?.level });
-    const intensity = props.intensity || "normal";
-    const confettiN = intensity === "celebratory" ? 90 : intensity === "subtle" ? 0 : 44;
-    const confetti = React.useMemo(() => {
-      const cols = ["#FFBA00", "#E41E26", "#7C5CFF", "#2BB6A3", "#fff"];
-      return Array.from({ length: confettiN }, (_, i) => ({
-        left: seededNoise(i + 1) * 100,
-        delay: seededNoise(i + 101) * 0.5,
-        dur: 1.6 + seededNoise(i + 201) * 1.4,
-        col: cols[i % cols.length],
-        rot: seededNoise(i + 301) * 360,
-      }));
-    }, [confettiN]);
-    if (!levelUp) return null;
-    return React.createElement("div", { className: "lvlup", onClick: actions.clearLevelUp },
-      intensity !== "subtle" ? React.createElement("div", { className: "lvlup__flash" }) : null,
-      confetti.map((c, i) => React.createElement("div", {
-        key: i, className: "confetti",
-        style: { left: c.left + "%", background: c.col, animationDelay: c.delay + "s", animationDuration: c.dur + "s", transform: `rotate(${c.rot}deg)` },
-      })),
-      React.createElement("div", { className: "lvlup__card", onClick: (e) => e.stopPropagation() },
-        React.createElement("h1", { className: "lvlup__title" }, "LEVEL UP!"),
-        React.createElement("div", { className: "lvlup__avatar", style: { width: 150, height: 150 } },
-          React.createElement(Avatar, { opts: opts, size: 150, crisp: props.crisp })),
-        React.createElement("div", { className: "lvlup__rank" }, "Rank " + levelUp.level + " · " + levelUp.name),
-        React.createElement("p", { className: "lvlup__sub" }, levelUp.description),
-        React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: actions.clearLevelUp }, "Tiếp tục")));
   }
 
   /* ---------- Q&A section ---------- */
@@ -155,7 +122,7 @@ const D = GLH_DATA;
   function AppBar(props) {
     const { user } = useGame();
     const cls = D.CLASSES[user.quiz_result.class_id];
-    const rank = rankForXp(user.xp);
+    const rank = rankForUser(user);
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
     const tabs = [
       ["home",    null],                    // icon only
@@ -237,7 +204,7 @@ const D = GLH_DATA;
               React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
             React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
               React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
-              React.createElement("div", { className: "lv" }, "RANK " + rank.level + " · " + user.xp + " XP")))
+              React.createElement("div", { className: "lv" }, user.xp + " XP tích lũy")))
         )));
   }
 
@@ -440,7 +407,6 @@ const D = GLH_DATA;
         React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " Đánh giá"
       ) : null,
       React.createElement(XpToast, null),
-      React.createElement(LevelUp, { crisp, intensity: t.anim }),
       React.createElement(TweaksUI, { t, setTweak }));
   }
 

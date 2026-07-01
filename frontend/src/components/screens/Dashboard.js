@@ -11,7 +11,7 @@ import { getCourseCta } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
 const { FORMAT_LABEL, DOW_VI, MONTHS_VI } = GLHUI;
-const { useGame, rankForXp } = GLHEngine;
+const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 const FORMAT_COLOR = {
@@ -107,7 +107,7 @@ export function Dashboard(props) {
   const { user } = useGame();
   const qr       = user.quiz_result;
   const cls      = D.CLASSES[qr.class_id];
-  const rank     = rankForXp(user.xp);
+  const rank     = rankForUser(user);
   const revealOpts  = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
   const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
   const deptLabel   = qr._answers?.[0]?.label ?? cls.name;

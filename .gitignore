@@ -9,3 +9,8 @@ npm-debug.log*
 *.gdoc
 Garena Learning Hub*.html
 _tmp_*
+courses-unified-template.csv
+*.csv
+!sample-data/
+!sample-data/data-prep/
+!sample-data/data-prep/*.csv

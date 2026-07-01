@@ -73,6 +73,7 @@ assert.equal(getCourseCta({ course_id: "LC-003", type: "scheduled", session_id: 
 assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
 assert.equal(getCourseCta({ course_id: "LC-004", type: "scheduled", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
+assert.equal(getCourseCta({ course_id: "LC-005", format: "elearning", url: "https://learn.example" }, { completed_courses: ["LC-005"] }).key, "review");
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", status: "open" }, TODAY)).key, "interest");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");

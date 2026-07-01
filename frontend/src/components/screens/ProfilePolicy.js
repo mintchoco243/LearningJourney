@@ -8,7 +8,7 @@ import { GLH_DATA } from '@/data/glhData';
 
 const D = GLH_DATA;
 const { Icon, fmtDate } = GLHUI;
-const { useGame, rankForXp } = GLHEngine;
+const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 
@@ -23,7 +23,7 @@ const { Avatar } = GLHAvatar;
     if (!qr) return null;
 
     const cls = D.CLASSES[qr.class_id];
-    const rank = rankForXp(user.xp);
+    const rank = rankForUser(user);
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
 
     const completedCourses = (user.completed_courses || [])
@@ -42,10 +42,12 @@ const { Avatar } = GLHAvatar;
       { label: "Tổng XP", value: user.xp.toString() },
     ];
 
-    const deptLabel = qr._answers && qr._answers[0] ? qr._answers[0].label : cls.name;
-    const rankLabel = qr._answers && qr._answers[1] ? qr._answers[1].label : rank.name;
+    const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
+    const roleLabel = user.db_role || (qr._answers && qr._answers[0] ? qr._answers[0].label : cls.name);
+    const teamLabel = user.db_team || null;
+    const rankLabel = dbRank ? dbRank.name : (user.db_rank || (qr._answers && qr._answers[1] ? qr._answers[1].label : rank.name));
     const goalLabel = qr._answers && qr._answers[2] ? qr._answers[2].label : null;
-    const displayName = user.email ? user.email.split("@")[0] : "Người dùng";
+    const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
 
     return React.createElement("div", { className: "glh-dark", style: { minHeight: "100vh", paddingBottom: 80 } },
       React.createElement("div", { style: { padding: "24px clamp(16px,4vw,40px)", maxWidth: 960, margin: "0 auto" } },
@@ -66,8 +68,8 @@ const { Avatar } = GLHAvatar;
               React.createElement(Avatar, { opts: opts, size: 88, crisp: props.crisp })
             ),
             React.createElement("div", null,
-              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 } }, "Bộ phận & Cấp bậc"),
-              React.createElement("div", { style: { fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4 } }, deptLabel),
+              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 } }, "Vai trò & Cấp bậc"),
+              React.createElement("div", { style: { fontSize: 18, fontWeight: 700, color: "#fff", marginBottom: 4 } }, roleLabel),
               React.createElement("div", { style: { fontSize: 13, color: "var(--amber)", fontWeight: 600 } }, rankLabel)
             )
           ),
@@ -124,10 +126,15 @@ const { Avatar } = GLHAvatar;
             "Làm lại Onboarding"
           ),
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 } },
-            // Dept
-            deptLabel ? React.createElement("div", { style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14 } },
+            // Role
+            roleLabel ? React.createElement("div", { style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14 } },
+              React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Vai trò"),
+              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, roleLabel)
+            ) : null,
+            // Team
+            teamLabel ? React.createElement("div", { style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14 } },
               React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Bộ phận"),
-              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, deptLabel)
+              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, teamLabel)
             ) : null,
             // Rank level
             rankLabel ? React.createElement("div", { style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14 } },
