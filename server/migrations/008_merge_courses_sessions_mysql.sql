@@ -7,7 +7,8 @@
 -- enrollments/testimonials now reference course_code (string, no FK since course_code is non-unique)
 -- reservations.session_id still references courses.id (UUID of session rows)
 
--- Step 1: Create merged table
+-- Step 1: Create merged table (drop leftover scratch table from a prior failed run)
+DROP TABLE IF EXISTS courses_new;
 CREATE TABLE courses_new (
   id CHAR(36) PRIMARY KEY,
   course_code VARCHAR(20) NOT NULL,
