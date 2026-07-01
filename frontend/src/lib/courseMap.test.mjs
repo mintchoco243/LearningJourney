@@ -35,7 +35,8 @@ assert.equal(up.countdown_days, 7);
 
 // full session -> closed CTA
 assert.equal(mapSessionToUpcoming({ session_date: "2026-07-08", status: "full" }, TODAY).course_status, "upcoming_closed");
-assert.equal(mapSessionToUpcoming({ session_date: "2026-07-08", status: "open", course_status: "ended" }, TODAY).course_status, "ended");
+assert.equal(mapSessionToUpcoming({ session_date: "2026-06-08", status: "open", course_status: "ended" }, TODAY).course_status, "ended");
+assert.equal(mapSessionToUpcoming({ session_date: "2026-07-08", status: "open", course_status: "ended" }, TODAY).course_status, "upcoming_open");
 
 // time range string keeps both ends
 const range = mapSessionToUpcoming({ session_date: "2026-07-08", session_time: "10:00 - 12:00", status: "open" }, TODAY);
@@ -56,12 +57,14 @@ const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended",
 assert.equal(endedCard.course_status, "ended");
 assert.equal(endedCard.material_url, "https://docs.example/lc-003");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, "ended");
+assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "2026-07-15", material_url: "https://docs.example" }, TODAY).course_status, "upcoming_open");
 
 // shared CTA logic
 assert.equal(getCourseCta({ course_id: "LC-001", format: "elearning", url: "https://learn.example" }).key, "learn");
 assert.equal(getCourseCta({ course_id: "LC-002", session_id: "s2", course_status: "upcoming_open" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-003", session_id: "s3", course_status: "upcoming_closed" }).key, "waitlist");
 assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
+assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 

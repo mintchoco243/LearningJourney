@@ -32,11 +32,24 @@ function normalizeSessionStatus(status) {
   return String(status || "open").trim().toLowerCase();
 }
 
+function effectiveLifecycle(status, date, today = new Date()) {
+  const normalized = normalizeSessionStatus(status);
+  const remainingDays = daysUntil(date, today);
+  if (date && remainingDays != null && remainingDays >= 0 && normalized === "ended") {
+    return "open";
+  }
+  if (date && remainingDays != null && remainingDays < 0 && normalized !== "cancelled") {
+    return "ended";
+  }
+  return normalized;
+}
+
 export function mapSessionToUpcoming(s, today = new Date()) {
   const date = dateOnly(s.session_date);
   const times = sessionTimes(s.session_time);
   const sessionStatus = normalizeSessionStatus(s.status);
-  const courseStatus = normalizeSessionStatus(s.course_status);
+  const courseStatus = effectiveLifecycle(s.course_status, date, today);
+  const countdown = daysUntil(date, today);
   return {
     session_id: s.id || s.session_id || null,
     course_id: courseRowId(s),
@@ -64,7 +77,7 @@ export function mapSessionToUpcoming(s, today = new Date()) {
       : sessionStatus === "full"
         ? "upcoming_closed"
         : "upcoming_open",
-    countdown_days: daysUntil(date, today),
+    countdown_days: countdown,
     url: s.registration_url || "#",
     audience: s.audience || "Mọi cấp độ",
   };
@@ -72,10 +85,10 @@ export function mapSessionToUpcoming(s, today = new Date()) {
 
 export const mapSessionToCourse = mapSessionToUpcoming;
 
-export function mapCourseToCard(c) {
-  const status = String(c.status || "").trim().toLowerCase();
+export function mapCourseToCard(c, today = new Date()) {
   const date = dateOnly(c.session_date);
   const times = sessionTimes(c.session_time);
+  const status = effectiveLifecycle(c.status, date, today);
   return {
     course_id: courseRowId(c),
     course_code: courseCode(c),
@@ -89,7 +102,7 @@ export function mapCourseToCard(c) {
     skill_tags: c.skill_tags || [],
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
-    course_status: status === "ended" ? "ended" : null,
+    course_status: status === "ended" ? "ended" : date ? "upcoming_open" : null,
     session_id: date ? c.id : null,
     session_status: c.session_status || null,
     start_date: date,
@@ -110,7 +123,7 @@ export function getCourseCta(course, user = {}) {
   const reserved = c.session_id && (user.registered_events || []).includes(c.session_id);
   const hasMaterial = Boolean(c.material_url);
   const hasUrl = Boolean(c.url && c.url !== "#");
-  const status = c.course_status || null;
+  const status = effectiveLifecycle(c.course_status, c.start_date);
 
   if (completed) {
     return hasMaterial
