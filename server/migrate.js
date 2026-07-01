@@ -97,6 +97,17 @@ async function executeStatement(file, statement) {
   }
 }
 
+async function deleteOrphanReservationsForMergedSessions(file) {
+  // Deployment regression guard: 2026-07-01 failed with ER_NO_REFERENCED_ROW_2
+  // when old reservations pointed at sessions not copied into courses_new.
+  await executeStatement(
+    file,
+    `DELETE r FROM reservations r
+     LEFT JOIN courses_new c ON c.id = r.session_id
+     WHERE c.id IS NULL`,
+  );
+}
+
 async function runMergeCoursesSessionsMigration(file, sql) {
   const coursesMerged =
     (await columnExists("courses", "course_code")) &&
@@ -159,6 +170,7 @@ async function runMergeCoursesSessionsMigration(file, sql) {
     );
   }
 
+  await deleteOrphanReservationsForMergedSessions(file);
   await executeStatement(
     file,
     `ALTER TABLE reservations ADD CONSTRAINT fk_res_session

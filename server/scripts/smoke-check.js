@@ -18,4 +18,18 @@ for (const file of walk(path.join(root, "server"))) {
   if (result.status !== 0) process.exit(result.status);
 }
 
+const migrateSource = fs.readFileSync(path.join(root, "server", "migrate.js"), "utf8");
+const reservationCleanupIndex = migrateSource.indexOf("DELETE r FROM reservations r");
+const reservationFkIndex = migrateSource.indexOf("ALTER TABLE reservations ADD CONSTRAINT fk_res_session");
+if (
+  reservationCleanupIndex === -1 ||
+  reservationFkIndex === -1 ||
+  reservationCleanupIndex > reservationFkIndex
+) {
+  console.error(
+    "Migration guard missing: delete orphan reservations before adding fk_res_session.",
+  );
+  process.exit(1);
+}
+
 console.log("Syntax check passed");

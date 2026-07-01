@@ -82,6 +82,9 @@ ALTER TABLE testimonials DROP FOREIGN KEY fk_test_course;
 ALTER TABLE testimonials CHANGE course_id course_code VARCHAR(20) NOT NULL;
 
 -- Step 6: Update reservations FK to point to courses_new
+-- Deploy note 2026-07-01: production had orphan reservations for deleted
+-- sessions, causing ER_NO_REFERENCED_ROW_2 when adding fk_res_session.
+-- server/migrate.js deletes those orphan rows before this FK is added.
 ALTER TABLE reservations DROP FOREIGN KEY fk_res_session;
 ALTER TABLE reservations ADD CONSTRAINT fk_res_session
   FOREIGN KEY (session_id) REFERENCES courses_new(id) ON DELETE CASCADE;
