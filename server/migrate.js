@@ -62,6 +62,19 @@ async function foreignKeysForColumn(tableName, columnName) {
   return result.rows.map((row) => row.CONSTRAINT_NAME || row.constraint_name);
 }
 
+async function foreignKeyExists(tableName, constraintName) {
+  const result = await pool.query(
+    `SELECT CONSTRAINT_NAME
+     FROM information_schema.KEY_COLUMN_USAGE
+     WHERE TABLE_SCHEMA = DATABASE()
+       AND TABLE_NAME = $1
+       AND CONSTRAINT_NAME = $2
+       AND REFERENCED_TABLE_NAME IS NOT NULL`,
+    [tableName, constraintName],
+  );
+  return result.rowCount > 0;
+}
+
 async function dropForeignKeysForColumn(tableName, columnName) {
   for (const constraintName of await foreignKeysForColumn(tableName, columnName)) {
     await pool.query(
@@ -161,6 +174,80 @@ async function runMergeCoursesSessionsMigration(file, sql) {
   await executeStatement(file, "RENAME TABLE courses_new TO courses");
 }
 
+async function runCourseRowIdentityMigration(file) {
+  if (await columnExists("enrollments", "course_code")) {
+    await dropForeignKeysForColumn("enrollments", "course_code");
+    await executeStatement(
+      file,
+      "ALTER TABLE enrollments CHANGE course_code course_id CHAR(36) NOT NULL",
+    );
+  }
+
+  if (await columnExists("testimonials", "course_code")) {
+    await dropForeignKeysForColumn("testimonials", "course_code");
+    await executeStatement(
+      file,
+      "ALTER TABLE testimonials CHANGE course_code course_id CHAR(36) NOT NULL",
+    );
+  }
+
+  if (await columnExists("enrollments", "course_id")) {
+    await executeStatement(
+      file,
+      `UPDATE enrollments e
+       LEFT JOIN courses exact ON exact.id = e.course_id
+       LEFT JOIN (
+         SELECT course_code, MIN(id) AS id
+         FROM courses
+         GROUP BY course_code
+       ) mapped ON mapped.course_code = e.course_id
+       SET e.course_id = mapped.id
+       WHERE exact.id IS NULL AND mapped.id IS NOT NULL`,
+    );
+    await executeStatement(
+      file,
+      `DELETE e FROM enrollments e
+       LEFT JOIN courses c ON c.id = e.course_id
+       WHERE c.id IS NULL`,
+    );
+    if (!(await foreignKeyExists("enrollments", "fk_enroll_course_row"))) {
+      await executeStatement(
+        file,
+        `ALTER TABLE enrollments ADD CONSTRAINT fk_enroll_course_row
+          FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`,
+      );
+    }
+  }
+
+  if (await columnExists("testimonials", "course_id")) {
+    await executeStatement(
+      file,
+      `UPDATE testimonials t
+       LEFT JOIN courses exact ON exact.id = t.course_id
+       LEFT JOIN (
+         SELECT course_code, MIN(id) AS id
+         FROM courses
+         GROUP BY course_code
+       ) mapped ON mapped.course_code = t.course_id
+       SET t.course_id = mapped.id
+       WHERE exact.id IS NULL AND mapped.id IS NOT NULL`,
+    );
+    await executeStatement(
+      file,
+      `DELETE t FROM testimonials t
+       LEFT JOIN courses c ON c.id = t.course_id
+       WHERE c.id IS NULL`,
+    );
+    if (!(await foreignKeyExists("testimonials", "fk_test_course_row"))) {
+      await executeStatement(
+        file,
+        `ALTER TABLE testimonials ADD CONSTRAINT fk_test_course_row
+          FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE`,
+      );
+    }
+  }
+}
+
 // One-shot migrations that DROP/RENAME tables can't be re-run safely (e.g. on
 // container restart). Skip them once their target state already exists.
 async function shouldSkip(file) {
@@ -183,6 +270,11 @@ for (const file of files) {
   process.stdout.write(`Running ${file}... `);
   if (isMysqlUrl() && file.startsWith("008_merge_courses_sessions")) {
     await runMergeCoursesSessionsMigration(file, sql);
+    process.stdout.write("done\n");
+    continue;
+  }
+  if (isMysqlUrl() && file.startsWith("010_course_row_identity")) {
+    await runCourseRowIdentityMigration(file);
     process.stdout.write("done\n");
     continue;
   }

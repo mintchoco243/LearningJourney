@@ -15,12 +15,12 @@ sessionsRouter.get("/", async (req, res) => {
   }
   if (req.query.course_id) {
     params.push(req.query.course_id);
-    filters.push(`c.course_code = $${params.length}`);
+    filters.push(`(c.id = $${params.length} OR c.course_code = $${params.length})`);
   }
 
   const result = await query(
     `SELECT c.id, c.course_code, c.title, c.trainer, c.format, c.type, c.registration_url,
-            c.description, c.duration_hours, c.xp_reward, c.rating, c.material_url,
+            c.description, c.duration_hours, c.xp_reward, c.rating, c.status AS course_status, c.material_url,
             c.skill_tags, c.min_participants, c.session_date, c.session_time, c.location,
             c.max_participants, c.current_count, c.session_status AS status
      FROM courses c

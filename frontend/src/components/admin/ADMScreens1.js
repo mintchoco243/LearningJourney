@@ -21,7 +21,8 @@ const D = ADM_DATA;
 
   function mapCourse(c) {
     return {
-      id: c.course_code,
+      id: c.id,
+      course_code: c.course_code || c.id,
       title: c.title,
       trainer: c.trainer || "",
       trainer_type: c.trainer_type || "internal",
@@ -40,6 +41,11 @@ const D = ADM_DATA;
       description: c.description || "",
       type: c.type || "internal",
       registration_url: c.registration_url || "",
+      session_date: c.session_date ? String(c.session_date).split("T")[0] : "",
+      session_time: c.session_time || "",
+      location: c.location || "",
+      max_participants: c.max_participants ?? "",
+      current_count: c.current_count ?? 0,
     };
   }
 
@@ -187,7 +193,7 @@ const D = ADM_DATA;
 
     const filtered = courses.filter(c => {
       const q = search.toLowerCase();
-      const matchQ = !search || c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q);
+      const matchQ = !search || c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q) || c.course_code.toLowerCase().includes(q);
       const matchS = statusFilter === "all" || (statusFilter === "active" ? c.is_active : !c.is_active);
       return matchQ && matchS;
     });
@@ -214,6 +220,7 @@ const D = ADM_DATA;
             title: course.title,
             trainer: course.trainer,
             trainer_type: course.trainer_type,
+            course_code: course.course_code,
             format: course.format,
             duration_hours: course.duration_hours,
             rank_targets: course.rank_targets,
@@ -226,6 +233,10 @@ const D = ADM_DATA;
             status: course.status,
             material_url: course.material_url,
             min_participants: course.min_participants ?? null,
+            session_date: course.session_date || null,
+            session_time: course.session_time || null,
+            location: course.location || null,
+            max_participants: course.max_participants || null,
             is_active: newVal,
           }),
         });
@@ -240,6 +251,7 @@ const D = ADM_DATA;
         const isEdit = Boolean(editTarget);
         const payload = {
           title: formData.title,
+          course_code: formData.id,
           trainer: formData.trainer,
           trainer_type: formData.trainer_type || "internal",
           format: formData.format,
@@ -255,6 +267,10 @@ const D = ADM_DATA;
           status: formData.status || "open",
           material_url: formData.material_url || "",
           min_participants: parseInt(formData.min_participants) || null,
+          session_date: formData.session_date || null,
+          session_time: formData.session_time || null,
+          location: formData.location || null,
+          max_participants: parseInt(formData.max_participants) || null,
         };
         if (!isEdit) payload.id = formData.id;
         const data = await apiFetch(
@@ -329,6 +345,7 @@ const D = ADM_DATA;
             title: course.title,
             trainer: course.trainer,
             trainer_type: course.trainer_type,
+            course_code: course.course_code,
             format: course.format,
             duration_hours: course.duration_hours,
             rank_targets: type === 'rank_targets' ? batchRanks : course.rank_targets,
@@ -341,6 +358,10 @@ const D = ADM_DATA;
             status: course.status,
             material_url: course.material_url,
             min_participants: course.min_participants ?? null,
+            session_date: course.session_date || null,
+            session_time: course.session_time || null,
+            location: course.location || null,
+            max_participants: course.max_participants || null,
             is_active: type === 'is_active' ? batchValue === 'true' : course.is_active,
             format: type === 'format' ? batchValue : course.format,
           };
@@ -449,8 +470,9 @@ const D = ADM_DATA;
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={paginatedRows.length > 0 && paginatedRows.every(c => selected.has(c.id))} onChange={() => paginatedRows.every(c => selected.has(c.id)) ? setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.delete(c.id)); return next; }) : setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.add(c.id)); return next; })} />
                 </th>
-                <th style={{ width: 100 }}>Mã</th>
+                <th style={{ width: 110 }}>Mã</th>
                 <th>Tên khóa học</th>
+                <th style={{ width: 120 }}>Ngày tổ chức</th>
                 <th style={{ width: 108 }}>Format</th>
                 <th style={{ width: 60 }}>XP</th>
                 <th>Rank targets</th>
@@ -465,10 +487,14 @@ const D = ADM_DATA;
                   <td>
                     <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelectCourse(c.id)} />
                   </td>
-                  <td><code style={{ fontSize: 11 }}>{c.id}</code></td>
+                  <td><code style={{ fontSize: 11 }}>{c.course_code}</code></td>
                   <td>
                     <div style={{ fontWeight: 600, color: "#fff" }}>{c.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.trainer} · {c.duration} phút</div>
+                    <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.trainer} · {c.duration} phút · row {String(c.id).slice(0, 8)}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: 12, color: c.session_date ? "#fff" : "var(--rpg-muted)", fontWeight: 600 }}>{c.session_date || "Tự học"}</div>
+                    {c.session_time && <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.session_time}</div>}
                   </td>
                   <td><Badge status={c.format} /></td>
                   <td><span style={{ fontWeight: 700, color: "var(--amber)" }}>+{c.xp}</span></td>
@@ -602,7 +628,7 @@ const D = ADM_DATA;
           </Modal>
         )}
 
-        <Modal open={editModal} onClose={() => setEditModal(false)} title={editTarget ? `Chỉnh sửa — ${editTarget.id}` : "Tạo khóa học mới"} width={660}>
+        <Modal open={editModal} onClose={() => setEditModal(false)} title={editTarget ? `Chỉnh sửa — ${editTarget.course_code}` : "Tạo khóa học mới"} width={660}>
           <CourseForm course={editTarget} onSave={handleSave} onClose={() => setEditModal(false)} saving={saving} error={error} />
         </Modal>
 
@@ -619,7 +645,7 @@ const D = ADM_DATA;
 
   function CourseForm({ course, onSave, onClose, saving, error }) {
     const [form, setForm] = React.useState({
-      id: course?.id || "",
+      id: course?.course_code || "",
       title: course?.title || "",
       trainer: course?.trainer || "",
       trainer_type: course?.trainer_type || "internal",
@@ -636,6 +662,10 @@ const D = ADM_DATA;
       status: course?.status || "open",
       material_url: course?.material_url || "",
       min_participants: course?.min_participants || "",
+      session_date: course?.session_date || "",
+      session_time: course?.session_time || "",
+      location: course?.location || "",
+      max_participants: course?.max_participants || "",
     });
 
     function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
@@ -650,13 +680,11 @@ const D = ADM_DATA;
       <div>
         {error && <div style={{ background: "rgba(228,30,38,.1)", border: "1px solid rgba(228,30,38,.3)", borderRadius: 6, padding: "10px 14px", marginBottom: 14, color: "#ff6b6b", fontSize: 13 }}>{error}</div>}
 
-        <div style={{ display: "grid", gridTemplateColumns: isEdit ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          {!isEdit && (
-            <div className="adm-form-group">
-              <label className="adm-label">Mã khoá học <span style={{color:"#E41E26"}}>*</span></label>
-              <input className="adm-input" value={form.id} onChange={e => set("id", e.target.value)} placeholder="VD: LC-013" />
-            </div>
-          )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Mã khoá học <span style={{color:"#E41E26"}}>*</span></label>
+            <input className="adm-input" value={form.id} onChange={e => set("id", e.target.value)} placeholder="VD: LC-013" />
+          </div>
           <div className="adm-form-group">
             <label className="adm-label">Tên khóa học <span style={{color:"#E41E26"}}>*</span></label>
             <input className="adm-input" value={form.title} onChange={e => set("title", e.target.value)} placeholder="VD: Kỹ năng thuyết trình nâng cao" />
@@ -724,6 +752,25 @@ const D = ADM_DATA;
           <div className="adm-form-group">
             <label className="adm-label">Số người tối thiểu</label>
             <input className="adm-input" type="number" min="1" value={form.min_participants} onChange={e => set("min_participants", e.target.value)} placeholder="Không bắt buộc" />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Ngày tổ chức</label>
+            <input className="adm-input" type="date" value={form.session_date} onChange={e => set("session_date", e.target.value)} />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Giờ tổ chức</label>
+            <input className="adm-input" value={form.session_time} onChange={e => set("session_time", e.target.value)} placeholder="09:00" />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Địa điểm</label>
+            <input className="adm-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="Phòng / Online link" />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Sức chứa tối đa</label>
+            <input className="adm-input" type="number" min="1" value={form.max_participants} onChange={e => set("max_participants", e.target.value)} placeholder="Không bắt buộc" />
           </div>
         </div>
 
@@ -822,7 +869,7 @@ const D = ADM_DATA;
           <select className="adm-select" value={courseId} onChange={e => setCourseId(e.target.value)}>
             <option value="">-- Chọn khóa học --</option>
             {courses.filter(c => c.is_active).map(c => (
-              <option key={c.id} value={c.id}>{c.id} — {c.title}</option>
+              <option key={c.id} value={c.id}>{c.course_code} — {c.title}</option>
             ))}
           </select>
         </div>

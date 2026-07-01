@@ -28,11 +28,11 @@ adminUsersRouter.get("/:id", async (req, res, next) => {
     if (!userRes.rowCount) return res.status(404).json({ error: "USER_NOT_FOUND" });
 
     const enrollmentsRes = await query(
-      `SELECT e.*, c.title AS course_title
-       FROM enrollments e
-       JOIN courses c ON c.course_code = e.course_code AND c.session_date IS NULL
-       WHERE e.user_id = $1
-       ORDER BY e.completed_at DESC`,
+     `SELECT e.*, c.title AS course_title
+      FROM enrollments e
+       JOIN courses c ON c.id = e.course_id
+      WHERE e.user_id = $1
+      ORDER BY e.completed_at DESC`,
       [id]
     );
 

@@ -17,8 +17,7 @@ coursesRouter.get("/", async (req, res, next) => {
     const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
     const offset = (page - 1) * limit;
     const params = [req.user.id, limit, offset];
-    // catalog = master rows only (session_date IS NULL)
-    const filters = ["c.is_active = TRUE", "c.session_date IS NULL"];
+    const filters = ["c.is_active = TRUE"];
 
     if (req.query.search) {
       params.push(`%${req.query.search}%`);
@@ -39,9 +38,9 @@ coursesRouter.get("/", async (req, res, next) => {
     const result = await query(
       `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
        FROM courses c
-       LEFT JOIN enrollments e ON e.course_code = c.course_code AND e.user_id = $1
+       LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1
        WHERE ${filters.join(" AND ")}
-       ORDER BY c.created_at DESC
+       ORDER BY COALESCE(c.session_date, c.created_at) DESC, c.created_at DESC
        LIMIT $2 OFFSET $3`,
       params
     );
@@ -54,14 +53,14 @@ coursesRouter.get("/", async (req, res, next) => {
   }
 });
 
-// :id here is course_code (e.g. LC-001)
+// :id here is the course row UUID.
 coursesRouter.get("/:id", async (req, res, next) => {
   try {
     const result = await query(
       `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
        FROM courses c
-       LEFT JOIN enrollments e ON e.course_code = c.course_code AND e.user_id = $2
-       WHERE c.course_code = $1 AND c.session_date IS NULL AND c.is_active = TRUE`,
+       LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $2
+       WHERE c.id = $1 AND c.is_active = TRUE`,
       [req.params.id, req.user.id]
     );
     if (!result.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
@@ -75,17 +74,17 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
   try {
     const result = await withTransaction(async (client) => {
       const course = await client.query(
-        "SELECT * FROM courses WHERE course_code = $1 AND session_date IS NULL AND is_active = TRUE",
+        "SELECT * FROM courses WHERE id = $1 AND is_active = TRUE",
         [req.params.id]
       );
       if (!course.rowCount) return null;
       const c = course.rows[0];
       const enrollment = await client.query(
-        `INSERT INTO enrollments (user_id, course_code, source, xp_earned, hours_earned)
+        `INSERT INTO enrollments (user_id, course_id, source, xp_earned, hours_earned)
          VALUES ($1, $2, 'self_reported', $3, $4)
-         ON CONFLICT (user_id, course_code) DO NOTHING
+         ON CONFLICT (user_id, course_id) DO NOTHING
          RETURNING *`,
-        [req.user.id, c.course_code, c.xp_reward, c.duration_hours]
+        [req.user.id, c.id, c.xp_reward, c.duration_hours]
       );
       if (!enrollment.rowCount) {
         const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
@@ -97,8 +96,8 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       );
       const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
       await client.query(
-        "UPDATE courses SET enrolled_count = enrolled_count + 1 WHERE course_code = $1 AND session_date IS NULL",
-        [c.course_code]
+        "UPDATE courses SET enrolled_count = enrolled_count + 1 WHERE id = $1",
+        [c.id]
       );
       return { duplicate: false, course: c, user: user.rows[0] };
     });
@@ -119,7 +118,7 @@ coursesRouter.get("/:id/testimonials", async (req, res) => {
     `SELECT t.*, u.full_name, u.avatar_url
      FROM testimonials t
      JOIN users u ON u.id = t.user_id
-     WHERE t.course_code = $1
+     WHERE t.course_id = $1
      ORDER BY t.is_featured DESC, t.created_at DESC`,
     [req.params.id]
   );
@@ -127,22 +126,22 @@ coursesRouter.get("/:id/testimonials", async (req, res) => {
 });
 
 coursesRouter.post("/:id/testimonials", async (req, res) => {
-  const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_code = $2", [req.user.id, req.params.id]);
+  const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [req.user.id, req.params.id]);
   if (!completed.rowCount) return res.status(403).json({ error: "COMPLETE_COURSE_FIRST" });
   await query(
-    `INSERT INTO testimonials (course_code, user_id, rating, content) VALUES ($1, $2, $3, $4)`,
+    `INSERT INTO testimonials (course_id, user_id, rating, content) VALUES ($1, $2, $3, $4)`,
     [req.params.id, req.user.id, req.body.rating, req.body.content || null]
   );
   await query(
     `UPDATE courses SET rating = (
-       SELECT ROUND(AVG(rating), 1) FROM testimonials WHERE course_code = $1
-     ) WHERE course_code = $1`,
+       SELECT ROUND(AVG(rating), 1) FROM testimonials WHERE course_id = $1
+     ) WHERE id = $1`,
     [req.params.id]
   );
   const result = await query(
     `SELECT t.*, u.full_name, u.avatar_url FROM testimonials t
      JOIN users u ON u.id = t.user_id
-     WHERE t.course_code = $1 AND t.user_id = $2
+     WHERE t.course_id = $1 AND t.user_id = $2
      ORDER BY t.created_at DESC LIMIT 1`,
     [req.params.id, req.user.id]
   );

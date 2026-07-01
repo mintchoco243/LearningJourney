@@ -173,7 +173,7 @@ export function toJsonArray(text) {
 
 async function knownCourseIds() {
   const [live, staged] = await Promise.all([
-    query("SELECT DISTINCT course_code AS course_id FROM courses WHERE session_date IS NULL"),
+    query("SELECT DISTINCT course_code AS course_id FROM courses"),
     query("SELECT DISTINCT course_id FROM staging_courses"),
   ]);
   return new Set([...live.rows, ...staged.rows].map((row) => clean(row.course_id)));
@@ -529,80 +529,31 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
       }
 
       else if (type === "catalog") {
-        const codes = [...new Set(stagingRows.map((r) => r.course_code))];
-        const placeholders = codes.map((_, i) => `$${i + 1}`).join(", ");
-
-        const existingCourses = await client.query(
-          `SELECT * FROM courses WHERE course_code IN (${placeholders}) AND session_date IS NULL`,
-          codes
-        );
-        const createdSessionIds = [];
-
-        // One master row per distinct course_code (first row's fields win).
-        for (const code of codes) {
-          const row = stagingRows.find((r) => r.course_code === code);
-          const existing = await client.query(
-            "SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1",
-            [code]
-          );
-          if (existing.rowCount) {
-            await client.query(
-              `UPDATE courses
-               SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
-                   skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
-                   min_participants = $11, registration_url = $12, description = $13,
-                   xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
-               WHERE course_code = $1`,
-              [
-                code, row.title, row.trainer, row.trainer_type || "internal",
-                row.format, row.duration_hours, toJsonArray(row.skill_tags),
-                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
-                row.min_participants, row.registration_url, row.description, row.xp_reward,
-                row.is_active, row.status || "open", row.material_url || null,
-              ]
-            );
-          } else {
-            await client.query(
-              `INSERT INTO courses
-                 (id, course_code, title, trainer, trainer_type, format, duration_hours,
-                  skill_tags, rank_targets, role_targets, type, min_participants,
-                  registration_url, description, xp_reward, is_active, status, material_url, session_date)
-               VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NULL)`,
-              [
-                code, row.title, row.trainer, row.trainer_type || "internal",
-                row.format, row.duration_hours, toJsonArray(row.skill_tags),
-                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
-                row.min_participants, row.registration_url, row.description, row.xp_reward,
-                row.is_active, row.status || "open", row.material_url || null,
-              ]
-            );
-          }
-        }
-
-        // One session row per staging row that actually has a session_date.
+        const createdCourseIds = [];
         for (const row of stagingRows) {
-          if (!row.session_date) continue;
-          const sessionId = crypto.randomUUID();
-          createdSessionIds.push(sessionId);
+          const courseId = crypto.randomUUID();
+          createdCourseIds.push(courseId);
           await client.query(
             `INSERT INTO courses
                (id, course_code, title, trainer, trainer_type, format, duration_hours,
                 skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
                 description, xp_reward, is_active, status, material_url,
                 session_date, session_time, location, max_participants, current_count, session_status)
-             SELECT $1, course_code, title, trainer, trainer_type, format, duration_hours,
-                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
-                description, xp_reward, is_active, status, material_url,
-                $3, $4, $5, $6, 0, 'open'
-             FROM courses WHERE course_code = $2 AND session_date IS NULL LIMIT 1`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                $15, $16, $17, $18, $19, $20, $21, $22, 0, 'open')`,
             [
-              sessionId, row.course_code, row.session_date,
-              row.session_time || null, row.location || null, row.max_participants || null,
+              courseId, row.course_code, row.title, row.trainer, row.trainer_type || "internal",
+              row.format, row.duration_hours, toJsonArray(row.skill_tags),
+              toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
+              row.min_participants, row.registration_url, row.description, row.xp_reward,
+              row.is_active, row.status || "open", row.material_url || null,
+              row.session_date || null, row.session_time || null, row.location || null,
+              row.max_participants || null,
             ]
           );
         }
 
-        snapshotData = { existing: existingCourses.rows, promotedCodes: codes, createdSessionIds };
+        snapshotData = { createdCourseIds };
       }
 
       else if (type === "policies") {
@@ -760,6 +711,14 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
 
     await withTransaction(async (client) => {
       if (type === "courses" || type === "catalog") {
+        if (type === "catalog") {
+          const { createdCourseIds = [] } = snapshot;
+          if (createdCourseIds.length) {
+            const placeholders = createdCourseIds.map((_, i) => `$${i + 1}`).join(", ");
+            await client.query(`DELETE FROM courses WHERE id IN (${placeholders})`, createdCourseIds);
+          }
+          return;
+        }
         const { existing = [], promotedIds = [], promotedCodes = [], createdSessionIds = [] } = snapshot;
         const codesToCheck = type === "catalog" ? promotedCodes : promotedIds;
 

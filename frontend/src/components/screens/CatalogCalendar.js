@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
-import { getCalendarEvents } from '@/lib/mockApi';
+import { getCalendarEvents, getStaticCalendarCourses } from '@/lib/mockApi';
 import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
@@ -251,7 +251,7 @@ function ctaColor(cta) {
     const _now = new Date();
     const [cursor, setCursor] = React.useState({ y: _now.getFullYear(), m: _now.getMonth() });
     const [skillFilter, setSkillFilter] = React.useState("all");
-    const [calendarEvents, setCalendarEvents] = React.useState([]);
+    const [calendarEvents, setCalendarEvents] = React.useState(() => getStaticCalendarCourses());
 
     React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
 

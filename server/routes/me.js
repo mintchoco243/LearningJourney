@@ -8,7 +8,7 @@ meRouter.get("/", async (req, res) => {
   const enrollments = await query(
     `SELECT e.*, c.title, c.trainer, c.format
      FROM enrollments e
-     JOIN courses c ON c.course_code = e.course_code AND c.session_date IS NULL
+     JOIN courses c ON c.id = e.course_id
      WHERE e.user_id = $1
      ORDER BY e.completed_at DESC`,
     [req.user.id]

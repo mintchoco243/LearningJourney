@@ -269,6 +269,7 @@
         if (courses && courses.length) {
           GLH_DATA.COURSES = courses.map((c) => ({
             course_id: c.id,
+            course_code: c.course_code || c.id,
             title: c.title,
             description: c.description || "",
             class_ids: c.role_targets && c.role_targets.length ? c.role_targets.map((r) => r.toLowerCase()) : ["strategist", "builder", "connector", "operator", "explorer"],
@@ -291,8 +292,9 @@
         if (sessions && sessions.length) {
           GLH_DATA.CALENDAR = sessions.map((s) => ({
             event_id: s.id,
+            course_id: s.course_code || s.course_id,
             title: s.title,
-            type: s.type || "workshop",
+            type: s.type || s.format || "workshop",
             skill_tags: s.skill_tags || [],
             start_date: s.session_date ? s.session_date.split("T")[0] : "",
             time: s.session_time || "",

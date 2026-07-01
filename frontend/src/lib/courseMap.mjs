@@ -14,6 +14,7 @@ export function normalizeFormat(f) {
 
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 const courseCode = (row) => row.course_code || row.course_id || row.id;
+const courseRowId = (row) => row.id || row.course_id || row.course_code;
 
 export function daysUntil(dateStr, today = new Date()) {
   if (!dateStr) return null;
@@ -35,9 +36,11 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   const date = dateOnly(s.session_date);
   const times = sessionTimes(s.session_time);
   const sessionStatus = normalizeSessionStatus(s.status);
+  const courseStatus = normalizeSessionStatus(s.course_status);
   return {
     session_id: s.id || s.session_id || null,
-    course_id: courseCode(s),
+    course_id: courseRowId(s),
+    course_code: courseCode(s),
     title: s.title,
     format: normalizeFormat(s.format),
     location: s.location || null,
@@ -54,7 +57,9 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     start_time: times[0] || null,
     end_time: times[1] || null,
     session_status: sessionStatus,
-    course_status: sessionStatus === "cancelled"
+    course_status: courseStatus === "ended"
+      ? "ended"
+      : sessionStatus === "cancelled"
       ? "cancelled"
       : sessionStatus === "full"
         ? "upcoming_closed"
@@ -65,27 +70,16 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   };
 }
 
-// Session -> Calendar event shape (event_id/type/skill_tags/time/location/host).
-export function mapSessionToEvent(s) {
-  return {
-    event_id: s.id,
-    title: s.title,
-    type: s.type,
-    skill_tags: s.skill_tags || [],
-    start_date: dateOnly(s.session_date),
-    time: String(s.session_time || "").slice(0, 5),
-    location: s.location || null,
-    host: s.trainer || null,
-    url: s.registration_url || "#",
-  };
-}
-
 export const mapSessionToCourse = mapSessionToUpcoming;
 
 export function mapCourseToCard(c) {
   const status = String(c.status || "").trim().toLowerCase();
+  const date = dateOnly(c.session_date);
+  const times = sessionTimes(c.session_time);
   return {
-    course_id: courseCode(c),
+    course_id: courseRowId(c),
+    course_code: courseCode(c),
+    _id: c.id,
     title: c.title,
     description: c.description || "",
     trainer: c.trainer || "",
@@ -96,6 +90,14 @@ export function mapCourseToCard(c) {
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : null,
+    session_id: date ? c.id : null,
+    session_status: c.session_status || null,
+    start_date: date,
+    start_time: times[0] || null,
+    end_time: times[1] || null,
+    location: c.location || null,
+    max_participants: c.max_participants ?? null,
+    current_count: c.current_count ?? null,
     material_url: c.material_url || null,
     audience: c.audience || "Mọi cấp độ",
     rating: c.rating != null ? Number(c.rating) : null,

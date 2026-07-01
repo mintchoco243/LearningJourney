@@ -3,7 +3,7 @@
 import React from "react";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
-import { SessionsScreen, RequestsScreen } from '@/components/admin/ADMScreens2';
+import { RequestsScreen } from '@/components/admin/ADMScreens2';
 import { PolicyScreen, AccountsScreen, TestimonialsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
@@ -19,7 +19,6 @@ const { Sidebar } = ADMComponents;
     dashboard:    { label: "Dashboard" },
     users:        { label: "Quản lý Users" },
     courses:      { label: "Quản lý Khóa học" },
-    sessions:     { label: "Quản lý Sessions" },
     requests:     { label: "L&D Requests" },
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
@@ -31,7 +30,15 @@ const { Sidebar } = ADMComponents;
     React.useEffect(() => { setMounted(true); }, []);
 
     const [page, setPage] = React.useState(
-      () => { try { if (typeof window !== "undefined") { return localStorage.getItem("adm_page") || "dashboard"; } } catch (e) {} return "dashboard"; }
+      () => {
+        try {
+          if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("adm_page") || "dashboard";
+            return saved === "sessions" ? "courses" : saved;
+          }
+        } catch (e) {}
+        return "dashboard";
+      }
     );
     const adminRole = "super_admin"; // mock: in prod read from session
 
@@ -51,7 +58,6 @@ const { Sidebar } = ADMComponents;
       dashboard:    <Dashboard />,
       users:        <UsersScreen />,
       courses:      <CoursesScreen />,
-      sessions:     <SessionsScreen />,
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,

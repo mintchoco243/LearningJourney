@@ -5,10 +5,10 @@ import { sendMail } from "../../services/mail.js";
 
 export const adminCoursesRouter = express.Router();
 
-// GET /admin/api/courses -> List all courses (master rows only)
+// GET /admin/api/courses -> List all course rows. One row is one manageable offering.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
-    const result = await query("SELECT * FROM courses WHERE session_date IS NULL ORDER BY created_at DESC");
+    const result = await query("SELECT * FROM courses ORDER BY created_at DESC");
     res.json({ courses: result.rows });
   } catch (error) {
     next(error);
@@ -21,7 +21,7 @@ adminCoursesRouter.post("/suggest-xp", (req, res) => {
   res.json(result);
 });
 
-// POST /admin/api/courses -> Create course (master row, session_date IS NULL)
+// POST /admin/api/courses -> Create one course row. Duplicate course_code is allowed.
 adminCoursesRouter.post("/", async (req, res, next) => {
   try {
     const {
@@ -29,91 +29,95 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, is_active, status, material_url,
+      session_date, session_time, location, max_participants,
     } = req.body;
 
     if (!course_code || !title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
     }
 
-    const existing = await query("SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
-    if (existing.rowCount) return res.status(409).json({ error: "COURSE_CODE_ALREADY_EXISTS" });
-
     await query(
       `INSERT INTO courses
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
           skill_tags, rank_targets, role_targets, type, min_participants,
           registration_url, description, xp_reward, is_active, status, material_url,
-          session_date)
-       VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NULL)`,
+          session_date, session_time, location, max_participants, current_count, session_status)
+       VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, 0, 'open')`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
         skill_tags, rank_targets, role_targets, type, min_participants,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
+        session_date || null, session_time || null, location || null, max_participants || null,
       ]
     );
 
-    const result = await query("SELECT * FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
+    const result = await query("SELECT * FROM courses WHERE course_code = $1 ORDER BY created_at DESC LIMIT 1", [course_code]);
     res.status(201).json({ course: result.rows[0] });
   } catch (error) {
     next(error);
   }
 });
 
-// PUT /admin/api/courses/:id -> Update course (:id = course_code)
+// PUT /admin/api/courses/:id -> Update one course row (:id = UUID)
 adminCoursesRouter.put("/:id", async (req, res, next) => {
   try {
-    const { id: course_code } = req.params;
+    const { id } = req.params;
     const {
+      course_code,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, is_active, status, material_url,
+      session_date, session_time, location, max_participants,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
     }
 
-    const check = await query("SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
+    const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
     if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
 
-    // Update all rows with this course_code (master + session rows stay in sync)
     await query(
       `UPDATE courses
-       SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
-           skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
-           min_participants = $11, registration_url = $12, description = $13,
-           xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
-       WHERE course_code = $1`,
+       SET course_code = $2, title = $3, trainer = $4, trainer_type = $5, format = $6, duration_hours = $7,
+           skill_tags = $8, rank_targets = $9, role_targets = $10, type = $11,
+           min_participants = $12, registration_url = $13, description = $14,
+           xp_reward = $15, is_active = $16, status = $17, material_url = $18,
+           session_date = $19, session_time = $20, location = $21, max_participants = $22,
+           updated_at = NOW()
+       WHERE id = $1`,
       [
-        course_code, title, trainer, trainer_type || "internal", format, duration_hours,
+        id, course_code || id, title, trainer, trainer_type || "internal", format, duration_hours,
         skill_tags, rank_targets, role_targets, type, min_participants,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
+        session_date || null, session_time || null, location || null, max_participants || null,
       ]
     );
 
-    const result = await query("SELECT * FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
+    const result = await query("SELECT * FROM courses WHERE id = $1", [id]);
     res.json({ course: result.rows[0] });
   } catch (error) {
     next(error);
   }
 });
 
-// DELETE /admin/api/courses/:id -> Delete course (:id = course_code)
+// DELETE /admin/api/courses/:id -> Delete one course row (:id = UUID)
 adminCoursesRouter.delete("/:id", async (req, res, next) => {
   try {
-    const { id: course_code } = req.params;
-    const check = await query("SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
+    const { id } = req.params;
+    const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
     if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
 
     await withTransaction(async (client) => {
-      await client.query("DELETE FROM enrollments WHERE course_code = $1", [course_code]);
-      await client.query("DELETE FROM testimonials WHERE course_code = $1", [course_code]);
-      // Reservations cascade-delete when courses rows are deleted (FK ON DELETE CASCADE)
-      await client.query("DELETE FROM courses WHERE course_code = $1", [course_code]);
+      await client.query("DELETE FROM enrollments WHERE course_id = $1", [id]);
+      await client.query("DELETE FROM testimonials WHERE course_id = $1", [id]);
+      await client.query("DELETE FROM reservations WHERE session_id = $1", [id]);
+      await client.query("DELETE FROM courses WHERE id = $1", [id]);
     });
     res.json({ ok: true });
   } catch (error) {
@@ -121,17 +125,17 @@ adminCoursesRouter.delete("/:id", async (req, res, next) => {
   }
 });
 
-// POST /admin/api/courses/:id/import-participants -> Import email participants (:id = course_code)
+// POST /admin/api/courses/:id/import-participants -> Import email participants (:id = UUID)
 adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
   try {
-    const { id: course_code } = req.params;
+    const { id } = req.params;
     const { emails } = req.body;
 
     if (!Array.isArray(emails)) {
       return res.status(400).json({ error: "EMAILS_ARRAY_REQUIRED" });
     }
 
-    const courseRes = await query("SELECT * FROM courses WHERE course_code = $1 AND session_date IS NULL", [course_code]);
+    const courseRes = await query("SELECT * FROM courses WHERE id = $1", [id]);
     if (!courseRes.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
     const course = courseRes.rows[0];
 
@@ -153,16 +157,16 @@ adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
         }
         const user = userRes.rows[0];
 
-        const enrollRes = await client.query("SELECT id FROM enrollments WHERE user_id = $1 AND course_code = $2", [user.id, course_code]);
+        const enrollRes = await client.query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [user.id, id]);
         if (enrollRes.rowCount) {
           existed_count++;
           continue;
         }
 
         await client.query(
-          `INSERT INTO enrollments (user_id, course_code, completed_at, source, xp_earned, hours_earned)
+          `INSERT INTO enrollments (user_id, course_id, completed_at, source, xp_earned, hours_earned)
            VALUES ($1, $2, NOW(), 'admin_import', $3, $4)`,
-          [user.id, course_code, course.xp_reward, course.duration_hours]
+          [user.id, id, course.xp_reward, course.duration_hours]
         );
         await client.query(
           `UPDATE users SET xp_total = xp_total + $2, hours_total = hours_total + $3 WHERE id = $1`,
@@ -179,9 +183,9 @@ adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
       }
 
       await client.query(
-        `UPDATE courses SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_code = $1)
-         WHERE course_code = $1 AND session_date IS NULL`,
-        [course_code]
+        `UPDATE courses SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1)
+         WHERE id = $1`,
+        [id]
       );
     });
 
