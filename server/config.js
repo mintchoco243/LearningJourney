@@ -9,9 +9,9 @@ export const config = {
   jwtSecret: process.env.JWT_SECRET || "gLh2xK9mNpQrVwYzA4bDfJtSuCeHiOkR7vXnMqWsZyBcFjUlPdTgEaImKoNhLw",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   google: {
-    clientId: process.env.GOOGLE_CLIENT_ID || "95451265968-167cilthcjgg01n06ac6qgq2b405qoru.apps.googleusercontent.com",
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || "https://garena-lhub-v2.demo.ffol4.vn/auth/callback",
+    clientId: process.env.GOOGLE_CLIENT_ID || "95451265968-8rajr2ljr9kf68grc3v7psbg45f2mgtb.apps.googleusercontent.com",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || "https://garena-learning-hub-mn.demo.ffol4.vn//auth/callback",
   },
   devAuthEnabled:
     (process.env.DEV_AUTH_ENABLED || "true").toLowerCase() === "true" ||
