@@ -219,6 +219,18 @@ const D = GLH_DATA;
         }
         return true;
       },
+      reserveCourseSession(course) {
+        const sessionId = course.session_id;
+        if (!sessionId || (user.registered_events || []).includes(sessionId)) return false;
+        const nextXp = (user.xp || 0) + D.XP.event_register;
+        persist(Object.assign({}, user, {
+          xp: nextXp,
+          registered_events: [...(user.registered_events || []), sessionId],
+        }));
+        setXpBurst({ amount: D.XP.event_register, label: "Đăng ký khóa học", id: Date.now() });
+        fetch("/api/sessions/" + sessionId + "/reserve", { method: "POST", credentials: "include" }).catch(() => {});
+        return true;
+      },
       registerEvent(ev) {
         if ((user.registered_events || []).includes(ev.event_id)) return false;
         const nextXp = (user.xp || 0) + D.XP.event_register;

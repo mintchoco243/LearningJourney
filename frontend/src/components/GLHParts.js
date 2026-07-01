@@ -4,6 +4,7 @@ import React from "react";
 import { GLHUI } from './GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
+import { getCourseCta } from '@/lib/courseMap.mjs';
 
 const { Icon, fmtDate, fmtDuration, FORMAT_LABEL } = GLHUI;
 const { useGame, isRecommended } = GLHEngine;
@@ -58,25 +59,33 @@ const D = GLH_DATA;
     elearning:{ bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
   };
 
+  function ctaColor(cta) {
+    return ({
+      accent: "var(--glh-accent)",
+      warning: "#FF9E00",
+      purple: "#A38BFF",
+      success: "var(--garena-positive)",
+      muted: "var(--rpg-muted)",
+    })[cta?.tone] || "var(--rpg-muted)";
+  }
+
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
     const isEnded = c.course_status === "ended";
     const done = (user.completed_courses || []).includes(c.course_id);
-    const cta = c.course_status
-      ? ({ upcoming_open: { text: "Đăng ký →", color: "var(--glh-accent)" }, upcoming_closed: { text: "Đặt chỗ →", color: "#FF9E00" }, elearning: { text: "Học ngay →", color: "#A38BFF" }, ended: { text: "Xem tài liệu →", color: "var(--rpg-muted)" } })[c.course_status]
-      : ({ offline: { text: "Đăng ký →", color: "var(--glh-accent)" }, online: { text: "Đăng ký →", color: "var(--glh-accent)" }, elearning: { text: "Học ngay →", color: "#A38BFF" } })[c.format] || { text: "Xem thêm →", color: "var(--rpg-muted)" };
+    const cta = getCourseCta(c, user);
     const desc = c.description_short || c.description;
 
     return React.createElement("button", {
       className: "u-card u-card--hover",
       style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
       onClick: () => {
-        if (isEnded && c.material_url) {
+        if (cta.action === "material" && c.material_url) {
           window.open(c.material_url, "_blank", "noreferrer");
           return;
         }
-        onClick(c);
+        onClick && onClick(c);
       },
     },
       React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
@@ -88,6 +97,7 @@ const D = GLH_DATA;
             "Đã kết thúc"),
           React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--amber)" } },
             React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")),
+        c.rating ? React.createElement(Stars, { value: c.rating }) : null,
         // date + countdown (dashboard recommended only)
         showDate && c.start_date && React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "var(--rpg-muted)" } },
           fmtDate(c.start_date),
@@ -104,7 +114,7 @@ const D = GLH_DATA;
         React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
           c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
           c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
-          cta && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: cta.color } }, cta.text))));
+          cta && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text))));
   }
 
   /* ---------- Course modal ---------- */
@@ -126,7 +136,10 @@ const D = GLH_DATA;
           const upcoming = (data?.sessions || [])
             .filter((s) => s.status !== "cancelled")
             .sort((a, b) => new Date(a.session_date) - new Date(b.session_date))[0];
-          setSession(upcoming || null);
+          const selected = c.session_id
+            ? (data?.sessions || []).find((s) => s.id === c.session_id)
+            : null;
+          setSession(selected || upcoming || null);
         })
         .catch(() => {});
       fetch(`/api/courses/${encodeURIComponent(id)}/testimonials`, { credentials: "include" })
@@ -142,6 +155,29 @@ const D = GLH_DATA;
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
+    const modalCourse = Object.assign({}, c, {
+      session_id: c.session_id || session?.id || null,
+      session_status: c.session_status || session?.status || null,
+      location: c.location || session?.location || meta.location,
+      start_date: c.start_date || session?.session_date || null,
+      start_time: c.start_time || (session?.session_time ? String(session.session_time).slice(0, 5) : null),
+      max_participants: c.max_participants ?? session?.max_participants ?? null,
+      current_count: c.current_count ?? session?.current_count ?? null,
+    });
+    const cta = getCourseCta(modalCourse, user);
+    const handlePrimary = () => {
+      if (cta.action === "material" && modalCourse.material_url) {
+        window.open(modalCourse.material_url, "_blank", "noreferrer");
+        return;
+      }
+      if (cta.action === "url" && modalCourse.url && modalCourse.url !== "#") {
+        window.open(modalCourse.url, "_blank", "noreferrer");
+        return;
+      }
+      if (cta.action === "reserve") {
+        actions.reserveCourseSession(modalCourse);
+      }
+    };
     const stop = (e) => e.stopPropagation();
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
       React.createElement("div", { className: "modal", onClick: stop },
@@ -161,27 +197,23 @@ const D = GLH_DATA;
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 } },
-            React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }),
-            React.createElement(DetailItem, { icon: "users", label: "Đối tượng", value: c.audience }),
-            React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }),
-            (session?.location || meta.location) ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: session?.location || meta.location }) : null,
-            session?.session_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(session.session_date) }) : null,
-            session?.session_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: String(session.session_time).slice(0, 5) }) : null),
+            c.trainer ? React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }) : null,
+            c.audience ? React.createElement(DetailItem, { icon: "users", label: "Đối tượng", value: c.audience }) : null,
+            c.duration_minutes ? React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }) : null,
+            modalCourse.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: modalCourse.location }) : null,
+            modalCourse.start_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(modalCourse.start_date) }) : null,
+            modalCourse.start_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: modalCourse.start_time }) : null,
+            modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Số lượng", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.max_participants }) : null),
           testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
               React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
               React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
-          isEnded
-            ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, padding: 14, background: "rgba(138,147,168,0.12)", border: "1px solid rgba(138,147,168,0.28)", borderRadius: 8, color: "var(--rpg-text)", fontWeight: 700, flexWrap: "wrap" } },
-                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--rpg-muted)" }),
-                React.createElement("span", { style: { flex: "1 1 180px" } }, "Khóa học đã kết thúc"),
-                c.material_url ? React.createElement("a", { href: c.material_url, className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center", padding: "8px 12px" }, target: "_blank", rel: "noreferrer" }, "Xem tài liệu") : null)
-            : done
+          cta.disabled
             ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
-                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), "Bạn đã hoàn thành khóa học này")
+                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
-                React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành"),
-                React.createElement("a", { href: c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, "Mở khóa học")))));
+                React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText),
+                !done && cta.key !== "learn" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
   }
 
   /* ---------- Event modal ---------- */

@@ -7,9 +7,10 @@ import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { CourseCard } from '../GLHParts';
 import { getUpcomingCourses, getRecommendedCourses } from '@/lib/mockApi';
+import { getCourseCta } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
-const { Icon, fmtDate, fmtDuration, FORMAT_LABEL, DOW_VI, MONTHS_VI } = GLHUI;
+const { FORMAT_LABEL, DOW_VI, MONTHS_VI } = GLHUI;
 const { useGame, rankForXp } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
@@ -19,18 +20,21 @@ const FORMAT_COLOR = {
   elearning: { bg: "rgba(122,92,255,0.18)",   color: "#A38BFF" },
 };
 
-function CTAText({ course_status }) {
-  const s = { fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" };
-  if (course_status === "upcoming_open")   return React.createElement("span", { style: { ...s, color: "var(--glh-accent)" } }, "Đăng ký →");
-  if (course_status === "upcoming_closed") return React.createElement("span", { style: { ...s, color: "#FF9E00" } }, "Đặt chỗ →");
-  if (course_status === "elearning")       return React.createElement("span", { style: { ...s, color: "#A38BFF" } }, "Học ngay →");
-  if (course_status === "ended")           return React.createElement("span", { style: { ...s, color: "var(--rpg-muted)" } }, "Xem tài liệu →");
-  return null;
+function ctaColor(cta) {
+  return ({
+    accent: "var(--glh-accent)",
+    warning: "#FF9E00",
+    purple: "#A38BFF",
+    success: "var(--garena-positive)",
+    muted: "var(--rpg-muted)",
+  })[cta?.tone] || "var(--rpg-muted)";
 }
 
 // ─── Upcoming item (grouped by month, same as Calendar ListView) ─────────────
 function UpcomingItem({ course, onOpen }) {
-  const { title, format, location, start_date, start_time, end_time, audience, course_status } = course;
+  const { user } = useGame();
+  const { title, format, location, start_date, start_time, end_time } = course;
+  const cta = getCourseCta(course, user);
   const dayNum  = start_date ? new Date(start_date).getDate() : null;
   const dow     = start_date ? DOW_VI[(new Date(start_date).getDay() + 6) % 7] : null;
   const countdown = course.countdown_days;
@@ -58,7 +62,7 @@ function UpcomingItem({ course, onOpen }) {
 
     // right: CTA + countdown stacked
     React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 } },
-      React.createElement(CTAText, { course_status }),
+      React.createElement("span", { style: { fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", color: ctaColor(cta) } }, cta.text),
       countdown != null && React.createElement("span", {
         style: { fontSize: 11, fontWeight: 700, color: countdownColor },
       }, countdown === 0 ? "Hôm nay" : `Còn ${countdown} ngày`)));

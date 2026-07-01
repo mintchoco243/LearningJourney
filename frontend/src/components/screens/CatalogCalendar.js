@@ -6,10 +6,10 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
 import { getCalendarEvents } from '@/lib/mockApi';
-import { mapCourseToCard } from '@/lib/courseMap.mjs';
+import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
-const { Icon, fmtDate, fmtDuration, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
+const { Icon, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
 const { useGame, isRecommended } = GLHEngine;
 const { CourseCard } = GLHParts;
 
@@ -19,6 +19,16 @@ const FORMAT_COLOR = {
   elearning: { bg: "rgba(122,92,255,0.18)",   color: "#A38BFF" },
 };
 const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI", communication: "Giao tiếp", product: "Sản phẩm", foundations: "Nền tảng", facilitation: "Đào tạo", analytics: "Phân tích", strategy: "Chiến lược", ops_excellence: "Vận hành", mentoring: "Dẫn dắt" };
+
+function ctaColor(cta) {
+  return ({
+    accent: "var(--glh-accent)",
+    warning: "#FF9E00",
+    purple: "#A38BFF",
+    success: "var(--garena-positive)",
+    muted: "var(--rpg-muted)",
+  })[cta?.tone] || "var(--rpg-muted)";
+}
 
 
   
@@ -235,26 +245,13 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
     );
   }
 
-  function FilterRow(props) {
-    return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-      React.createElement("span", { style: { fontSize: 12, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", minWidth: 96 } }, props.label),
-      props.children);
-  }
-
   /* ---------------- Calendar ---------------- */
-  const TYPE_COLOR = {
-    workshop: { bg: "rgba(228,30,38,0.18)", fg: "#FF8A8E" },
-    webinar: { bg: "rgba(46,84,109,0.34)", fg: "#A8CAEA" },
-    bootcamp: { bg: "rgba(191,107,0,0.26)", fg: "#EFA15C" },
-    talk: { bg: "rgba(43,182,163,0.22)", fg: "#5FD9C8" },
-  };
-
   export function Calendar(props) {
     const [view, setView] = React.useState("quarter");
     const _now = new Date();
     const [cursor, setCursor] = React.useState({ y: _now.getFullYear(), m: _now.getMonth() });
     const [skillFilter, setSkillFilter] = React.useState("all");
-    const [calendarEvents, setCalendarEvents] = React.useState(D.CALENDAR);
+    const [calendarEvents, setCalendarEvents] = React.useState([]);
 
     React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
 
@@ -262,13 +259,6 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
     const events = calendarEvents.filter(e =>
       skillFilter === "all" || (e.skill_tags || []).includes(skillFilter)
     );
-
-    const TYPE_COLOR = {
-      workshop: { bg: "rgba(228,30,38,0.18)", color: "#FF8A8E" },
-      webinar:  { bg: "rgba(46,84,109,0.34)",  color: "#A8CAEA" },
-      bootcamp: { bg: "rgba(191,107,0,0.26)",  color: "#EFA15C" },
-      talk:     { bg: "rgba(43,182,163,0.22)", color: "#5FD9C8" },
-    };
 
     const calChip = (label, active, onClick) =>
       React.createElement("button", { onClick, style: { padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1px solid", transition: "all 150ms",
@@ -296,8 +286,8 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
 
       filterSection,
 
-      view === "month" ? React.createElement(MonthView, { cursor, setCursor, evByDay, onOpen: props.onOpenEvent })
-        : React.createElement(ListView, { view, events, onOpen: props.onOpenEvent })
+      view === "month" ? React.createElement(MonthView, { cursor, setCursor, evByDay, onOpen: props.onOpenCourse })
+        : React.createElement(ListView, { view, events, onOpen: props.onOpenCourse })
     );
   }
 
@@ -334,9 +324,9 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
           return React.createElement("div", { key: i, className: "cal-cell" + (isToday ? " is-today" : "") },
             React.createElement("div", { className: "cal-day", style: isToday ? { color: "var(--garena-red)" } : null }, d),
             dayEvents.map((e) => {
-              const col = TYPE_COLOR[e.type] || { bg: "rgba(255,255,255,0.07)", fg: "#cfd6e4" };
+              const col = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "#cfd6e4" };
               return React.createElement("button", {
-                key: e.event_id, className: "cal-ev", style: { background: col.bg, color: col.fg },
+                key: e.session_id || e.course_id, className: "cal-ev", style: { background: col.bg, color: col.color },
                 onClick: () => onOpen(e),
               }, e.title);
             }));
@@ -345,6 +335,7 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
   }
 
   function ListView(props) {
+    const { user } = useGame();
     const today = new Date();
     let list = props.events.slice().sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
     if (props.view === "quarter") {
@@ -364,15 +355,13 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
               const d = new Date(e.start_date);
               const isPast = d < today;
               const daysLeft = Math.ceil((d - today) / 86400000);
-              const isOnline = /zoom|meet|online/i.test(e.location || "");
-              const evFmt = isOnline ? "online" : "offline";
-              const fc = FORMAT_COLOR[evFmt];
-              const ctaText = isPast ? "Xem lại →" : "Đăng ký →";
-              const ctaColor = isPast ? "var(--rpg-muted)" : "var(--glh-accent)";
+              const fc = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
+              const cta = getCourseCta(e, user);
               const cdColor = daysLeft <= 5 ? "#E41E26" : daysLeft <= 14 ? "#FF9E00" : "var(--rpg-muted)";
+              const timeMeta = [e.start_time && e.end_time ? `${e.start_time} – ${e.end_time}` : e.start_time, e.location].filter(Boolean);
 
               return React.createElement("button", {
-                key: e.event_id, className: "u-card u-card--hover",
+                key: e.session_id || e.course_id, className: "u-card u-card--hover",
                 style: { textAlign: "left", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", background: "var(--rpg-panel)" },
                 onClick: () => props.onOpen(e),
               },
@@ -385,13 +374,12 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
                   React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
                     React.createElement("div", { className: "u-h3", style: { fontSize: 15, margin: 0 } }, e.title),
                     React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", padding: "2px 8px", borderRadius: 999, background: fc.bg, color: fc.color, flexShrink: 0 } },
-                      isOnline ? "Online" : "Offline")),
+                      FORMAT_LABEL[e.format] || e.format)),
                   React.createElement("div", { style: { fontSize: 13, color: "var(--garena-grey)", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" } },
-                    e.time && React.createElement("span", null, e.time),
-                    e.location && React.createElement("span", null, e.location))),
+                    timeMeta.map((m, i) => React.createElement("span", { key: i }, m)))),
                 // CTA + countdown
                 React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 } },
-                  React.createElement("span", { style: { fontSize: 12, fontWeight: 800, color: ctaColor, whiteSpace: "nowrap" } }, ctaText),
+                  React.createElement("span", { style: { fontSize: 12, fontWeight: 800, color: ctaColor(cta), whiteSpace: "nowrap" } }, cta.text),
                   !isPast && React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: cdColor } },
                     daysLeft === 0 ? "Hôm nay" : "Còn " + daysLeft + " ngày")));
             })));

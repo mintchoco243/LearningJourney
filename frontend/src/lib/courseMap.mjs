@@ -23,20 +23,45 @@ export function daysUntil(dateStr, today = new Date()) {
   return Math.round((target - base) / 86400000);
 }
 
+function sessionTimes(value) {
+  return String(value || "").match(/\d{1,2}:\d{2}/g) || [];
+}
+
+function normalizeSessionStatus(status) {
+  return String(status || "open").trim().toLowerCase();
+}
+
 export function mapSessionToUpcoming(s, today = new Date()) {
   const date = dateOnly(s.session_date);
-  const times = String(s.session_time || "").match(/\d{1,2}:\d{2}/g) || [];
+  const times = sessionTimes(s.session_time);
+  const sessionStatus = normalizeSessionStatus(s.status);
   return {
+    session_id: s.id || s.session_id || null,
     course_id: courseCode(s),
     title: s.title,
     format: normalizeFormat(s.format),
     location: s.location || null,
     description: s.description || "",
+    trainer: s.trainer || "",
+    duration_minutes: s.duration_hours != null ? Math.round(Number(s.duration_hours) * 60) : null,
+    xp_reward: s.xp_reward,
+    rating: s.rating != null ? Number(s.rating) : null,
+    material_url: s.material_url || null,
+    min_participants: s.min_participants ?? null,
+    max_participants: s.max_participants ?? null,
+    current_count: s.current_count ?? null,
     start_date: date,
     start_time: times[0] || null,
     end_time: times[1] || null,
-    course_status: s.status === "open" ? "upcoming_open" : "upcoming_closed",
+    session_status: sessionStatus,
+    course_status: sessionStatus === "cancelled"
+      ? "cancelled"
+      : sessionStatus === "full"
+        ? "upcoming_closed"
+        : "upcoming_open",
     countdown_days: daysUntil(date, today),
+    url: s.registration_url || "#",
+    audience: s.audience || "Mọi cấp độ",
   };
 }
 
@@ -54,6 +79,8 @@ export function mapSessionToEvent(s) {
     url: s.registration_url || "#",
   };
 }
+
+export const mapSessionToCourse = mapSessionToUpcoming;
 
 export function mapCourseToCard(c) {
   const status = String(c.status || "").trim().toLowerCase();
@@ -73,6 +100,42 @@ export function mapCourseToCard(c) {
     audience: c.audience || "Mọi cấp độ",
     rating: c.rating != null ? Number(c.rating) : null,
   };
+}
+
+export function getCourseCta(course, user = {}) {
+  const c = course || {};
+  const completed = (user.completed_courses || []).includes(c.course_id);
+  const reserved = c.session_id && (user.registered_events || []).includes(c.session_id);
+  const hasMaterial = Boolean(c.material_url);
+  const hasUrl = Boolean(c.url && c.url !== "#");
+  const status = c.course_status || null;
+
+  if (completed) {
+    return hasMaterial
+      ? { key: "completed_material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
+      : { key: "completed", text: "Đã hoàn thành", modalText: "Đã hoàn thành", tone: "success", action: "none", disabled: true };
+  }
+  if (status === "cancelled" || c.session_status === "cancelled") {
+    return { key: "cancelled", text: "Đã hủy", modalText: "Session đã hủy", tone: "muted", action: "none", disabled: true };
+  }
+  if (status === "ended") {
+    return hasMaterial
+      ? { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
+      : { key: "ended", text: "Đã kết thúc", modalText: "Đã kết thúc", tone: "muted", action: "none", disabled: true };
+  }
+  if (reserved) {
+    return { key: "reserved", text: "Đã đăng ký", modalText: "Đã đăng ký", tone: "success", action: "none", disabled: true };
+  }
+  if (c.format === "elearning" || status === "elearning") {
+    return { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: hasUrl ? "url" : "none", disabled: !hasUrl };
+  }
+  if (status === "upcoming_closed" || c.session_status === "full") {
+    return { key: "waitlist", text: "Đặt chỗ →", modalText: "Đặt chỗ chờ", tone: "warning", action: c.session_id ? "reserve" : hasUrl ? "url" : "none", disabled: !c.session_id && !hasUrl };
+  }
+  if (status === "upcoming_open" || c.session_id || c.format === "online" || c.format === "offline") {
+    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: c.session_id ? "reserve" : hasUrl ? "url" : "none", disabled: !c.session_id && !hasUrl };
+  }
+  return { key: "detail", text: "Xem chi tiết →", modalText: "Xem chi tiết", tone: "muted", action: hasUrl ? "url" : "none", disabled: !hasUrl };
 }
 
 // Upcoming = future, non-cancelled sessions, soonest first, max 5.

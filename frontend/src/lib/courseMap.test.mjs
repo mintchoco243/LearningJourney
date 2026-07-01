@@ -1,6 +1,6 @@
 // Run: node src/lib/courseMap.test.mjs   (from frontend/)
 import assert from "node:assert/strict";
-import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToEvent, mapCourseToCard, pickUpcoming, pickRecommended } from "./courseMap.mjs";
+import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToEvent, mapCourseToCard, getCourseCta, pickUpcoming, pickRecommended } from "./courseMap.mjs";
 
 const TODAY = new Date(2026, 6, 1); // 2026-07-01 (local)
 
@@ -18,11 +18,15 @@ assert.equal(daysUntil("2026-06-30", TODAY), -1);
 
 // session -> upcoming item (pg-style ISO date + "HH:MM:SS")
 const up = mapSessionToUpcoming(
-  { course_id: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
+  { id: "s1", course_id: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", duration_hours: 2, xp_reward: 100, rating: "4.8", session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
   TODAY
 );
+assert.equal(up.session_id, "s1");
 assert.equal(up.course_id, "LC-001");
 assert.equal(up.format, "offline");
+assert.equal(up.duration_minutes, 120);
+assert.equal(up.xp_reward, 100);
+assert.equal(up.rating, 4.8);
 assert.equal(up.start_date, "2026-07-08");
 assert.equal(up.start_time, "10:00");
 assert.equal(up.course_status, "upcoming_open");
@@ -57,6 +61,14 @@ const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended",
 assert.equal(endedCard.course_status, "ended");
 assert.equal(endedCard.material_url, "https://docs.example/lc-003");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, "ended");
+
+// shared CTA logic
+assert.equal(getCourseCta({ course_id: "LC-001", format: "elearning", url: "https://learn.example" }).key, "learn");
+assert.equal(getCourseCta({ course_id: "LC-002", session_id: "s2", course_status: "upcoming_open" }).key, "register");
+assert.equal(getCourseCta({ course_id: "LC-003", session_id: "s3", course_status: "upcoming_closed" }).key, "waitlist");
+assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
+assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
+assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

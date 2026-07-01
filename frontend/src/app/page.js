@@ -21,7 +21,7 @@ import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSli
 const { useGame, rankForXp } = GLHEngine;
 const { Icon } = GLHUI;
 const { Avatar } = GLHAvatar;
-const { CourseModal, EventModal } = GLHParts;
+const { CourseModal } = GLHParts;
 const D = GLH_DATA;
 
 
@@ -311,7 +311,6 @@ const D = GLH_DATA;
     const [activeTab, setActiveTab] = React.useState("home");
 
     const [course, setCourse] = React.useState(null);
-    const [event, setEvent] = React.useState(null);
     const [ldRequest, setLdRequest] = React.useState(false);
     const [showRating, setShowRating] = React.useState(false);
     const [showTutorial, setShowTutorial] = React.useState(() => {
@@ -375,7 +374,7 @@ const D = GLH_DATA;
         React.createElement(QASection, null));
     } else {
       // app — tab-based navigation
-      const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenEvent: setEvent, onOpenLdRequest: () => setLdRequest(true) };
+      const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
       const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
       let tabContent;
       if (activeTab === "home") {
@@ -401,7 +400,6 @@ const D = GLH_DATA;
       body,
 
       course ? React.createElement(CourseModal, { course, onClose: () => setCourse(null) }) : null,
-      event ? React.createElement(EventModal, { event, onClose: () => setEvent(null) }) : null,
       ldRequest ? React.createElement(LdRequestPopup, { onClose: () => setLdRequest(false) }) : null,
       showRating ? React.createElement(RatingModal, { onClose: () => setShowRating(false) }) : null,
       showTutorial && phase === "app" ? React.createElement(Tutorial, { onClose: () => setShowTutorial(false) }) : null,
