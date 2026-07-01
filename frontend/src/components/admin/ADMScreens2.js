@@ -22,8 +22,8 @@ const D = ADM_DATA;
   function mapSession(s) {
     return {
       id: s.id,
-      course_id: s.course_id,
-      course_title: s.course_title || s.title || s.course_id,
+      course_id: s.course_code,
+      course_title: s.course_title || s.title || s.course_code,
       date: s.session_date || s.date || "",
       time: s.session_time || s.time || "",
       location: s.location || "",
@@ -312,7 +312,7 @@ const D = ADM_DATA;
           <select className="adm-select" value={form.course_id} onChange={e => set("course_id", e.target.value)}>
             <option value="">-- Chọn khóa học --</option>
             {courses.map(c => (
-              <option key={c.id} value={c.id}>{c.id} — {c.title}</option>
+              <option key={c.id} value={c.course_code || c.id}>{c.course_code || c.id} — {c.title}</option>
             ))}
           </select>
         </div>

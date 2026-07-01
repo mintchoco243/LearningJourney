@@ -30,17 +30,16 @@ adminUsersRouter.get("/:id", async (req, res, next) => {
     const enrollmentsRes = await query(
       `SELECT e.*, c.title AS course_title
        FROM enrollments e
-       JOIN courses c ON e.course_id = c.id
+       JOIN courses c ON c.course_code = e.course_code AND c.session_date IS NULL
        WHERE e.user_id = $1
        ORDER BY e.completed_at DESC`,
       [id]
     );
 
     const reservationsRes = await query(
-      `SELECT r.*, s.session_date, s.session_time, s.location, c.title AS course_title
+      `SELECT r.*, s.session_date, s.session_time, s.location, s.title AS course_title
        FROM reservations r
-       JOIN course_sessions s ON r.session_id = s.id
-       JOIN courses c ON s.course_id = c.id
+       JOIN courses s ON r.session_id = s.id
        WHERE r.user_id = $1
        ORDER BY s.session_date DESC`,
       [id]

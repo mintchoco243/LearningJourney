@@ -147,7 +147,7 @@ export function toJsonArray(text) {
 
 async function knownCourseIds() {
   const [live, staged] = await Promise.all([
-    query("SELECT id AS course_id FROM courses"),
+    query("SELECT DISTINCT course_code AS course_id FROM courses WHERE session_date IS NULL"),
     query("SELECT DISTINCT course_id FROM staging_courses"),
   ]);
   return new Set([...live.rows, ...staged.rows].map((row) => clean(row.course_id)));
@@ -406,58 +406,53 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
       if (type === "courses") {
         const courseIds = stagingRows.map((r) => r.course_id);
         const placeholders = courseIds.map((_, i) => `$${i + 1}`).join(", ");
-        
-        // Snapshot existing courses
+
+        // Snapshot existing master rows
         const existingCourses = await client.query(
-          `SELECT * FROM courses WHERE id IN (${placeholders})`,
+          `SELECT * FROM courses WHERE course_code IN (${placeholders}) AND session_date IS NULL`,
           courseIds
         );
         snapshotData = { existing: existingCourses.rows, promotedIds: courseIds };
 
-        // Promote (insert / upsert)
+        // Promote (upsert master row per course_code)
         for (const row of stagingRows) {
-          await client.query(
-            `INSERT INTO courses
-               (id, title, trainer, trainer_type, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active, status, material_url)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-             ON DUPLICATE KEY UPDATE
-               title = VALUES(title),
-               trainer = VALUES(trainer),
-               trainer_type = VALUES(trainer_type),
-               format = VALUES(format),
-               duration_hours = VALUES(duration_hours),
-               skill_tags = VALUES(skill_tags),
-               rank_targets = VALUES(rank_targets),
-               role_targets = VALUES(role_targets),
-               type = VALUES(type),
-               min_participants = VALUES(min_participants),
-               registration_url = VALUES(registration_url),
-               description = VALUES(description),
-               xp_reward = VALUES(xp_reward),
-               is_active = VALUES(is_active),
-               status = VALUES(status),
-               material_url = VALUES(material_url),
-               updated_at = NOW()`,
-            [
-              row.course_id,
-              row.title,
-              row.trainer,
-              row.trainer_type || "internal",
-              row.format,
-              row.duration_hours,
-              toJsonArray(row.skill_tags),
-              toJsonArray(row.rank_targets),
-              toJsonArray(row.role_targets),
-              row.type,
-              row.min_participants,
-              row.registration_url,
-              row.description,
-              row.xp_reward,
-              row.is_active,
-              row.status || "open",
-              row.material_url || null,
-            ]
+          const existing = await client.query(
+            "SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1",
+            [row.course_id]
           );
+          if (existing.rowCount) {
+            // Update all rows with this course_code to keep session rows in sync
+            await client.query(
+              `UPDATE courses
+               SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
+                   skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
+                   min_participants = $11, registration_url = $12, description = $13,
+                   xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
+               WHERE course_code = $1`,
+              [
+                row.course_id, row.title, row.trainer, row.trainer_type || "internal",
+                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
+                row.min_participants, row.registration_url, row.description, row.xp_reward,
+                row.is_active, row.status || "open", row.material_url || null,
+              ]
+            );
+          } else {
+            await client.query(
+              `INSERT INTO courses
+                 (id, course_code, title, trainer, trainer_type, format, duration_hours,
+                  skill_tags, rank_targets, role_targets, type, min_participants,
+                  registration_url, description, xp_reward, is_active, status, material_url, session_date)
+               VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NULL)`,
+              [
+                row.course_id, row.title, row.trainer, row.trainer_type || "internal",
+                row.format, row.duration_hours, toJsonArray(row.skill_tags),
+                toJsonArray(row.rank_targets), toJsonArray(row.role_targets), row.type,
+                row.min_participants, row.registration_url, row.description, row.xp_reward,
+                row.is_active, row.status || "open", row.material_url || null,
+              ]
+            );
+          }
         }
       }
 
@@ -466,17 +461,21 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
         for (const row of stagingRows) {
           const sessionId = crypto.randomUUID();
           createdSessionIds.push(sessionId);
+          // Copy course info from master row into session row
           await client.query(
-            `INSERT INTO course_sessions
-               (id, course_id, session_date, session_time, location, max_participants, status)
-             VALUES ($1, $2, $3, $4, $5, $6, 'open')`,
+            `INSERT INTO courses
+               (id, course_code, title, trainer, trainer_type, format, duration_hours,
+                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                description, xp_reward, is_active, status, material_url,
+                session_date, session_time, location, max_participants, current_count, session_status)
+             SELECT $1, course_code, title, trainer, trainer_type, format, duration_hours,
+                skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+                description, xp_reward, is_active, status, material_url,
+                $3, $4, $5, $6, 0, 'open'
+             FROM courses WHERE course_code = $2 AND session_date IS NULL LIMIT 1`,
             [
-              sessionId,
-              row.course_id,
-              row.session_date,
-              row.session_time || null,
-              row.location || null,
-              row.max_participants || null,
+              sessionId, row.course_id, row.session_date,
+              row.session_time || null, row.location || null, row.max_participants || null,
             ]
           );
         }
@@ -640,13 +639,13 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
       if (type === "courses") {
         const { existing = [], promotedIds = [] } = snapshot;
 
-        // Delete newly created courses (those not in snapshot existing)
-        const existingIds = new Set(existing.map((c) => c.id));
-        const newIds = promotedIds.filter((id) => !existingIds.has(id));
+        // Delete newly created master rows (course_codes not in snapshot)
+        const existingCodes = new Set(existing.map((c) => c.course_code));
+        const newCodes = promotedIds.filter((code) => !existingCodes.has(code));
 
-        if (newIds.length) {
-          const placeholders = newIds.map((_, i) => `$${i + 1}`).join(", ");
-          await client.query(`DELETE FROM courses WHERE id IN (${placeholders})`, newIds);
+        if (newCodes.length) {
+          const placeholders = newCodes.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM courses WHERE course_code IN (${placeholders})`, newCodes);
         }
 
         // Restore existing courses
@@ -657,25 +656,14 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
                  skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
                  min_participants = $11, registration_url = $12, description = $13,
                  xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
-             WHERE id = $1`,
+             WHERE course_code = $1`,
             [
-              c.id,
-              c.title,
-              c.trainer,
-              c.trainer_type ?? null,
-              c.format,
-              c.duration_hours,
-              JSON.stringify(c.skill_tags ?? []),
-              JSON.stringify(c.rank_targets ?? []),
-              JSON.stringify(c.role_targets ?? []),
-              c.type,
-              c.min_participants ?? null,
-              c.registration_url ?? null,
-              c.description ?? null,
-              c.xp_reward,
-              c.is_active,
-              c.status ?? null,
-              c.material_url ?? null,
+              c.course_code,
+              c.title, c.trainer, c.trainer_type ?? null, c.format, c.duration_hours,
+              JSON.stringify(c.skill_tags ?? []), JSON.stringify(c.rank_targets ?? []),
+              JSON.stringify(c.role_targets ?? []), c.type, c.min_participants ?? null,
+              c.registration_url ?? null, c.description ?? null, c.xp_reward,
+              c.is_active, c.status ?? null, c.material_url ?? null,
             ]
           );
         }
@@ -693,7 +681,7 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
         const { createdSessionIds = [] } = snapshot;
         if (createdSessionIds.length) {
           const placeholders = createdSessionIds.map((_, i) => `$${i + 1}`).join(", ");
-          await client.query(`DELETE FROM course_sessions WHERE id IN (${placeholders})`, createdSessionIds);
+          await client.query(`DELETE FROM courses WHERE id IN (${placeholders}) AND session_date IS NOT NULL`, createdSessionIds);
         }
       }
 

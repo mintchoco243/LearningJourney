@@ -21,7 +21,7 @@ const D = ADM_DATA;
 
   function mapCourse(c) {
     return {
-      id: c.id,
+      id: c.course_code,
       title: c.title,
       trainer: c.trainer || "",
       trainer_type: c.trainer_type || "internal",

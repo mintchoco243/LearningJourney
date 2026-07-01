@@ -6,10 +6,9 @@ async function run() {
   try {
     // Find all sessions happening exactly 2 days from now
     const result = await query(
-      `SELECT s.*, c.title AS course_title
-       FROM course_sessions s
-       JOIN courses c ON s.course_id = c.id
-       WHERE s.session_date = DATE_ADD(CURRENT_DATE(), INTERVAL 2 DAY)`
+      `SELECT *, title AS course_title
+       FROM courses
+       WHERE session_date = DATE_ADD(CURRENT_DATE(), INTERVAL 2 DAY)`
     );
 
     console.log(`Found ${result.rowCount} session(s) scheduled for 2 days from now.`);

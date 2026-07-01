@@ -41,35 +41,44 @@ const courses = [
 ];
 
 for (const c of courses) {
-  await query(
-    `INSERT INTO courses
-       (id, title, trainer, format, duration_hours,
-        skill_tags, rank_targets, role_targets,
-        type, min_participants, registration_url, description, xp_reward)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-     ON CONFLICT (id) DO NOTHING`,
-    [
-      c.id, c.title, c.trainer, c.format, c.duration,
-      c.skills, c.ranks, c.roles,
-      c.type, c.min, c.url, c.desc, c.xp,
-    ],
-  );
+  const existing = await query("SELECT id FROM courses WHERE course_code = $1 AND session_date IS NULL", [c.id]);
+  if (!existing.rowCount) {
+    await query(
+      `INSERT INTO courses
+         (id, course_code, title, trainer, format, duration_hours,
+          skill_tags, rank_targets, role_targets,
+          type, min_participants, registration_url, description, xp_reward, session_date)
+       VALUES (UUID(),$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NULL)`,
+      [
+        c.id, c.title, c.trainer, c.format, c.duration,
+        JSON.stringify(c.skills), JSON.stringify(c.ranks), JSON.stringify(c.roles),
+        c.type, c.min, c.url, c.desc, c.xp,
+      ],
+    );
+  }
 }
 
 // ── Sessions (only seed if table is empty) ───────────────────────────
 
-const sessionCount = await query("SELECT COUNT(*) AS cnt FROM course_sessions");
+const sessionCount = await query("SELECT COUNT(*) AS cnt FROM courses WHERE session_date IS NOT NULL");
 if (Number(sessionCount.rows[0]?.cnt ?? 0) === 0) {
   const sessions = [
     ["LC-001", futureDate(7), "10:00", "Garena VN - Training Room", 30],
     ["LC-003", futureDate(21), "14:00", "Online", 12],
   ];
-  for (const s of sessions) {
+  for (const [course_code, session_date, session_time, location, max_participants] of sessions) {
     await query(
-      `INSERT INTO course_sessions
-         (course_id, session_date, session_time, location, max_participants)
-       VALUES ($1,$2,$3,$4,$5)`,
-      s,
+      `INSERT INTO courses
+         (id, course_code, title, trainer, trainer_type, format, duration_hours,
+          skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+          description, xp_reward, is_active, status,
+          session_date, session_time, location, max_participants, current_count, session_status)
+       SELECT UUID(), course_code, title, trainer, trainer_type, format, duration_hours,
+          skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+          description, xp_reward, is_active, status,
+          $2, $3, $4, $5, 0, 'open'
+       FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1`,
+      [course_code, session_date, session_time, location, max_participants],
     );
   }
 }

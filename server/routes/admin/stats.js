@@ -24,7 +24,7 @@ adminStatsRouter.get("/", async (req, res) => {
         : "SELECT source, COUNT(*)::int AS count FROM enrollments GROUP BY source",
     ),
     query(
-      "SELECT id, title, enrolled_count FROM courses ORDER BY enrolled_count DESC, title ASC LIMIT 5",
+      "SELECT course_code AS id, title, enrolled_count FROM courses WHERE session_date IS NULL ORDER BY enrolled_count DESC, title ASC LIMIT 5",
     ),
     query(
       mysql
