@@ -48,6 +48,21 @@ const specs = {
     table: "staging_admin_accounts",
     columns: ["email", "full_name", "role", "is_active"],
   },
+  users: {
+    table: "staging_users",
+    columns: [
+      "email",
+      "full_name",
+      "rank",
+      "role",
+      "team",
+      "class_archetype",
+      "learning_formats",
+      "weekly_hours",
+      "preferred_trainers",
+      "learning_goals",
+    ],
+  },
 };
 
 const validAdminRoles = new Set(["super_admin", "admin", "editor"]);
@@ -190,6 +205,11 @@ async function validateRows(type, inputRows) {
       if (row.email && !row.email.toLowerCase().endsWith("@garena.vn")) errors.push("email must use @garena.vn");
       if (!validAdminRoles.has(row.role)) errors.push("role must be super_admin/admin/editor");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
+    }
+
+    if (type === "users") {
+      if (!row.email) errors.push("email is required");
+      if (!row.full_name) errors.push("full_name is required");
     }
 
     return { index, row, errors };
@@ -485,6 +505,44 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
         snapshotData = { createdPolicyIds };
       }
 
+      else if (type === "users") {
+        const createdUserIds = [];
+        for (const row of stagingRows) {
+          const userId = row.id || require('crypto').randomUUID();
+          createdUserIds.push(userId);
+          await client.query(
+            `INSERT INTO users
+               (id, email, full_name, rank, role, team, class_archetype, learning_formats, weekly_hours, preferred_trainers, learning_goals)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+             ON DUPLICATE KEY UPDATE
+               full_name = VALUES(full_name),
+               rank = VALUES(rank),
+               role = VALUES(role),
+               team = VALUES(team),
+               class_archetype = VALUES(class_archetype),
+               learning_formats = VALUES(learning_formats),
+               weekly_hours = VALUES(weekly_hours),
+               preferred_trainers = VALUES(preferred_trainers),
+               learning_goals = VALUES(learning_goals),
+               updated_at = NOW()`,
+            [
+              userId,
+              row.email.toLowerCase(),
+              row.full_name || null,
+              row.rank || null,
+              row.role || null,
+              row.team || null,
+              row.class_archetype || null,
+              toJsonArray(row.learning_formats),
+              row.weekly_hours || null,
+              toJsonArray(row.preferred_trainers),
+              row.learning_goals || null,
+            ]
+          );
+        }
+        snapshotData = { createdUserIds };
+      }
+
       else if (type === "admin-accounts") {
         const emails = stagingRows.map((r) => r.email.toLowerCase());
         const placeholders = emails.map((_, i) => `$${i + 1}`).join(", ");
@@ -620,6 +678,14 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
               c.material_url ?? null,
             ]
           );
+        }
+      }
+
+      else if (type === "users") {
+        const { createdUserIds = [] } = snapshot;
+        if (createdUserIds.length) {
+          const placeholders = createdUserIds.map((_, i) => `$${i + 1}`).join(", ");
+          await client.query(`DELETE FROM users WHERE id IN (${placeholders})`, createdUserIds);
         }
       }
 

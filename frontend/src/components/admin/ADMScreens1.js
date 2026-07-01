@@ -165,6 +165,8 @@ const D = ADM_DATA;
     const [search, setSearch]     = React.useState("");
     const [statusFilter, setStatusFilter] = React.useState("all");
     const [selected, setSelected] = React.useState(new Set());
+    const [currentPage, setCurrentPage] = React.useState(1);
+    const [rowsPerPage, setRowsPerPage] = React.useState(20);
     const [editModal, setEditModal]   = React.useState(false);
     const [importModal, setImportModal] = React.useState(false);
     const [syncModal, setSyncModal] = React.useState(false);
@@ -189,6 +191,10 @@ const D = ADM_DATA;
       const matchS = statusFilter === "all" || (statusFilter === "active" ? c.is_active : !c.is_active);
       return matchQ && matchS;
     });
+
+    const totalPages = Math.ceil(filtered.length / rowsPerPage);
+    const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+    const paginatedRows = filtered.slice((validPage - 1) * rowsPerPage, validPage * rowsPerPage);
 
     function openEdit(c) { setEditTarget(c); setError(""); setEditModal(true); }
     function openCreate() { setEditTarget(null); setError(""); setEditModal(true); }
@@ -410,9 +416,9 @@ const D = ADM_DATA;
         {selected.size > 0 && (
           <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 16, justifyContent: "space-between" }}>
             <div style={{ color: "var(--rpg-text)", fontSize: 13 }}>
-              Đã chọn <strong>{selected.size}</strong> khóa học
+              Đã chọn <strong>{selected.size}</strong>/{filtered.length} khóa học
               {selected.size < filtered.length && (
-                <button onClick={selectAllFiltered} style={{ marginLeft: 12, background: "none", border: "none", color: "#2BB6A3", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Chọn tất cả ({filtered.length})</button>
+                <button onClick={selectAllFiltered} style={{ marginLeft: 12, background: "none", border: "none", color: "#2BB6A3", cursor: "pointer", fontSize: 12, fontWeight: 600, textDecoration: "underline" }}>Chọn tất cả {filtered.length}</button>
               )}
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -441,7 +447,7 @@ const D = ADM_DATA;
             <thead>
               <tr>
                 <th style={{ width: 40 }}>
-                  <input type="checkbox" checked={selected.size === filtered.length && filtered.length > 0} onChange={() => selected.size === filtered.length ? clearSelection() : selectAllFiltered()} />
+                  <input type="checkbox" checked={paginatedRows.length > 0 && paginatedRows.every(c => selected.has(c.id))} onChange={() => paginatedRows.every(c => selected.has(c.id)) ? setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.delete(c.id)); return next; }) : setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.add(c.id)); return next; })} />
                 </th>
                 <th style={{ width: 100 }}>Mã</th>
                 <th>Tên khóa học</th>
@@ -454,7 +460,7 @@ const D = ADM_DATA;
               </tr>
             </thead>
             <tbody>
-              {filtered.map(c => (
+              {paginatedRows.map(c => (
                 <tr key={c.id}>
                   <td>
                     <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelectCourse(c.id)} />
@@ -496,10 +502,45 @@ const D = ADM_DATA;
               ))}
             </tbody>
           </table>
-          {!loading && filtered.length === 0 && (
+          {!loading && paginatedRows.length === 0 && filtered.length === 0 && (
             <div className="adm-empty">Không tìm thấy khóa học nào phù hợp</div>
           )}
         </div>
+
+        {!loading && filtered.length > 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0", fontSize: 13, color: "var(--rpg-muted)" }}>
+            <div>
+              Hiển thị {(validPage - 1) * rowsPerPage + 1}–{Math.min(validPage * rowsPerPage, filtered.length)} của {filtered.length} khóa học
+            </div>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <select className="adm-select" value={rowsPerPage} onChange={e => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }} style={{ width: 80 }}>
+                <option value={10}>10 dòng</option>
+                <option value={20}>20 dòng</option>
+                <option value={50}>50 dòng</option>
+              </select>
+
+              <div style={{ display: "flex", gap: 4 }}>
+                <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={validPage === 1}>← Trước</button>
+                <div style={{ display: "flex", gap: 2 }}>
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const page = validPage > 3 ? validPage - 2 + i : i + 1;
+                    return page <= totalPages ? (
+                      <button
+                        key={page}
+                        className={`adm-btn adm-btn--sm ${validPage === page ? "adm-btn--primary" : "adm-btn--sec"}`}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </button>
+                    ) : null;
+                  })}
+                </div>
+                {totalPages > 5 && validPage < totalPages - 2 && <span style={{ color: "var(--rpg-muted)" }}>...</span>}
+                <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={validPage === totalPages}>Sau →</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {batchActionModal && (
           <Modal open={!!batchActionModal} onClose={() => setBatchActionModal(null)} title={`Cập nhật ${batchActionModal.title} cho ${selected.size} khóa học`} width={400}>

@@ -198,6 +198,139 @@ const D = ADM_DATA;
   }
 
   /* ===================== USERS SCREEN ===================== */
+  function SyncUsersForm({ onClose }) {
+    const [fileName, setFileName] = React.useState(null);
+    const [csvText, setCsvText]   = React.useState(null);
+    const [step, setStep]         = React.useState("upload"); // upload | errors | ready | done
+    const [batch, setBatch]       = React.useState(null);
+    const [errorRows, setErrorRows] = React.useState([]);
+    const [loading, setLoading]   = React.useState(false);
+    const [error, setError]       = React.useState("");
+
+    function handleFile(e) {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      setFileName(f.name);
+      setStep("upload");
+      const reader = new FileReader();
+      reader.onload = ev => setCsvText(ev.target.result);
+      reader.readAsText(f);
+    }
+
+    async function handleCheck() {
+      if (!csvText) return;
+      setLoading(true); setError("");
+      try {
+        const res = await fetch("/admin/api/data-prep/users/import-csv", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ csvText, source: `CSV upload — ${fileName}` }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          setErrorRows((data.results || []).filter(r => r.errors.length));
+          setStep("errors");
+          return;
+        }
+        setBatch({ id: data.batchId, savedRows: data.savedRows });
+        setStep("ready");
+      } catch (e) {
+        setError(e.message || "Kiểm tra thất bại");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function handlePromote() {
+      if (!batch) return;
+      setLoading(true); setError("");
+      try {
+        const res = await fetch("/admin/api/data-prep/users/promote", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batchId: batch.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Promote thất bại");
+        setStep("done");
+        onClose?.();
+      } catch (e) {
+        setError(e.message || "Promote thất bại");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (step === "done") return (
+      <div>
+        <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "14px 16px", marginBottom: 18, color: "#2BB6A3", fontSize: 13, display: "flex", alignItems: "center", gap: 8 }}>
+          <Icon name="check-circle" size={16} /> Đã đồng bộ {batch.savedRows} người dùng lên hệ thống.
+        </div>
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+          <button className="adm-btn adm-btn--primary" onClick={onClose}><Icon name="check" size={13} /> Xong</button>
+        </div>
+      </div>
+    );
+
+    if (step === "errors") return (
+      <div>
+        <div style={{ color: "var(--rpg-muted)", fontSize: 13, marginBottom: 12 }}>
+          {errorRows.length} dòng có lỗi — sửa trong Sheet rồi tải lại CSV, chưa có gì được lưu.
+        </div>
+        <div style={{ maxHeight: 320, overflowY: "auto", border: "1px solid var(--rpg-border)", borderRadius: 8 }}>
+          {errorRows.map(r => (
+            <div key={r.index} style={{ padding: "10px 14px", borderBottom: "1px solid var(--rpg-border)", fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: "#fff", marginBottom: 4 }}>Dòng {r.index + 2} — {r.row.email || "(không có email)"}</div>
+              <div style={{ color: "#ff6b6b" }}>{r.errors.join("; ")}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 18 }}>
+          <button className="adm-btn adm-btn--sec" onClick={() => setStep("upload")}>Chọn file khác</button>
+          <button className="adm-btn adm-btn--sec" onClick={onClose}>Đóng</button>
+        </div>
+      </div>
+    );
+
+    if (step === "ready") return (
+      <div>
+        <div style={{ background: "rgba(43,182,163,.1)", border: "1px solid rgba(43,182,163,.3)", borderRadius: 8, padding: "14px 16px", marginBottom: 18, color: "#2BB6A3", fontSize: 13 }}>
+          Đã lưu nháp {batch.savedRows} người dùng, chưa hiển thị cho hệ thống. Bấm &quot;Đẩy lên live&quot; để áp dụng.
+        </div>
+        {error && <div style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 10 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
+          <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={loading}>Để sau</button>
+          <button className="adm-btn adm-btn--primary" onClick={handlePromote} disabled={loading}>
+            {loading ? "Đang đẩy lên..." : <><Icon name="upload" size={13} /> Đẩy lên live</>}
+          </button>
+        </div>
+      </div>
+    );
+
+    return (
+      <div>
+        <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
+          Cột cần có: <code>email, full_name</code> — các cột khác tuỳ chọn (rank, role, team, class_archetype, learning_formats, weekly_hours, preferred_trainers, learning_goals).
+        </div>
+        <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
+          <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />
+          <Icon name="file-plus" size={30} color="var(--rpg-muted)" style={{ margin: "0 auto 10px", display: "block" }} />
+          <div style={{ fontWeight: 700, color: "#fff", marginBottom: 5 }}>{fileName || "Click để chọn file CSV"}</div>
+          <div style={{ fontSize: 12, color: "var(--rpg-muted)" }}>Export từ Google Sheet: File → Download → Comma Separated Values</div>
+        </label>
+        {error && <div style={{ color: "#ff6b6b", fontSize: 13, marginTop: 10 }}>{error}</div>}
+        <div style={{ display: "flex", gap: 9, justifyContent: "flex-end", marginTop: 18 }}>
+          <button className="adm-btn adm-btn--sec" onClick={onClose}>Huỷ</button>
+          <button className="adm-btn adm-btn--primary" onClick={handleCheck} disabled={!csvText || loading}>
+            {loading ? "Đang kiểm tra..." : <><Icon name="check" size={13} /> Kiểm tra dữ liệu</>}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   export function UsersScreen() {
     const [users, setUsers]               = React.useState(D.ADMIN_USERS);
     const [loading, setLoading]           = React.useState(true);
@@ -207,6 +340,7 @@ const D = ADM_DATA;
     const [statusFilter, setStatusFilter] = React.useState("all");
     const [selectedUser, setSelectedUser] = React.useState(null);
     const [page, setPage]                 = React.useState(1);
+    const [syncModal, setSyncModal]       = React.useState(false);
     const PER_PAGE = 10;
 
     React.useEffect(() => {
@@ -241,6 +375,11 @@ const D = ADM_DATA;
         <PageHeader
           title="Quản lý Users"
           subtitle={`${users.length} người dùng · ${active} đang hoạt động`}
+          action={
+            <button className="adm-btn adm-btn--sec" onClick={() => setSyncModal(true)}>
+              <Icon name="refresh-cw" size={14} /> Đồng bộ CSV
+            </button>
+          }
         />
 
         <div className="adm-stat-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
@@ -384,6 +523,10 @@ const D = ADM_DATA;
           width={620}
         >
           {selectedUser && <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} />}
+        </Modal>
+
+        <Modal open={syncModal} onClose={() => setSyncModal(false)} title="Đồng bộ Users từ CSV" width={520}>
+          <SyncUsersForm onClose={() => { setSyncModal(false); apiFetch("/admin/api/users").then(data => { if (data.users?.length) setUsers(data.users); }).catch(() => {}); }} />
         </Modal>
       </div>
     );

@@ -150,14 +150,8 @@ export function Dashboard(props) {
         action: { label: "Xem tất cả →", onClick: () => props.onNav("library") },
       }),
 
-      !hasSurvey && React.createElement("div", {
-        style: { background: "rgba(255,158,0,0.08)", border: "1px solid rgba(255,158,0,0.25)", borderRadius: 8, padding: "10px 14px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, fontSize: 13 },
-      },
-        React.createElement(Icon, { name: "info", size: 15, color: "#FF9E00" }),
-        React.createElement("span", { style: { color: "var(--rpg-muted)" } }, "Hoàn thành khảo sát để nhận gợi ý chính xác hơn. "),
-        React.createElement("button", { className: "u-btn u-btn--ghost", style: { padding: "0 4px", fontSize: 13 }, onClick: () => props.onNav("profile") }, "Làm ngay →")),
 
-      React.createElement("div", { className: "rec-grid" },
+React.createElement("div", { className: "rec-grid" },
         recommended.map(c => React.createElement(CourseCard, { key: c.course_id, course: c, onClick: props.onOpenCourse, showDate: true }))))
   );
 }

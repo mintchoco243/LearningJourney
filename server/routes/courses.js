@@ -45,7 +45,7 @@ coursesRouter.get("/", async (req, res, next) => {
       params
     );
 
-    const userResult = await query("SELECT role, rank FROM users WHERE id = $1", [req.user.id]);
+    const userResult = await query("SELECT role, rank, team FROM users WHERE id = $1", [req.user.id]);
     const user = userResult.rows[0] || {};
     res.json({ courses: result.rows.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
   } catch (err) {
