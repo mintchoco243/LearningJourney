@@ -10,7 +10,7 @@
     "dev": "node scripts/dev-local.mjs",
     "dev:server": "node --watch server/index.js",
     "prestart": "node server/migrate.js && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
-    "start": "node server/index.js",
+    "start": "node -e \"process.env.NODE_ENV=process.env.NODE_ENV || 'production'; import('./server/index.js')\"",
     "db:migrate": "node server/migrate.js",
     "db:seed": "node server/seed.js",
     "cron:reminder": "node server/scripts/sessionReminder.js",
