@@ -102,10 +102,35 @@ const D = GLH_DATA;
   export function CourseModal(props) {
     const { user, actions } = useGame();
     const c = props.course;
+    const meta = (D.COURSE_META || {})[c?.course_id] || {};
+    const [session, setSession] = React.useState(null);
+    const [testimonials, setTestimonials] = React.useState(null);
+
+    React.useEffect(() => {
+      if (!c) return;
+      const id = c._id || c.course_id;
+      setSession(null);
+      setTestimonials(null);
+      fetch(`/api/sessions?course_id=${encodeURIComponent(id)}`, { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          const upcoming = (data?.sessions || [])
+            .filter((s) => s.status !== "cancelled")
+            .sort((a, b) => new Date(a.session_date) - new Date(b.session_date))[0];
+          if (upcoming) setSession(upcoming);
+        })
+        .catch(() => {});
+      fetch(`/api/courses/${encodeURIComponent(id)}/testimonials`, { credentials: "include" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => { if (data?.testimonials?.length) setTestimonials(data.testimonials); })
+        .catch(() => {});
+    }, [c?._id, c?.course_id]);
+
     if (!c) return null;
-    const meta = (D.COURSE_META || {})[c.course_id] || {};
     const done = (user.completed_courses || []).includes(c.course_id);
     const rec = isRecommended(c, user);
+    const rating = c.rating || meta.rating;
+    const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
     const stop = (e) => e.stopPropagation();
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
       React.createElement("div", { className: "modal", onClick: stop },
@@ -115,24 +140,25 @@ const D = GLH_DATA;
           React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } },
             React.createElement("span", { className: "u-pill", style: { background: "rgba(255,255,255,0.12)", color: "#fff" } }, FORMAT_LABEL[c.format] || c.format),
             rec ? React.createElement("span", { className: "u-pill u-pill--match" }, "Phù hợp với bạn") : null,
-            meta.rating ? React.createElement(Stars, { value: meta.rating }) : null),
+            rating ? React.createElement(Stars, { value: rating }) : null),
           React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.2, color: "#fff" } }, c.title),
           React.createElement("div", { style: { color: "var(--amber)", fontWeight: 700, display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--glh-display)", fontSize: 14 } },
             React.createElement(Icon, { name: "zap", size: 16, color: "var(--amber)" }), "+" + c.xp_reward + " XP khi hoàn thành")),
         React.createElement("div", { style: { padding: "24px 28px 28px" } },
           React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--rpg-text)", margin: "0 0 18px" } }, c.description),
-          (c.skill_tags || []).length ? React.createElement("div", { style: { marginBottom: 18 } },
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--garena-grey)", marginBottom: 8 } }, "Competencies"),
-            React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-              (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" })))) : null,
+          (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
+            (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 } },
             React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }),
             React.createElement(DetailItem, { icon: "users", label: "Đối tượng", value: c.audience }),
             React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }),
-            meta.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: meta.location }) : null),
-          meta.testimonial ? React.createElement("div", { style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px", marginBottom: 20 } },
-            React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "\u201c" + meta.testimonial.quote + "\u201d"),
-            React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + meta.testimonial.author + " · " + meta.testimonial.role)) : null,
+            (session?.location || meta.location) ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: session?.location || meta.location }) : null,
+            session?.session_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(session.session_date) }) : null,
+            session?.session_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: String(session.session_time).slice(0, 5) }) : null),
+          testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
+            testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
+              React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
+              React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
           done
             ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
                 React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), "Bạn đã hoàn thành khóa học này")

@@ -150,7 +150,8 @@ const { useGame } = GLHEngine;
         React.createElement(Icon, { name: "users", size: 16, color: "var(--amber)" }),
         "TRAINER PREFERENCE"
       ),
-      React.createElement("h2", { className: "qz-q" }, "Có trainer nào bạn muốn học từ không?"),
+      React.createElement("h2", { className: "qz-q" }, "Bạn có đặc biệt yêu thích trainer nào không?"),
+      React.createElement("p", { style: { fontSize: 13, color: "var(--rpg-muted)", marginBottom: 16, marginTop: -8 } }, "Gợi ý cả trainer nội bộ và bên ngoài nhé · Bước này là tùy chọn"),
       React.createElement("div", { style: { marginBottom: 12 } },
         React.createElement("input", {
           type: "text",
@@ -187,7 +188,7 @@ const { useGame } = GLHEngine;
         )
       ) : null,
       React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)" } },
-        tags.length + " / 3 trainer · Bước này là tùy chọn")
+        tags.length + " / 3 trainer")
     );
   }
 

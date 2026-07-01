@@ -33,24 +33,25 @@ export const OUTFIT = {
         );
       case "spiky":
         return (
+          r(28, 22, 44, 18, c.base, 8) +      // base covers head top
           `<polygon points="30,40 34,16 40,38" fill="${c.base}"/>` +
           `<polygon points="40,38 46,12 52,38" fill="${c.base}"/>` +
           `<polygon points="50,38 56,14 62,38" fill="${c.base}"/>` +
           `<polygon points="60,38 66,18 70,40" fill="${c.base}"/>` +
-          r(30, 30, 40, 10, c.base, 4)
+          r(28, 28, 44, 12, c.base, 4)
         );
       case "bun":
         return (
           r(46, 12, 12, 12, c.base, 6) +     // bun
-          r(28, 24, 44, 14, c.base, 8) +
+          r(28, 22, 44, 16, c.base, 8) +     // cap starts at head top y:22
           r(28, 30, 7, 22, c.base, 4) +
           r(65, 30, 7, 22, c.base, 4)
         );
       case "cap":
         return (
-          r(28, 24, 44, 14, "#222831", 8) +
-          r(26, 34, 30, 7, "#222831", 3) +   // brim
-          r(36, 26, 28, 6, "#3A4250", 3)
+          r(28, 22, 44, 16, "#222831", 8) +  // cap starts at head top y:22
+          r(26, 36, 48, 7, "#222831", 3) +   // brim full-width symmetric
+          r(36, 24, 28, 6, "#3A4250", 3)
         );
       case "short":
       default:

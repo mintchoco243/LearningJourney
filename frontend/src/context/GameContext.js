@@ -12,6 +12,8 @@ const D = GLH_DATA;
     onboarded: false,
     email: "",
     full_name: "",
+    db_role: "",   // department from DB (pre-populated by admin)
+    db_rank: "",   // rank_id from DB (e.g. "rank_02")
     character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
     quiz_result: null, // { class_id, rank_id, personality, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
@@ -173,6 +175,15 @@ const D = GLH_DATA;
     const actions = React.useMemo(() => ({
       reset() { clearUser(); persist(Object.assign({}, DEFAULT_USER)); },
       setEmail(email) { persist(Object.assign({}, user, { email, onboarded: true })); },
+      setUserProfile(profile) {
+        persist(Object.assign({}, user, {
+          email: profile.email || user.email,
+          full_name: profile.full_name || user.full_name,
+          db_role: profile.role || user.db_role,
+          db_rank: profile.rank || user.db_rank,
+          onboarded: true,
+        }));
+      },
       setCharacter(character) { persist(Object.assign({}, user, { character })); },
       finishOnboarding() { persist(Object.assign({}, user, { onboarded: true })); },
       completeQuiz(result) {

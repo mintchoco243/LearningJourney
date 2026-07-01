@@ -302,7 +302,7 @@ const D = GLH_DATA;
         })
         .then((data) => {
           if (data && data.user && data.user.email) {
-            if (!user.email) actions.setEmail(data.user.email);
+            actions.setUserProfile(data.user);
             setPhase(user.quiz_result ? "app" : "onboarding");
           }
         })

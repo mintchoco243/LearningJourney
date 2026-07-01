@@ -18,70 +18,47 @@ const { Avatar } = GLHAvatar;
   
   const KEYS = ["A", "B", "C", "D"];
 
-  /* ---------------- Quiz (with extended steps 4-6) ---------------- */
+  /* ---------------- Quiz (3 preference steps) ---------------- */
   export function Quiz(props) {
     const { user, actions } = useGame();
     const [idx, setIdx] = React.useState(0);
-    const [answers, setAnswers] = React.useState(() => new Array(D.QUIZ.length).fill(null));
-    const [step4, setStep4] = React.useState([]); // learning style
-    const [step5, setStep5] = React.useState(""); // availability
-    const [step6, setStep6] = React.useState([]); // trainers
+    const [step4, setStep4] = React.useState([]);
+    const [step5, setStep5] = React.useState("");
+    const [step6, setStep6] = React.useState([]);
     const [anim, setAnim] = React.useState(0);
-    const lockRef = React.useRef(false);
 
-    const TOTAL_STEPS = D.QUIZ.length + 3; // original 3 + new 3 steps
-    const q = idx < D.QUIZ.length ? D.QUIZ[idx] : null;
-    const pct = Math.round(((idx + (idx < D.QUIZ.length && answers[idx] ? 1 : idx >= D.QUIZ.length ? 1 : 0)) / TOTAL_STEPS) * 100);
-
+    const TOTAL_STEPS = 3;
     const goTo = (n) => { setIdx(n); setAnim((a) => a + 1); };
 
-    const choose = (optIndex) => {
-      if (lockRef.current) return;
-      if (idx >= D.QUIZ.length) return; // no choosing on extended steps
-      
-      const next = answers.slice();
-      next[idx] = q.options[optIndex];
-      setAnswers(next);
-      lockRef.current = true;
-      window.setTimeout(() => {
-        lockRef.current = false;
-        if (idx < D.QUIZ.length - 1) goTo(idx + 1);
-        else goTo(D.QUIZ.length); // move to step 4
-      }, 320);
-    };
-
     const finishExtended = () => {
-      const result = scoreQuiz(answers);
-      result._answers = answers;
-      result.quiz_extended = { learning_style: step4, availability: step5, trainers: step6 };
+      const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
+      const result = {
+        class_id: "explorer",
+        personality: "explorer",
+        rank_id: user.db_rank || "rank_01",
+        start_xp: dbRank ? dbRank.required_xp + 50 : 50,
+        completed_at: new Date().toISOString(),
+        quiz_extended: { learning_style: step4, availability: step5, trainers: step6 },
+      };
       actions.completeQuiz(result);
-      // Persist onboarding data to backend (fire-and-forget)
       fetch("/api/me/onboarding", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          rank: result.rank_id,
-          role: (answers[0] && answers[0].label) || "",
-          class_archetype: result.class_id,
           learning_formats: step4 || [],
           weekly_hours: step5 || null,
           preferred_trainers: step6 || [],
-          learning_goals: (answers[2] && answers[2].label) || "",
         }),
       }).catch(() => {});
       props.onComplete();
     };
 
     const canContinue = () => {
-      if (idx < D.QUIZ.length) return answers[idx] !== null;
-      if (idx === D.QUIZ.length) return step4.length > 0; // step 4: at least one selected
-      if (idx === D.QUIZ.length + 1) return step5 !== ""; // step 5: must select
-      return true; // step 6: optional
+      if (idx === 0) return step4.length > 0;
+      if (idx === 1) return step5 !== "";
+      return true;
     };
-
-    
-    const selectedIndex = idx < D.QUIZ.length && answers[idx] ? D.QUIZ[idx].options.indexOf(answers[idx]) : -1;
 
     return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad", style: { position: "relative" } },
       React.createElement(Starfield),
@@ -92,50 +69,25 @@ const { Avatar } = GLHAvatar;
       React.createElement("div", { className: "qz-wrap" },
         React.createElement("div", { className: "qz-top" },
           React.createElement("div", { className: "qz-progress" },
-            React.createElement("div", { className: "qz-progress__fill", style: { width: pct + "%" } })),
+            React.createElement("div", { className: "qz-progress__fill", style: { width: Math.round(((idx + 1) / TOTAL_STEPS) * 100) + "%" } })),
           React.createElement("div", { className: "qz-count glh-display" }, (idx + 1) + " / " + TOTAL_STEPS)),
         React.createElement("div", { key: anim, className: "qz-anim-enter" },
-          idx < D.QUIZ.length ? (
-            // Original quiz questions (steps 1-3)
-            React.createElement(React.Fragment, null,
-              React.createElement("div", { className: "qz-group" },
-                React.createElement(Icon, { name: q.icon, size: 16, color: "var(--amber)" }), q.group),
-              React.createElement("h2", { className: "qz-q" }, q.text),
-              React.createElement("div", { className: "qz-options" },
-                q.options.map((o, i) => React.createElement("button", {
-                  key: i, className: "qz-opt" + (selectedIndex === i ? " is-active" : ""),
-                  onClick: () => choose(i),
-                },
-                  React.createElement("span", { className: "qz-key" }, KEYS[i]),
-                  React.createElement("span", null, o.label)))))
-          ) : idx === D.QUIZ.length ? (
-            // Step 4: Learning Style
-            React.createElement(Step4LearningStyle, { value: step4, onChange: setStep4 })
-          ) : idx === D.QUIZ.length + 1 ? (
-            // Step 5: Availability
-            React.createElement(Step5Availability, { value: step5, onChange: setStep5 })
-          ) : (
-            // Step 6: Trainer Preference
-            React.createElement(Step6TrainerPreference, { value: step6, onChange: setStep6 })
-          )
+          idx === 0 ? React.createElement(Step4LearningStyle, { value: step4, onChange: setStep4 })
+          : idx === 1 ? React.createElement(Step5Availability, { value: step5, onChange: setStep5 })
+          : React.createElement(Step6TrainerPreference, { value: step6, onChange: setStep6 })
         ),
-        // Next button for extended steps
-        idx >= D.QUIZ.length ? React.createElement("div", { style: { marginTop: 24, display: "flex", gap: 12 } },
-          React.createElement("button", {
+        React.createElement("div", { style: { marginTop: 24, display: "flex", gap: 12 } },
+          idx > 0 ? React.createElement("button", {
             className: "glh-btn glh-btn--ghost",
             onClick: () => goTo(idx - 1),
-          },
-            React.createElement(Icon, { name: "arrow-left", size: 16 }), " Quay lại"
-          ),
+          }, React.createElement(Icon, { name: "arrow-left", size: 16 }), " Quay lại") : null,
           React.createElement("button", {
             className: "glh-btn glh-btn--primary",
-            onClick: () => idx === D.QUIZ.length + 2 ? finishExtended() : goTo(idx + 1),
+            onClick: () => idx === TOTAL_STEPS - 1 ? finishExtended() : goTo(idx + 1),
             disabled: !canContinue(),
-            style: { opacity: canContinue() ? 1 : 0.5 },
-          },
-            idx === D.QUIZ.length + 2 ? "Hoàn thành" : "Tiếp tục"
-          )
-        ) : null
+            style: { opacity: canContinue() ? 1 : 0.5, flex: 1 },
+          }, idx === TOTAL_STEPS - 1 ? "Hoàn thành" : "Tiếp tục")
+        )
       )
     );
   }
@@ -174,19 +126,18 @@ const { Avatar } = GLHAvatar;
     const qr = user.quiz_result;
 
     const quizExt = qr.quiz_extended || {};
-    const deptAnswer = qr._answers && qr._answers[0] ? qr._answers[0].label : null;
-    const rankAnswer = qr._answers && qr._answers[1] ? qr._answers[1].label : null;
-    const goalAnswer = qr._answers && qr._answers[2] ? qr._answers[2].label : null;
+    const deptAnswer = user.db_role || null;
+    const rankObj = D.RANKS.find((r) => r.id === (user.db_rank || qr.rank_id));
+    const rankAnswer = rankObj ? rankObj.name : (user.db_rank || null);
 
-    const displayName = user.email ? user.email.split("@")[0] : "Bạn";
+    const displayName = user.full_name ? user.full_name.split(" ").pop() : (user.email ? user.email.split("@")[0] : "Bạn");
 
     const learningStyleLabels = { video: "Video tự học", workshop: "Workshop", coaching: "Coaching 1-1", reading: "Reading / Tài liệu" };
     const availabilityLabel = { under1: "Dưới 1 giờ/tuần", "1to2": "1–2 giờ/tuần", "3plus": "3+ giờ/tuần" };
 
     const summaryItems = [
-      { icon: "building-2", label: "Bộ phận", value: deptAnswer },
-      { icon: "bar-chart-2", label: "Cấp bậc", value: rankAnswer },
-      { icon: "target", label: "Mục tiêu", value: goalAnswer },
+      deptAnswer ? { icon: "building-2", label: "Bộ phận", value: deptAnswer } : null,
+      rankAnswer ? { icon: "bar-chart-2", label: "Cấp bậc", value: rankAnswer } : null,
       quizExt.learning_style && quizExt.learning_style.length > 0 ? {
         icon: "book-open", label: "Hình thức học",
         value: quizExt.learning_style.map((s) => learningStyleLabels[s] || s).join(", ")
