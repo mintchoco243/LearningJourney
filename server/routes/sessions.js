@@ -6,7 +6,7 @@ export const sessionsRouter = express.Router();
 
 sessionsRouter.get("/", async (req, res) => {
   const params = [];
-  const filters = ["c.is_active = TRUE", "c.session_date IS NOT NULL"];
+  const filters = ["c.is_active = TRUE", "c.status <> 'draft'", "c.session_date IS NOT NULL"];
   if (req.query.month) {
     params.push(`${req.query.month}-01`);
     filters.push(`c.session_date >= $${params.length}`);
@@ -37,12 +37,19 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
       const session = await client.query(
         `SELECT c.*, c.min_participants, c.title AS course_title
          FROM courses c
-         WHERE c.id = $1 AND c.session_date IS NOT NULL FOR UPDATE`,
+         WHERE c.id = $1 AND c.is_active = TRUE
+           AND (c.type IN ('scheduled', 'interest') OR c.session_date IS NOT NULL)
+         FOR UPDATE`,
         [req.params.id]
       );
       if (!session.rowCount) return null;
-      if (session.rows[0].session_status === "cancelled") {
+      if (session.rows[0].status === "cancelled" || session.rows[0].session_status === "cancelled") {
         const error = new Error("SESSION_CANCELLED");
+        error.status = 409;
+        throw error;
+      }
+      if (session.rows[0].status === "full" || session.rows[0].session_status === "full") {
+        const error = new Error("SESSION_FULL");
         error.status = 409;
         throw error;
       }
@@ -59,15 +66,22 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
       }
 
       const minParticipants = session.rows[0].min_participants;
-      const oldCount = session.rows[0].current_count;
+      const maxParticipants = session.rows[0].max_participants;
+      const oldCount = Number(session.rows[0].current_count || 0);
       const newCount = oldCount + 1;
       const triggerSessionFull = minParticipants !== null && oldCount < minParticipants && newCount >= minParticipants;
+      const triggerCapacityFull = maxParticipants !== null && newCount >= maxParticipants;
 
       await client.query(
         `UPDATE courses
-         SET current_count = current_count + 1,
+         SET current_count = COALESCE(current_count, 0) + 1,
+             status = CASE
+               WHEN max_participants IS NOT NULL AND COALESCE(current_count, 0) + 1 >= max_participants THEN 'full'
+               WHEN min_participants IS NOT NULL AND type = 'interest' AND COALESCE(current_count, 0) + 1 >= min_participants THEN 'full'
+               ELSE status
+             END,
              session_status = CASE
-               WHEN max_participants IS NOT NULL AND current_count + 1 >= max_participants THEN 'full'
+               WHEN max_participants IS NOT NULL AND COALESCE(current_count, 0) + 1 >= max_participants THEN 'full'
                ELSE session_status
              END
          WHERE id = $1`,
@@ -83,7 +97,9 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
         session: updated.rows[0],
         course_title: session.rows[0].title,
         session_date: session.rows[0].session_date,
+        type: session.rows[0].type,
         triggerSessionFull,
+        triggerCapacityFull,
       };
     });
 
@@ -92,10 +108,12 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
     await sendMail({
       to: req.user.email,
       subject: `Xác nhận đặt chỗ: ${result.course_title}`,
-      html: `<p>Chào bạn,</p><p>Bạn đã đặt chỗ thành công cho khóa học <strong>${result.course_title}</strong> diễn ra vào ngày <strong>${result.session_date}</strong>.</p>`,
+      html: result.session_date
+        ? `<p>Chào bạn,</p><p>Bạn đã đăng ký thành công khóa học <strong>${result.course_title}</strong> diễn ra vào ngày <strong>${result.session_date}</strong>.</p>`
+        : `<p>Chào bạn,</p><p>Bạn đã đặt chỗ thành công cho khóa học <strong>${result.course_title}</strong>. Ban L&D sẽ thông báo khi lớp đủ nhu cầu và có lịch tổ chức.</p>`,
     });
 
-    if (result.triggerSessionFull) {
+    if (result.triggerSessionFull || result.triggerCapacityFull) {
       const participants = await query(
         `SELECT u.email, u.full_name FROM reservations r JOIN users u ON r.user_id = u.id WHERE r.session_id = $1`,
         [req.params.id]
@@ -104,7 +122,19 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
         await sendMail({
           to: p.email,
           subject: `Lớp [${result.course_title}] đã đủ người!`,
-          html: `<p>Chào ${p.full_name},</p><p>Lớp học <strong>${result.course_title}</strong> vào ngày <strong>${result.session_date}</strong> đã đạt đủ số lượng tối thiểu và đủ điều kiện để mở lớp.</p><p>Ban L&D sẽ sớm gửi xác nhận mở lớp chính thức.</p>`,
+          html: result.session_date
+            ? `<p>Chào ${p.full_name},</p><p>Lớp học <strong>${result.course_title}</strong> vào ngày <strong>${result.session_date}</strong> đã đạt đủ số lượng.</p><p>Ban L&D sẽ sớm gửi xác nhận chính thức.</p>`
+            : `<p>Chào ${p.full_name},</p><p>Khóa học <strong>${result.course_title}</strong> đã đạt đủ số lượng tối thiểu để L&D xem xét mở lớp.</p><p>Ban L&D sẽ cập nhật lịch tổ chức sau.</p>`,
+        });
+      }
+      const admins = await query(
+        `SELECT email, full_name FROM admin_accounts WHERE is_active = TRUE`
+      );
+      for (const admin of admins.rows) {
+        await sendMail({
+          to: admin.email,
+          subject: `Khóa [${result.course_title}] đã đủ nhu cầu mở lớp`,
+          html: `<p>Chào ${admin.full_name || "Admin"},</p><p>Khóa học <strong>${result.course_title}</strong> đã đạt ngưỡng ${result.triggerCapacityFull ? "sức chứa tối đa" : "số người tối thiểu"}.</p><p>Vui lòng vào Admin để kiểm tra danh sách đăng ký và cập nhật lịch tổ chức nếu cần.</p>`,
         });
       }
     }
@@ -127,6 +157,7 @@ sessionsRouter.delete("/:id/reserve", async (req, res, next) => {
       await client.query(
         `UPDATE courses
          SET current_count = GREATEST(current_count - 1, 0),
+             status = CASE WHEN status = 'full' THEN 'open' ELSE status END,
              session_status = CASE WHEN session_status = 'full' THEN 'open' ELSE session_status END
          WHERE id = $1`,
         [req.params.id]

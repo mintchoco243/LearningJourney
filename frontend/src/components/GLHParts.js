@@ -160,6 +160,7 @@ const D = GLH_DATA;
       start_date: c.start_date || session?.session_date || null,
       start_time: c.start_time || (session?.session_time ? String(session.session_time).slice(0, 5) : null),
       max_participants: c.max_participants ?? session?.max_participants ?? null,
+      min_participants: c.min_participants ?? session?.min_participants ?? null,
       current_count: c.current_count ?? session?.current_count ?? null,
     });
     const cta = getCourseCta(modalCourse, user);
@@ -174,6 +175,11 @@ const D = GLH_DATA;
       }
       if (cta.action === "reserve") {
         actions.reserveCourseSession(modalCourse);
+        return;
+      }
+      if (cta.action === "complete") {
+        actions.completeCourse(c);
+        props.onClose();
       }
     };
     const stop = (e) => e.stopPropagation();
@@ -201,6 +207,7 @@ const D = GLH_DATA;
             modalCourse.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: modalCourse.location }) : null,
             modalCourse.start_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(modalCourse.start_date) }) : null,
             modalCourse.start_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: modalCourse.start_time }) : null,
+            modalCourse.min_participants && !modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Tối thiểu mở lớp", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.min_participants }) : null,
             modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Số lượng", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.max_participants }) : null),
           testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
@@ -211,7 +218,7 @@ const D = GLH_DATA;
                 React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
                 React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText),
-                !done && cta.key !== "learn" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
+                !done && !["learn", "complete"].includes(cta.key) ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

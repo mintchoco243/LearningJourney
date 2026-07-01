@@ -9,6 +9,14 @@ const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
 const D = ADM_DATA;
 
+const COURSE_TYPES = [
+  { id: "scheduled", label: "Khóa có lịch" },
+  { id: "interest", label: "Đặt chỗ / gom nhu cầu" },
+  { id: "elearning", label: "E-learning" },
+  { id: "external", label: "Khóa bên ngoài" },
+  { id: "material_only", label: "Tài liệu / recording" },
+];
+
 
   
   
@@ -39,7 +47,8 @@ const D = ADM_DATA;
       material_url: c.material_url || "",
       enrollments: c.enrolled_count || 0,
       description: c.description || "",
-      type: c.type || "internal",
+      type: c.type || "scheduled",
+      min_participants: c.min_participants ?? "",
       registration_url: c.registration_url || "",
       session_date: c.session_date ? String(c.session_date).split("T")[0] : "",
       session_time: c.session_time || "",
@@ -259,7 +268,7 @@ const D = ADM_DATA;
           rank_targets: formData.rank_targets,
           role_targets: formData.role_targets || [],
           skill_tags: formData.skill_tags || [],
-          type: formData.type || "internal",
+          type: formData.type || "scheduled",
           xp_reward: parseInt(formData.xp_reward) || 100,
           description: formData.description || "",
           registration_url: formData.registration_url || "",
@@ -654,7 +663,7 @@ const D = ADM_DATA;
       rank_targets: course?.rank_targets || [],
       role_targets: course?.role_targets || [],
       skill_tags: course?.skill_tags || [],
-      type: course?.type || "internal",
+      type: course?.type || "scheduled",
       xp_reward: course?.xp_reward || course?.xp || 100,
       description: course?.description || "",
       registration_url: course?.registration_url || "",
@@ -725,6 +734,13 @@ const D = ADM_DATA;
         </div>
 
         <div className="adm-form-group" style={{ marginBottom: 14 }}>
+          <label className="adm-label">Loại khóa</label>
+          <select className="adm-select" value={form.type} onChange={e => set("type", e.target.value)}>
+            {COURSE_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+        </div>
+
+        <div className="adm-form-group" style={{ marginBottom: 14 }}>
           <label className="adm-label">Rank targets</label>
           <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
             {RANKS_ALL.map(r => (
@@ -778,16 +794,19 @@ const D = ADM_DATA;
           <div className="adm-form-group">
             <label className="adm-label">Trạng thái</label>
             <select className="adm-select" value={form.status} onChange={e => set("status", e.target.value)}>
+              <option value="draft">Nháp</option>
               <option value="open">Đang mở</option>
+              <option value="full">Đã đủ slot / nhu cầu</option>
               <option value="ended">Đã tổ chức xong</option>
+              <option value="cancelled">Đã hủy</option>
             </select>
           </div>
-          {form.status === "ended" && (
+          {["ended", "material_only"].includes(form.status) || form.type === "material_only" ? (
             <div className="adm-form-group">
               <label className="adm-label">Link tài liệu</label>
               <input className="adm-input" value={form.material_url} onChange={e => set("material_url", e.target.value)} placeholder="https://..." />
             </div>
-          )}
+          ) : null}
         </div>
 
         <div className="adm-form-group" style={{ marginBottom: 18 }}>
@@ -1004,7 +1023,7 @@ const D = ADM_DATA;
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
+          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — <code>type</code> dùng scheduled/interest/elearning/external/material_only. Các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />

@@ -93,8 +93,8 @@ const specs = {
 
 const validAdminRoles = new Set(["super_admin", "admin", "editor"]);
 const validFormats = new Set(["online", "offline", "elearning", "webinar", "workshop", "bootcamp", "talk"]);
-const validTypes = new Set(["open", "scheduled", "waitlist"]);
-const validCourseStatuses = new Set(["open", "ended"]);
+const validTypes = new Set(["scheduled", "interest", "elearning", "external", "material_only"]);
+const validCourseStatuses = new Set(["draft", "open", "full", "ended", "cancelled"]);
 
 function getSpec(type) {
   const spec = specs[type];
@@ -216,14 +216,14 @@ async function validateRows(type, inputRows) {
       if (!row.format) errors.push("format is required");
       if (row.format && !validFormats.has(row.format)) errors.push("format must be online/offline/elearning/webinar/workshop/bootcamp/talk");
       if (!row.type) errors.push("type is required");
-      if (row.type && !validTypes.has(row.type)) errors.push("type must be open/scheduled/waitlist");
+      if (row.type && !validTypes.has(row.type)) errors.push("type must be scheduled/interest/elearning/external/material_only");
       if (!row.duration_hours) errors.push("duration_hours is required");
       if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
       if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
-      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be open/ended");
+      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be draft/open/full/ended/cancelled");
     }
 
     if (type === "sessions") {
@@ -243,14 +243,14 @@ async function validateRows(type, inputRows) {
       if (!row.format) errors.push("format is required");
       if (row.format && !validFormats.has(row.format)) errors.push("format must be online/offline/elearning/webinar/workshop/bootcamp/talk");
       if (!row.type) errors.push("type is required");
-      if (row.type && !validTypes.has(row.type)) errors.push("type must be open/scheduled/waitlist");
+      if (row.type && !validTypes.has(row.type)) errors.push("type must be scheduled/interest/elearning/external/material_only");
       if (!row.duration_hours) errors.push("duration_hours is required");
       if (row.duration_hours && numberValue(row.duration_hours) === null) errors.push("duration_hours must be a number");
       if (row.min_participants && numberValue(row.min_participants) === null) errors.push("min_participants must be a number");
       if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
-      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be open/ended");
+      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be draft/open/full/ended/cancelled");
       if (row.session_date && !isDateText(row.session_date)) errors.push("session_date must be YYYY-MM-DD");
       if (row.max_participants && numberValue(row.max_participants) === null) errors.push("max_participants must be a number");
     }

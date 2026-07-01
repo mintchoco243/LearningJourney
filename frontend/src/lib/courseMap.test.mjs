@@ -50,7 +50,7 @@ assert.equal(card.course_code, "LC-002");
 assert.equal(card.format, "elearning");
 assert.equal(card.duration_minutes, 90);
 assert.equal(card.url, "#");
-assert.equal(card.course_status, null);
+assert.equal(card.course_status, "open");
 
 // course -> card: ended status carries material_url through for the "Xem tài liệu" CTA
 const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended", material_url: "https://docs.example/lc-003" });
@@ -61,12 +61,16 @@ assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "202
 
 // shared CTA logic
 assert.equal(getCourseCta({ course_id: "LC-001", format: "elearning", url: "https://learn.example" }).key, "learn");
-assert.equal(getCourseCta({ course_id: "LC-002", session_id: "s2", course_status: "upcoming_open" }).key, "reserve");
-assert.equal(getCourseCta({ course_id: "LC-003", session_id: "s3", course_status: "upcoming_closed" }).key, "waitlist");
+assert.equal(getCourseCta({ course_id: "LC-002", type: "scheduled", session_id: "s2", course_status: "upcoming_open" }).key, "register");
+assert.equal(getCourseCta({ course_id: "LC-003", type: "scheduled", session_id: "s3", course_status: "upcoming_closed" }).key, "full");
 assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
-assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "reserve");
+assert.equal(getCourseCta({ course_id: "LC-004", type: "scheduled", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", status: "open" }, TODAY)).key, "interest");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "complete");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

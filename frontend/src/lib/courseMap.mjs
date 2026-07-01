@@ -15,6 +15,7 @@ export function normalizeFormat(f) {
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 const courseCode = (row) => row.course_code || row.course_id || row.id;
 const courseRowId = (row) => row.id || row.course_id || row.course_code;
+const courseType = (row) => String(row.type || "").trim().toLowerCase();
 
 export function daysUntil(dateStr, today = new Date()) {
   if (!dateStr) return null;
@@ -55,6 +56,7 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     course_id: courseRowId(s),
     course_code: courseCode(s),
     title: s.title,
+    type: courseType(s) || "scheduled",
     format: normalizeFormat(s.format),
     location: s.location || null,
     description: s.description || "",
@@ -89,11 +91,14 @@ export function mapCourseToCard(c, today = new Date()) {
   const date = dateOnly(c.session_date);
   const times = sessionTimes(c.session_time);
   const status = effectiveLifecycle(c.status, date, today);
+  const type = courseType(c) || (normalizeFormat(c.format) === "elearning" ? "elearning" : "scheduled");
+  const usesReservationFlow = type === "scheduled" || type === "interest";
   return {
     course_id: courseRowId(c),
     course_code: courseCode(c),
     _id: c.id,
     title: c.title,
+    type,
     description: c.description || "",
     trainer: c.trainer || "",
     format: normalizeFormat(c.format),
@@ -102,8 +107,8 @@ export function mapCourseToCard(c, today = new Date()) {
     skill_tags: c.skill_tags || [],
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
-    course_status: status === "ended" ? "ended" : date ? "upcoming_open" : null,
-    session_id: date ? c.id : null,
+    course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
+    session_id: usesReservationFlow ? c.id : null,
     session_status: c.session_status || null,
     start_date: date,
     start_time: times[0] || null,
@@ -112,6 +117,7 @@ export function mapCourseToCard(c, today = new Date()) {
     max_participants: c.max_participants ?? null,
     current_count: c.current_count ?? null,
     material_url: c.material_url || null,
+    min_participants: c.min_participants ?? null,
     audience: c.audience || "Mọi cấp độ",
     rating: c.rating != null ? Number(c.rating) : null,
   };
@@ -119,6 +125,7 @@ export function mapCourseToCard(c, today = new Date()) {
 
 export function getCourseCta(course, user = {}) {
   const c = course || {};
+  const type = courseType(c) || (c.format === "elearning" ? "elearning" : "scheduled");
   const completed = (user.completed_courses || []).includes(c.course_id);
   const reserved = c.session_id && (user.registered_events || []).includes(c.session_id);
   const hasMaterial = Boolean(c.material_url);
@@ -131,24 +138,41 @@ export function getCourseCta(course, user = {}) {
       : { key: "completed", text: "Đã hoàn thành", modalText: "Đã hoàn thành", tone: "success", action: "none", disabled: true };
   }
   if (status === "cancelled" || c.session_status === "cancelled") {
-    return { key: "cancelled", text: "Đã hủy", modalText: "Session đã hủy", tone: "muted", action: "none", disabled: true };
+    return { key: "cancelled", text: "Đã hủy", modalText: "Khóa đã hủy", tone: "muted", action: "none", disabled: true };
   }
   if (status === "ended") {
+    if (type === "elearning" || type === "external") {
+      return { key: "complete", text: "Đánh dấu hoàn thành", modalText: "Đánh dấu hoàn thành", tone: "success", action: "complete", disabled: false };
+    }
     return hasMaterial
       ? { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
       : { key: "ended", text: "Đã kết thúc", modalText: "Đã kết thúc", tone: "muted", action: "none", disabled: true };
   }
   if (reserved) {
-    return { key: "reserved", text: "Đã đăng ký", modalText: "Đã đăng ký", tone: "success", action: "none", disabled: true };
+    return { key: "reserved", text: type === "interest" ? "Đã đặt chỗ" : "Đã đăng ký", modalText: type === "interest" ? "Đã đặt chỗ" : "Đã đăng ký", tone: "success", action: "none", disabled: true };
   }
-  if (c.format === "elearning" || status === "elearning") {
+  if (type === "material_only") {
+    return hasMaterial
+      ? { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
+      : { key: "detail", text: "Xem chi tiết →", modalText: "Xem chi tiết", tone: "muted", action: "none", disabled: true };
+  }
+  if (type === "elearning" || c.format === "elearning") {
     return { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: hasUrl ? "url" : "none", disabled: !hasUrl };
   }
+  if (type === "external") {
+    return { key: "external_register", text: "Đăng ký →", modalText: "Đăng ký", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
+  }
+  if (type === "interest") {
+    if (status === "upcoming_closed" || status === "full" || c.session_status === "full") {
+      return { key: "interest_full", text: "Đã đủ nhu cầu", modalText: "Đã đủ nhu cầu", tone: "warning", action: "none", disabled: true };
+    }
+    return { key: "interest", text: "Đặt chỗ →", modalText: "Đặt chỗ", tone: "accent", action: "reserve", disabled: !c.session_id };
+  }
   if (status === "upcoming_closed" || c.session_status === "full") {
-    return { key: "waitlist", text: "Đặt chỗ →", modalText: "Đặt chỗ chờ", tone: "warning", action: c.session_id ? "reserve" : hasUrl ? "url" : "none", disabled: !c.session_id && !hasUrl };
+    return { key: "full", text: "Đã đủ slot", modalText: "Đã đủ slot", tone: "warning", action: "none", disabled: true };
   }
   if (status === "upcoming_open" || c.session_id) {
-    return { key: "reserve", text: "Đặt chỗ →", modalText: "Đặt chỗ tham gia", tone: "accent", action: "reserve", disabled: !c.session_id };
+    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: "reserve", disabled: !c.session_id };
   }
   if (c.format === "online" || c.format === "offline") {
     return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
