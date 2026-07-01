@@ -11,7 +11,7 @@ export const config = {
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || "95451265968-8rajr2ljr9kf68grc3v7psbg45f2mgtb.apps.googleusercontent.com",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
-    callbackUrl: process.env.GOOGLE_CALLBACK_URL || "https://garena-learning-hub-mn.demo.ffol4.vn//auth/callback",
+    callbackUrl: process.env.GOOGLE_CALLBACK_URL || "https://garena-learning-hub-mn.demo.ffol4.vn/auth/callback",
   },
   devAuthEnabled:
     (process.env.DEV_AUTH_ENABLED || "true").toLowerCase() === "true" ||
