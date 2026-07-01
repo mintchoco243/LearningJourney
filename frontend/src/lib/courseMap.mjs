@@ -13,6 +13,7 @@ export function normalizeFormat(f) {
 }
 
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
+const courseCode = (row) => row.course_code || row.course_id || row.id;
 
 export function daysUntil(dateStr, today = new Date()) {
   if (!dateStr) return null;
@@ -26,7 +27,7 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   const date = dateOnly(s.session_date);
   const times = String(s.session_time || "").match(/\d{1,2}:\d{2}/g) || [];
   return {
-    course_id: s.course_code,
+    course_id: courseCode(s),
     title: s.title,
     format: normalizeFormat(s.format),
     location: s.location || null,
@@ -56,7 +57,7 @@ export function mapSessionToEvent(s) {
 
 export function mapCourseToCard(c) {
   return {
-    course_id: c.course_code,
+    course_id: courseCode(c),
     title: c.title,
     description: c.description || "",
     trainer: c.trainer || "",
