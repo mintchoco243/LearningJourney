@@ -61,10 +61,10 @@ assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "202
 
 // shared CTA logic
 assert.equal(getCourseCta({ course_id: "LC-001", format: "elearning", url: "https://learn.example" }).key, "learn");
-assert.equal(getCourseCta({ course_id: "LC-002", session_id: "s2", course_status: "upcoming_open" }).key, "register");
+assert.equal(getCourseCta({ course_id: "LC-002", session_id: "s2", course_status: "upcoming_open" }).key, "reserve");
 assert.equal(getCourseCta({ course_id: "LC-003", session_id: "s3", course_status: "upcoming_closed" }).key, "waitlist");
 assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
-assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
+assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "reserve");
 assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 

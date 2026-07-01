@@ -147,8 +147,11 @@ export function getCourseCta(course, user = {}) {
   if (status === "upcoming_closed" || c.session_status === "full") {
     return { key: "waitlist", text: "Đặt chỗ →", modalText: "Đặt chỗ chờ", tone: "warning", action: c.session_id ? "reserve" : hasUrl ? "url" : "none", disabled: !c.session_id && !hasUrl };
   }
-  if (status === "upcoming_open" || c.session_id || c.format === "online" || c.format === "offline") {
-    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: c.session_id ? "reserve" : hasUrl ? "url" : "none", disabled: !c.session_id && !hasUrl };
+  if (status === "upcoming_open" || c.session_id) {
+    return { key: "reserve", text: "Đặt chỗ →", modalText: "Đặt chỗ tham gia", tone: "accent", action: "reserve", disabled: !c.session_id };
+  }
+  if (c.format === "online" || c.format === "offline") {
+    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
   }
   return { key: "detail", text: "Xem chi tiết →", modalText: "Xem chi tiết", tone: "muted", action: hasUrl ? "url" : "none", disabled: !hasUrl };
 }
