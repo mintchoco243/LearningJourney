@@ -280,7 +280,7 @@
             trainer: c.trainer || "",
             audience: c.audience || "Mọi cấp độ",
             url: c.registration_url || "#",
-            rating: c.rating || null,
+            rating: c.rating != null ? Number(c.rating) : null,
             _id: c.id,
           }));
         }

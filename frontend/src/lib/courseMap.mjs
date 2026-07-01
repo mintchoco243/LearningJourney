@@ -68,6 +68,8 @@ export function mapCourseToCard(c) {
     fit_tag: c.fit_tag || null,
     course_status: c.status === "ended" ? "ended" : null,
     material_url: c.material_url || null,
+    audience: c.audience || "Mọi cấp độ",
+    rating: c.rating != null ? Number(c.rating) : null,
   };
 }
 

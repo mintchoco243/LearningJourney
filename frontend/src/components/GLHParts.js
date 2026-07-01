@@ -28,7 +28,7 @@ const D = GLH_DATA;
 
   /* ---------- Star rating ---------- */
   export function Stars(props) {
-    const v = props.value;
+    const v = Number(props.value);
     if (!v) return null;
     return React.createElement("span", { style: { display: "inline-flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 700, color: "var(--amber)" } },
       "★ ", v.toFixed(1),
