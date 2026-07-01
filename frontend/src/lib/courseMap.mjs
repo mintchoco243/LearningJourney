@@ -39,6 +39,21 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   };
 }
 
+// Session -> Calendar event shape (event_id/type/skill_tags/time/location/host).
+export function mapSessionToEvent(s) {
+  return {
+    event_id: s.id,
+    title: s.title,
+    type: s.type,
+    skill_tags: s.skill_tags || [],
+    start_date: dateOnly(s.session_date),
+    time: String(s.session_time || "").slice(0, 5),
+    location: s.location || null,
+    host: s.trainer || null,
+    url: s.registration_url || "#",
+  };
+}
+
 export function mapCourseToCard(c) {
   return {
     course_id: c.id,

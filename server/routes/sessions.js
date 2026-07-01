@@ -19,7 +19,7 @@ sessionsRouter.get("/", async (req, res) => {
   }
 
   const result = await query(
-    `SELECT s.*, c.title, c.trainer, c.format, c.type, c.registration_url, c.description
+    `SELECT s.*, c.title, c.trainer, c.format, c.type, c.registration_url, c.description, c.skill_tags
      FROM course_sessions s
      JOIN courses c ON c.id = s.course_id
      WHERE ${filters.join(" AND ")}

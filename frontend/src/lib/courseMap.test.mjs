@@ -1,6 +1,6 @@
 // Run: node src/lib/courseMap.test.mjs   (from frontend/)
 import assert from "node:assert/strict";
-import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapCourseToCard, pickUpcoming, pickRecommended } from "./courseMap.mjs";
+import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToEvent, mapCourseToCard, pickUpcoming, pickRecommended } from "./courseMap.mjs";
 
 const TODAY = new Date(2026, 6, 1); // 2026-07-01 (local)
 
@@ -35,6 +35,14 @@ assert.equal(mapSessionToUpcoming({ session_date: "2026-07-08", status: "full" }
 const range = mapSessionToUpcoming({ session_date: "2026-07-08", session_time: "10:00 - 12:00", status: "open" }, TODAY);
 assert.equal(range.start_time, "10:00");
 assert.equal(range.end_time, "12:00");
+
+// session -> calendar event
+const ev = mapSessionToEvent({ id: "s1", title: "Onboarding", type: "workshop", skill_tags: ["foundations"], session_date: "2026-07-08T00:00:00.000Z", session_time: "09:00:00", location: "HQ", trainer: "L&D Team", registration_url: null });
+assert.equal(ev.event_id, "s1");
+assert.equal(ev.start_date, "2026-07-08");
+assert.equal(ev.time, "09:00");
+assert.equal(ev.host, "L&D Team");
+assert.equal(ev.url, "#");
 
 // course -> card (duration_hours -> minutes)
 const card = mapCourseToCard({ id: "LC-002", title: "Data", trainer: "Data Guild", format: "Video", duration_hours: 1.5, xp_reward: 80, skill_tags: ["Data Analysis"], registration_url: null, fit_tag: "best_fit" });

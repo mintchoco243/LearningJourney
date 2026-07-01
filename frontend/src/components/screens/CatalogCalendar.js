@@ -5,6 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
+import { getCalendarEvents } from '@/lib/mockApi';
 
 const D = GLH_DATA;
 const { Icon, fmtDate, fmtDuration, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
@@ -242,9 +243,12 @@ const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI",
     const _now = new Date();
     const [cursor, setCursor] = React.useState({ y: _now.getFullYear(), m: _now.getMonth() });
     const [skillFilter, setSkillFilter] = React.useState("all");
+    const [calendarEvents, setCalendarEvents] = React.useState(D.CALENDAR);
 
-    const calSkills = [...new Set(D.CALENDAR.flatMap(e => e.skill_tags || []))];
-    const events = D.CALENDAR.filter(e =>
+    React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
+
+    const calSkills = [...new Set(calendarEvents.flatMap(e => e.skill_tags || []))];
+    const events = calendarEvents.filter(e =>
       skillFilter === "all" || (e.skill_tags || []).includes(skillFilter)
     );
 
