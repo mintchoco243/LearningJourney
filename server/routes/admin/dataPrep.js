@@ -23,6 +23,8 @@ const specs = {
       "registration_url",
       "xp_reward",
       "is_active",
+      "status",
+      "material_url",
     ],
   },
   sessions: {
@@ -51,6 +53,7 @@ const specs = {
 const validAdminRoles = new Set(["super_admin", "admin", "editor"]);
 const validFormats = new Set(["online", "offline", "elearning", "webinar", "workshop", "bootcamp", "talk"]);
 const validTypes = new Set(["open", "scheduled", "waitlist"]);
+const validCourseStatuses = new Set(["open", "ended"]);
 
 function getSpec(type) {
   const spec = specs[type];
@@ -162,6 +165,7 @@ async function validateRows(type, inputRows) {
       if (!row.xp_reward) errors.push("xp_reward is required");
       if (row.xp_reward && numberValue(row.xp_reward) === null) errors.push("xp_reward must be a number");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
+      if (row.status && !validCourseStatuses.has(row.status)) errors.push("status must be open/ended");
     }
 
     if (type === "sessions") {
@@ -394,8 +398,8 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
         for (const row of stagingRows) {
           await client.query(
             `INSERT INTO courses
-               (id, title, trainer, trainer_type, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+               (id, title, trainer, trainer_type, format, duration_hours, skill_tags, rank_targets, role_targets, type, min_participants, registration_url, description, xp_reward, is_active, status, material_url)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
              ON DUPLICATE KEY UPDATE
                title = VALUES(title),
                trainer = VALUES(trainer),
@@ -411,6 +415,8 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
                description = VALUES(description),
                xp_reward = VALUES(xp_reward),
                is_active = VALUES(is_active),
+               status = VALUES(status),
+               material_url = VALUES(material_url),
                updated_at = NOW()`,
             [
               row.course_id,
@@ -428,6 +434,8 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
               row.description,
               row.xp_reward,
               row.is_active,
+              row.status || "open",
+              row.material_url || null,
             ]
           );
         }
@@ -534,20 +542,25 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
     const type = req.params.type;
     const { batchId } = req.body;
 
-    if (!batchId) {
-      return res.status(400).json({ error: "BATCH_ID_REQUIRED" });
-    }
-
     if (type === "admin-accounts" && req.adminRole !== "super_admin") {
       return res.status(403).json({ error: "SUPER_ADMIN_REQUIRED_FOR_ADMIN_ACCOUNTS" });
     }
 
-    const result = await query("SELECT * FROM data_batches WHERE id = $1 AND entity_type = $2", [batchId, type]);
-    if (!result.rowCount) return res.status(404).json({ error: "BATCH_NOT_FOUND" });
-    const batch = result.rows[0];
-
-    if (!batch.promoted_at) {
-      return res.status(400).json({ error: "BATCH_NOT_PROMOTED" });
+    let batch;
+    if (batchId) {
+      const result = await query("SELECT * FROM data_batches WHERE id = $1 AND entity_type = $2", [batchId, type]);
+      if (!result.rowCount) return res.status(404).json({ error: "BATCH_NOT_FOUND" });
+      batch = result.rows[0];
+    } else {
+      // No batchId given -> roll back whichever promoted batch of this type happened most recently.
+      const result = await query(
+        `SELECT * FROM data_batches
+         WHERE entity_type = $1 AND promoted_at IS NOT NULL
+         ORDER BY promoted_at DESC LIMIT 1`,
+        [type]
+      );
+      if (!result.rowCount) return res.status(404).json({ error: "NO_PROMOTED_BATCH_FOUND" });
+      batch = result.rows[0];
     }
 
     // Check if 24 hours have passed
@@ -585,7 +598,7 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
              SET title = $2, trainer = $3, trainer_type = $4, format = $5, duration_hours = $6,
                  skill_tags = $7, rank_targets = $8, role_targets = $9, type = $10,
                  min_participants = $11, registration_url = $12, description = $13,
-                 xp_reward = $14, is_active = $15, updated_at = NOW()
+                 xp_reward = $14, is_active = $15, status = $16, material_url = $17, updated_at = NOW()
              WHERE id = $1`,
             [
               c.id,
@@ -603,6 +616,8 @@ adminDataPrepRouter.post("/:type/rollback", async (req, res, next) => {
               c.description,
               c.xp_reward,
               c.is_active,
+              c.status,
+              c.material_url,
             ]
           );
         }

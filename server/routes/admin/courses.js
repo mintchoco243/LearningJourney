@@ -41,6 +41,8 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       description,
       xp_reward,
       is_active,
+      status,
+      material_url,
     } = req.body;
 
     if (!id || !title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
@@ -51,8 +53,8 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       `INSERT INTO courses
          (id, title, trainer, trainer_type, format, duration_hours,
           skill_tags, rank_targets, role_targets, type, min_participants,
-          registration_url, description, xp_reward, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+          registration_url, description, xp_reward, is_active, status, material_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
       [
         id,
         title,
@@ -69,6 +71,8 @@ adminCoursesRouter.post("/", async (req, res, next) => {
         description,
         xp_reward,
         is_active === undefined ? true : is_active,
+        status || "open",
+        material_url || null,
       ]
     );
 
@@ -98,6 +102,8 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       description,
       xp_reward,
       is_active,
+      status,
+      material_url,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
@@ -123,6 +129,8 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
            description = $13,
            xp_reward = $14,
            is_active = $15,
+           status = $16,
+           material_url = $17,
            updated_at = NOW()
        WHERE id = $1`,
       [
@@ -141,6 +149,8 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
         description,
         xp_reward,
         is_active === undefined ? true : is_active,
+        status || "open",
+        material_url || null,
       ]
     );
 

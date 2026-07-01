@@ -34,6 +34,8 @@ const D = ADM_DATA;
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),
+      status: c.status || "open",
+      material_url: c.material_url || "",
       enrollments: c.enrolled_count || 0,
       description: c.description || "",
       type: c.type || "internal",
@@ -193,10 +195,29 @@ const D = ADM_DATA;
       const newVal = !course.is_active;
       setCourses(cs => cs.map(c => c.id === id ? { ...c, is_active: newVal } : c));
       try {
+        // PUT requires the full course payload (title/trainer/format/duration_hours/type/xp_reward) —
+        // sending only is_active gets rejected with 400 MISSING_REQUIRED_FIELDS.
         await apiFetch(`/admin/api/courses/${id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ is_active: newVal }),
+          body: JSON.stringify({
+            title: course.title,
+            trainer: course.trainer,
+            trainer_type: course.trainer_type,
+            format: course.format,
+            duration_hours: course.duration_hours,
+            rank_targets: course.rank_targets,
+            role_targets: course.role_targets,
+            skill_tags: course.skill_tags,
+            type: course.type,
+            xp_reward: course.xp_reward,
+            description: course.description,
+            registration_url: course.registration_url,
+            status: course.status,
+            material_url: course.material_url,
+            min_participants: course.min_participants ?? null,
+            is_active: newVal,
+          }),
         });
       } catch (e) {
         setCourses(cs => cs.map(c => c.id === id ? { ...c, is_active: !newVal } : c));
@@ -221,6 +242,8 @@ const D = ADM_DATA;
           description: formData.description || "",
           registration_url: formData.registration_url || "",
           is_active: formData.is_active !== false,
+          status: formData.status || "open",
+          material_url: formData.material_url || "",
           min_participants: parseInt(formData.min_participants) || null,
         };
         if (!isEdit) payload.id = formData.id;
@@ -248,6 +271,21 @@ const D = ADM_DATA;
       }
     }
 
+    async function handleRollbackLastSync() {
+      if (!confirm("Hoàn tác lần đồng bộ CSV gần nhất? Chỉ áp dụng được trong vòng 24h sau khi đẩy lên live.")) return;
+      try {
+        await apiFetch("/admin/api/data-prep/courses/rollback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        await reloadCourses();
+        alert("Đã hoàn tác lần đồng bộ gần nhất.");
+      } catch (e) {
+        alert("Hoàn tác thất bại: " + e.message);
+      }
+    }
+
     return (
       <div data-screen-label="Courses">
         <PageHeader
@@ -257,6 +295,9 @@ const D = ADM_DATA;
             <div style={{ display: "flex", gap: 8 }}>
               <button className="adm-btn adm-btn--sec" onClick={() => setSyncModal(true)}>
                 <Icon name="refresh-cw" size={14} /> Đồng bộ CSV
+              </button>
+              <button className="adm-btn adm-btn--sec" onClick={handleRollbackLastSync}>
+                <Icon name="rotate-ccw" size={14} /> Hoàn tác đồng bộ gần nhất
               </button>
               <button className="adm-btn adm-btn--sec" onClick={() => setImportModal(true)}>
                 <Icon name="users" size={14} /> Import participants
@@ -369,6 +410,8 @@ const D = ADM_DATA;
       description: course?.description || "",
       registration_url: course?.registration_url || "",
       is_active: course ? course.is_active : true,
+      status: course?.status || "open",
+      material_url: course?.material_url || "",
       min_participants: course?.min_participants || "",
     });
 
@@ -459,6 +502,22 @@ const D = ADM_DATA;
             <label className="adm-label">Số người tối thiểu</label>
             <input className="adm-input" type="number" min="1" value={form.min_participants} onChange={e => set("min_participants", e.target.value)} placeholder="Không bắt buộc" />
           </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Trạng thái</label>
+            <select className="adm-select" value={form.status} onChange={e => set("status", e.target.value)}>
+              <option value="open">Đang mở</option>
+              <option value="ended">Đã tổ chức xong</option>
+            </select>
+          </div>
+          {form.status === "ended" && (
+            <div className="adm-form-group">
+              <label className="adm-label">Link tài liệu</label>
+              <input className="adm-input" value={form.material_url} onChange={e => set("material_url", e.target.value)} placeholder="https://..." />
+            </div>
+          )}
         </div>
 
         <div className="adm-form-group" style={{ marginBottom: 18 }}>
@@ -675,7 +734,7 @@ const D = ADM_DATA;
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>course_id, title, trainer, format, duration_hours, type, xp_reward</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, is_active, trainer_type).
+          Cột cần có: <code>course_id, title, trainer, format, duration_hours, type, xp_reward</code> — các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, is_active, trainer_type, status, material_url).
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />

@@ -66,6 +66,8 @@ export function mapCourseToCard(c) {
     skill_tags: c.skill_tags || [],
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
+    course_status: c.status === "ended" ? "ended" : null,
+    material_url: c.material_url || null,
   };
 }
 

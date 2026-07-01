@@ -50,6 +50,12 @@ assert.equal(card.course_id, "LC-002");
 assert.equal(card.format, "elearning");
 assert.equal(card.duration_minutes, 90);
 assert.equal(card.url, "#");
+assert.equal(card.course_status, null);
+
+// course -> card: ended status carries material_url through for the "Xem tài liệu" CTA
+const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended", material_url: "https://docs.example/lc-003" });
+assert.equal(endedCard.course_status, "ended");
+assert.equal(endedCard.material_url, "https://docs.example/lc-003");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

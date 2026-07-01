@@ -275,11 +275,12 @@
             rank_ids: c.rank_targets && c.rank_targets.length ? c.rank_targets.map((r) => r.toLowerCase()) : ["rank_01"],
             skill_tags: c.skill_tags || [],
             format: c.format || "online",
-            duration_minutes: c.duration_minutes || 60,
+            duration_minutes: c.duration_hours != null ? Math.round(Number(c.duration_hours) * 60) : (c.duration_minutes || 60),
             xp_reward: c.xp_reward || 30,
             trainer: c.trainer || "",
             audience: c.audience || "Mọi cấp độ",
             url: c.registration_url || "#",
+            rating: c.rating || null,
             _id: c.id,
           }));
         }

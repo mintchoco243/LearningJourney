@@ -138,7 +138,7 @@ const D = GLH_DATA;
                 React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), "Bạn đã hoàn thành khóa học này")
             : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
                 React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành"),
-                React.createElement("a", { href: c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, "Mở khóa học")))));
+                React.createElement("a", { href: (c.course_status === "ended" ? c.material_url : null) || c.url || "#", className: "u-btn u-btn--sec", style: { textDecoration: "none", display: "inline-flex", alignItems: "center" }, target: "_blank", rel: "noreferrer" }, c.course_status === "ended" ? "Xem tài liệu" : "Mở khóa học")))));
   }
 
   /* ---------- Event modal ---------- */
