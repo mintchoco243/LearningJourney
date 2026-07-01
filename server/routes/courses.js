@@ -5,7 +5,8 @@ export const coursesRouter = express.Router();
 
 function fitTag(course, user) {
   const roleFit = course.role_targets?.includes("All") || course.role_targets?.includes(user.role);
-  const rankFit = user.rank && course.rank_targets?.includes(user.rank);
+  // "All" trong rank_targets = khoá dành cho mọi cấp -> khớp với mọi rank của người dùng
+  const rankFit = user.rank && (course.rank_targets?.includes("All") || course.rank_targets?.includes(user.rank));
   if (roleFit && rankFit) return "best_fit";
   if (rankFit) return "for_your_level";
   return null;
@@ -26,6 +27,11 @@ coursesRouter.get("/", async (req, res, next) => {
     for (const [queryKey, column] of [["rank", "rank_targets"], ["role", "role_targets"], ["format", "format"], ["skill_tag", "skill_tags"], ["type", "type"]]) {
       if (!req.query[queryKey]) continue;
       params.push(req.query[queryKey]);
+      // Lọc theo rank: khớp khoá có đúng rank đó HOẶC khoá gắn "All" (mọi cấp)
+      if (queryKey === "rank") {
+        filters.push(`($${params.length} = ANY(c.rank_targets) OR 'All' = ANY(c.rank_targets))`);
+        continue;
+      }
       filters.push(column.endsWith("_targets") || column === "skill_tags" ? `$${params.length} = ANY(c.${column})` : `c.${column} = $${params.length}`);
     }
 

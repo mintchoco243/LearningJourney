@@ -11,6 +11,7 @@ const D = GLH_DATA;
   const DEFAULT_USER = {
     onboarded: false,
     email: "",
+    full_name: "",
     character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
     quiz_result: null, // { class_id, rank_id, personality, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }

@@ -58,50 +58,44 @@ const D = GLH_DATA;
     elearning:{ bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
   };
 
-  export function CourseCard(props) {
+  export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
-    const c = props.course;
-    const meta = (D.COURSE_META || {})[c.course_id] || {};
-    const done = (user.completed_courses || []).includes(c.course_id);
-    const rec = isRecommended(c, user);
+    const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
+    const done = (user.completed_courses || []).includes(c.course_id) || c.course_status === "ended";
+    const cta = c.course_status
+      ? ({ upcoming_open: { text: "Đăng ký →", color: "var(--glh-accent)" }, upcoming_closed: { text: "Đặt chỗ →", color: "#FF9E00" }, elearning: { text: "Học ngay →", color: "#A38BFF" }, ended: { text: "Xem tài liệu →", color: "var(--rpg-muted)" } })[c.course_status]
+      : ({ offline: { text: "Đăng ký →", color: "var(--glh-accent)" }, online: { text: "Đăng ký →", color: "var(--glh-accent)" }, elearning: { text: "Học ngay →", color: "#A38BFF" } })[c.format] || { text: "Xem thêm →", color: "var(--rpg-muted)" };
+    const desc = c.description_short || c.description;
 
     return React.createElement("button", {
-      className: "u-card u-card--hover" + (rec ? " u-card--feature" : ""),
-      style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden" },
-      onClick: () => props.onOpen(c),
+      className: "u-card u-card--hover",
+      style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
+      onClick: () => onClick(c),
     },
-      // Body
       React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
-        // Top row
+        // format chip + XP
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
-          React.createElement("span", {
-            style: {
-              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em",
-              padding: "3px 10px", borderRadius: 999,
-              background: (FORMAT_COLOR[c.format] || {}).bg || "rgba(255,255,255,0.07)",
-              color: (FORMAT_COLOR[c.format] || {}).color || "var(--rpg-muted)",
-            }
-          }, FORMAT_LABEL[c.format] || c.format),
-          done ? React.createElement("span", { style: { fontSize: 11, fontWeight: 700, color: "var(--garena-positive)", display: "inline-flex", alignItems: "center", gap: 4 } },
-            React.createElement(Icon, { name: "check-circle", size: 12, color: "var(--garena-positive)" }), "Đã học") : null,
-          rec && !done ? React.createElement("span", { className: "u-pill u-pill--match" }, "Gợi ý") : null,
+          React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
+            FORMAT_LABEL[c.format] || c.format),
           React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--amber)" } },
-            React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")
-        ),
-        React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3 } }, c.title),
-        React.createElement("p", { style: { fontSize: 12, color: "var(--rpg-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, c.description),
-        (c.skill_tags || []).length > 0 ? React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-          (c.skill_tags || []).slice(0, 2).map((sid) => React.createElement(SkillPill, { key: sid, id: sid }))
-        ) : null,
+            React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")),
+        // date + countdown (dashboard recommended only)
+        showDate && c.start_date && React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "var(--rpg-muted)" } },
+          fmtDate(c.start_date),
+          c.countdown_days != null && React.createElement("span", { style: { marginLeft: 8, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
+            "· còn " + c.countdown_days + " ngày")),
+        // title
+        React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3, margin: 0 } }, c.title),
+        // description
+        desc && React.createElement("p", { className: "rec-desc", style: { fontSize: 12, color: "var(--rpg-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, desc),
+        // skill tags
+        (c.skill_tags || []).length > 0 && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+          (c.skill_tags || []).slice(0, 2).map(sid => React.createElement(SkillPill, { key: sid, id: sid }))),
+        // meta row
         React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
-          React.createElement(MetaChip, { icon: "user" }, c.trainer),
-          React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
-          c.format === "offline" ? React.createElement(MetaChip, { icon: "map-pin" }, "Tầng 12, HQ") :
-          c.format === "online" ? React.createElement(MetaChip, { icon: "map" }, "Online") :
-          React.createElement(MetaChip, { icon: "map" }, "E-learning")
-        )
-      )
-    );
+          c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
+          c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
+          cta && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: cta.color } }, cta.text))));
   }
 
   /* ---------- Course modal ---------- */
