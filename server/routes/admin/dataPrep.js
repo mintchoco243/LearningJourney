@@ -159,11 +159,28 @@ export function csvToRows(csvText) {
   const grid = parseCsv(csvText).filter((r) => r.length > 1 || r[0] !== "");
   const [header, ...dataRows] = grid;
   if (!header) return [];
+  const normalizedHeaders = header.map((h) => normalizeHeaderName(h));
   return dataRows.map((cells) => {
     const obj = {};
-    header.forEach((h, i) => { obj[h.trim()] = cells[i]; });
+    normalizedHeaders.forEach((h, i) => { obj[h] = cells[i]; });
     return obj;
   });
+}
+
+function normalizeHeaderName(header) {
+  const normalized = clean(header)
+    .replace(/^\uFEFF/, "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const aliases = {
+    learning_format: "learning_formats",
+    learning_formats: "learning_formats",
+    preferred_trainer: "preferred_trainers",
+    preferred_trainers: "preferred_trainers",
+    prefferd_trainer: "preferred_trainers",
+    prefferd_trainers: "preferred_trainers",
+  };
+  return aliases[normalized] || normalized;
 }
 
 // Sheet multi-value cell ("A, B, C") -> JSON array text for MySQL JSON columns.

@@ -34,8 +34,37 @@ const D = ADM_DATA;
     return res.json();
   }
 
+  function asList(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (value === null || value === undefined || value === "") return [];
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean);
+      } catch (_) {}
+      return value.split(",").map(item => item.trim()).filter(Boolean);
+    }
+    return [String(value)];
+  }
+
+  function displayValue(value) {
+    const list = asList(value);
+    if (list.length > 1) return list.join(", ");
+    if (list.length === 1) return list[0];
+    return "—";
+  }
+
+  function Field({ label, value }) {
+    return (
+      <div style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "10px 12px", minWidth: 0 }}>
+        <div style={{ fontSize: 10, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 5 }}>{label}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.35, overflowWrap: "anywhere" }}>{displayValue(value)}</div>
+      </div>
+    );
+  }
+
   function RankBadge({ rank }) {
-    const m = RANK_META[rank] || RANK_META.rank_01;
+    const m = RANK_META[rank] || { ...RANK_META.rank_01, name: rank || RANK_META.rank_01.name };
     return (
       <span style={{
         display: "inline-flex", alignItems: "center", gap: 5,
@@ -90,8 +119,8 @@ const D = ADM_DATA;
     const ongoing     = enrollments.filter(e => e.status !== "completed");
     const rm          = RANK_META[user.rank] || RANK_META.rank_01;
     const nextRank    = Object.entries(RANK_META).find(([, m]) => m.min > rm.max);
-    const xpToNext    = nextRank ? nextRank[1].min - (user.xp || 0) : null;
-    const xp          = user.xp || 0;
+    const xpToNext    = nextRank ? nextRank[1].min - (user.xp_total || 0) : null;
+    const xp          = user.xp_total || 0;
     const xpPct       = Math.min(100, ((xp - rm.min) / (rm.max - rm.min + 1)) * 100);
 
     return (
@@ -110,7 +139,7 @@ const D = ADM_DATA;
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 700, fontSize: 16, color: "#fff", marginBottom: 3 }}>{user.full_name}</div>
-            <div style={{ fontSize: 13, color: "var(--rpg-muted)", marginBottom: 8 }}>{user.email}{user.dept ? ` · ${user.dept}` : ""}</div>
+            <div style={{ fontSize: 13, color: "var(--rpg-muted)", marginBottom: 8 }}>{user.email}{user.team ? ` · ${user.team}` : ""}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <RankBadge rank={user.rank} />
               <span style={{ fontSize: 13, color: rm.color, fontWeight: 700 }}>{xp.toLocaleString("vi-VN")} XP</span>
@@ -129,6 +158,17 @@ const D = ADM_DATA;
               <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>{(user.last_active||"").slice(5).replace("-","/")} </div>
             </>}
           </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 10, marginBottom: 20 }}>
+          <Field label="Email" value={user.email} />
+          <Field label="Full name" value={user.full_name} />
+          <Field label="Rank" value={user.rank} />
+          <Field label="Role" value={user.role} />
+          <Field label="Team" value={user.team} />
+          <Field label="Learning formats" value={user.learning_formats} />
+          <Field label="Weekly hours" value={user.weekly_hours} />
+          <Field label="Preferred trainers" value={user.preferred_trainers} />
         </div>
 
         {/* XP progress bar */}
@@ -312,7 +352,7 @@ const D = ADM_DATA;
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>email, full_name</code> — các cột khác tuỳ chọn (rank, role, team, class_archetype, learning_formats, weekly_hours, preferred_trainers, learning_goals).
+          Columns used: <code>email, full_name, rank, role, team, learning_formats, weekly_hours, preferred_trainers</code>. Header aliases like <code>Learning_formats</code>, <code>Preferred_trainers</code>, and <code>Prefferd_trainers</code> are accepted.
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />
@@ -335,9 +375,8 @@ const D = ADM_DATA;
     const [users, setUsers]               = React.useState(D.ADMIN_USERS);
     const [loading, setLoading]           = React.useState(true);
     const [search, setSearch]             = React.useState("");
-    const [deptFilter, setDeptFilter]     = React.useState("all");
+    const [teamFilter, setTeamFilter]     = React.useState("all");
     const [rankFilter, setRankFilter]     = React.useState("all");
-    const [statusFilter, setStatusFilter] = React.useState("all");
     const [selectedUser, setSelectedUser] = React.useState(null);
     const [page, setPage]                 = React.useState(1);
     const [syncModal, setSyncModal]       = React.useState(false);
@@ -350,31 +389,54 @@ const D = ADM_DATA;
         .finally(() => setLoading(false));
     }, []);
 
-    const depts = ["all", ...Array.from(new Set(users.map(u => u.dept).filter(Boolean))).sort()];
+    const teams = ["all", ...Array.from(new Set(users.map(u => u.team).filter(Boolean))).sort()];
 
     const filtered = users.filter(u => {
       const q = search.toLowerCase();
-      const matchQ = !search || (u.full_name||"").toLowerCase().includes(q) || (u.email||"").toLowerCase().includes(q) || (u.dept||"").toLowerCase().includes(q);
-      const matchD = deptFilter === "all" || u.dept === deptFilter;
+      const searchable = [
+        u.full_name,
+        u.email,
+        u.rank,
+        u.role,
+        u.team,
+        displayValue(u.learning_formats),
+        u.weekly_hours,
+        displayValue(u.preferred_trainers),
+      ].join(" ").toLowerCase();
+      const matchQ = !search || searchable.includes(q);
+      const matchT = teamFilter === "all" || u.team === teamFilter;
       const matchR = rankFilter === "all" || u.rank === rankFilter;
-      const matchS = statusFilter === "all" || u.status === statusFilter;
-      return matchQ && matchD && matchR && matchS;
+      return matchQ && matchT && matchR;
     });
 
-    const totalPages = Math.ceil(filtered.length / PER_PAGE);
-    const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+    const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+    const currentPage = Math.min(page, totalPages);
+    const paged = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
 
-    React.useEffect(() => { setPage(1); }, [search, deptFilter, rankFilter, statusFilter]);
+    function handleSearch(value) {
+      setSearch(value);
+      setPage(1);
+    }
 
-    const active    = users.filter(u => u.status === "active").length;
-    const totalEnr  = users.reduce((a, u) => a + (u.enrollment_count || 0), 0);
-    const completed = users.reduce((a, u) => a + (u.completed_count || 0), 0);
+    function handleTeamFilter(value) {
+      setTeamFilter(value);
+      setPage(1);
+    }
+
+    function handleRankFilter(value) {
+      setRankFilter(value);
+      setPage(1);
+    }
+
+    const withTeam  = users.filter(u => u.team).length;
+    const withRole  = users.filter(u => u.role).length;
+    const withPrefs = users.filter(u => asList(u.learning_formats).length || asList(u.preferred_trainers).length || u.weekly_hours).length;
 
     return (
       <div data-screen-label="Users">
         <PageHeader
           title="Quản lý Users"
-          subtitle={`${users.length} người dùng · ${active} đang hoạt động`}
+          subtitle={`${users.length} users`}
           action={
             <button className="adm-btn adm-btn--sec" onClick={() => setSyncModal(true)}>
               <Icon name="refresh-cw" size={14} /> Đồng bộ CSV
@@ -383,27 +445,22 @@ const D = ADM_DATA;
         />
 
         <div className="adm-stat-grid" style={{ gridTemplateColumns: "repeat(4,1fr)" }}>
-          <StatCard label="Tổng người dùng"       value={users.length}  icon="users"        color="#6aa3e0" iconBg="rgba(59,111,176,.14)" />
-          <StatCard label="Đang hoạt động"         value={active}        icon="user-check"   color="#2BB6A3" iconBg="rgba(43,182,163,.14)" />
-          <StatCard label="Tổng enrollments"       value={totalEnr}      icon="book-open"    color="#9b7fff" iconBg="rgba(124,92,255,.14)" />
-          <StatCard label="Khóa học hoàn thành"    value={completed}     icon="check-circle" color="#FFBA00" iconBg="rgba(255,186,0,.14)"  />
+          <StatCard label="Total users"              value={users.length}  icon="users"        color="#6aa3e0" iconBg="rgba(59,111,176,.14)" />
+          <StatCard label="With team"                value={withTeam}      icon="briefcase"    color="#2BB6A3" iconBg="rgba(43,182,163,.14)" />
+          <StatCard label="With role"                value={withRole}      icon="user-check"   color="#9b7fff" iconBg="rgba(124,92,255,.14)" />
+          <StatCard label="With learning prefs"      value={withPrefs}     icon="book-open"    color="#FFBA00" iconBg="rgba(255,186,0,.14)"  />
         </div>
 
         <div className="adm-filter-row" style={{ flexWrap: "wrap", gap: 8 }}>
-          <SearchInput value={search} onChange={setSearch} placeholder="Tìm tên, email, phòng ban..." />
-          <select className="adm-select" style={{ minWidth: 150 }} value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
-            <option value="all">Tất cả phòng ban</option>
-            {depts.filter(d => d !== "all").map(d => <option key={d} value={d}>{d}</option>)}
+          <SearchInput value={search} onChange={handleSearch} placeholder="Search name, email, role, team..." />
+          <select className="adm-select" style={{ minWidth: 150 }} value={teamFilter} onChange={e => handleTeamFilter(e.target.value)}>
+            <option value="all">All teams</option>
+            {teams.filter(d => d !== "all").map(d => <option key={d} value={d}>{d}</option>)}
           </select>
-          <select className="adm-select" style={{ minWidth: 140 }} value={rankFilter} onChange={e => setRankFilter(e.target.value)}>
+          <select className="adm-select" style={{ minWidth: 140 }} value={rankFilter} onChange={e => handleRankFilter(e.target.value)}>
             <option value="all">Tất cả rank</option>
             {Object.entries(RANK_META).map(([k, m]) => <option key={k} value={k}>{m.name}</option>)}
           </select>
-          <div className="adm-tab-filter">
-            {[["all","Tất cả"],["active","Hoạt động"],["inactive","Không hoạt động"]].map(([v,l]) => (
-              <button key={v} className={`adm-tab-filter__item${statusFilter===v?" is-active":""}`} onClick={()=>setStatusFilter(v)}>{l}</button>
-            ))}
-          </div>
         </div>
 
         <div className="adm-table-wrap">
@@ -411,14 +468,14 @@ const D = ADM_DATA;
             <thead>
               <tr>
                 <th style={{ width: 36 }}>#</th>
-                <th>Người dùng</th>
-                <th style={{ width: 130 }}>Phòng ban</th>
-                <th style={{ width: 120 }}>Rank</th>
-                <th style={{ width: 80 }}>XP</th>
-                <th style={{ width: 90 }}>Enrollments</th>
-                <th style={{ width: 90 }}>Hoàn thành</th>
-                <th style={{ width: 90 }}>Hoạt động</th>
-                <th style={{ width: 90 }}>Trạng thái</th>
+                <th style={{ minWidth: 220 }}>Email</th>
+                <th style={{ minWidth: 180 }}>Full name</th>
+                <th style={{ width: 130 }}>Rank</th>
+                <th style={{ minWidth: 120 }}>Role</th>
+                <th style={{ minWidth: 120 }}>Team</th>
+                <th style={{ minWidth: 160 }}>Learning formats</th>
+                <th style={{ width: 110 }}>Weekly hours</th>
+                <th style={{ minWidth: 170 }}>Preferred trainers</th>
                 <th style={{ width: 44 }}></th>
               </tr>
             </thead>
@@ -429,52 +486,30 @@ const D = ADM_DATA;
                 </tr>
               )}
               {!loading && paged.map((u, idx) => {
-                const rm     = RANK_META[u.rank] || RANK_META.rank_01;
-                const rowNum = (page - 1) * PER_PAGE + idx + 1;
+                const rowNum = (currentPage - 1) * PER_PAGE + idx + 1;
                 return (
                   <tr key={u.id} style={{ cursor: "pointer" }} onClick={() => setSelectedUser(u)}>
                     <td style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{rowNum}</td>
                     <td>
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Avatar name={u.full_name || u.email} />
+                        <Avatar name={u.email || u.full_name} />
                         <div>
-                          <div style={{ fontWeight: 600, color: "#fff", fontSize: 13 }}>{u.full_name || "—"}</div>
-                          <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{u.email}</div>
+                          <div style={{ fontWeight: 600, color: "#fff", fontSize: 13, overflowWrap: "anywhere" }}>{u.email || "—"}</div>
+                          <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{u.full_name || "—"}</div>
                         </div>
                       </div>
                     </td>
+                    <td style={{ fontSize: 12, color: "#fff", fontWeight: 600 }}>{u.full_name || "—"}</td>
+                    <td><RankBadge rank={u.rank || "rank_01"} /></td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{u.role || "—"}</td>
                     <td>
                       <span style={{ fontSize: 12, color: "var(--rpg-muted)", background: "rgba(255,255,255,.04)", border: "1px solid var(--rpg-border)", borderRadius: 4, padding: "2px 7px" }}>
-                        {u.dept || "—"}
+                        {u.team || "—"}
                       </span>
                     </td>
-                    <td><RankBadge rank={u.rank || "rank_01"} /></td>
-                    <td>
-                      <span style={{ fontWeight: 700, color: rm.color, fontSize: 13 }}>{(u.xp||0).toLocaleString("vi-VN")}</span>
-                    </td>
-                    <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, color: "#fff" }}>
-                      {u.enrollment_count || 0}
-                    </td>
-                    <td>
-                      {(u.completed_count || 0) > 0
-                        ? <span style={{ fontWeight: 700, color: "#2BB6A3" }}>{u.completed_count}</span>
-                        : <span style={{ color: "var(--rpg-faint)" }}>—</span>}
-                    </td>
-                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>
-                      {u.last_active ? (u.last_active||"").slice(5).replace("-", "/") : "—"}
-                    </td>
-                    <td>
-                      <span style={{
-                        display: "inline-flex", alignItems: "center", gap: 5,
-                        padding: "2px 9px", borderRadius: 999, fontSize: 11, fontWeight: 700,
-                        background: u.status === "active" ? "rgba(43,182,163,.12)" : "rgba(138,147,168,.10)",
-                        color: u.status === "active" ? "#2BB6A3" : "#8A93A8",
-                        border: `1px solid ${u.status === "active" ? "rgba(43,182,163,.3)" : "rgba(138,147,168,.22)"}`,
-                      }}>
-                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor" }} />
-                        {u.status === "active" ? "Active" : "Inactive"}
-                      </span>
-                    </td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)", maxWidth: 220, overflowWrap: "anywhere" }}>{displayValue(u.learning_formats)}</td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{u.weekly_hours || "—"}</td>
+                    <td style={{ fontSize: 12, color: "var(--rpg-muted)", maxWidth: 240, overflowWrap: "anywhere" }}>{displayValue(u.preferred_trainers)}</td>
                     <td onClick={e => e.stopPropagation()}>
                       <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => setSelectedUser(u)}>
                         <Icon name="eye" size={13} />
@@ -494,14 +529,14 @@ const D = ADM_DATA;
         {totalPages > 1 && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 14, fontSize: 13 }}>
             <span style={{ color: "var(--rpg-muted)" }}>
-              {filtered.length} kết quả · trang {page}/{totalPages}
+              {filtered.length} kết quả · trang {currentPage}/{totalPages}
             </span>
             <div style={{ display: "flex", gap: 6 }}>
-              <button className="adm-btn adm-btn--sec adm-btn--sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" disabled={currentPage === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
                 <Icon name="chevron-left" size={14} />
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1)
-                .filter(n => n === 1 || n === totalPages || Math.abs(n - page) <= 1)
+                .filter(n => n === 1 || n === totalPages || Math.abs(n - currentPage) <= 1)
                 .reduce((acc, n, i, arr) => {
                   if (i > 0 && n - arr[i-1] > 1) acc.push("…");
                   acc.push(n);
@@ -509,9 +544,9 @@ const D = ADM_DATA;
                 }, [])
                 .map((n, i) => n === "…"
                   ? <span key={`e${i}`} style={{ padding: "0 4px", color: "var(--rpg-muted)" }}>…</span>
-                  : <button key={n} className={`adm-btn adm-btn--sm${page === n ? " adm-btn--primary" : " adm-btn--sec"}`} onClick={() => setPage(n)}>{n}</button>
+                  : <button key={n} className={`adm-btn adm-btn--sm${currentPage === n ? " adm-btn--primary" : " adm-btn--sec"}`} onClick={() => setPage(n)}>{n}</button>
                 )}
-              <button className="adm-btn adm-btn--sec adm-btn--sm" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" disabled={currentPage === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
                 <Icon name="chevron-right" size={14} />
               </button>
             </div>
