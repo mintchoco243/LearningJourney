@@ -110,7 +110,7 @@ export function Dashboard(props) {
   const rank     = rankForUser(user);
   const revealOpts  = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
   const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
-  const deptLabel   = qr._answers?.[0]?.label ?? cls.name;
+  const deptLabel   = user.db_team || user.db_role || cls.name;
   const hasSurvey   = !!(qr._answers?.length > 0);
   const totalHours  = Math.round(user.xp * 0.5);
 
