@@ -118,10 +118,6 @@ const D = ADM_DATA;
     const completed   = enrollments.filter(e => e.status === "completed");
     const ongoing     = enrollments.filter(e => e.status !== "completed");
     const rm          = RANK_META[user.rank] || RANK_META.rank_01;
-    const nextRank    = Object.entries(RANK_META).find(([, m]) => m.min > rm.max);
-    const xpToNext    = nextRank ? nextRank[1].min - (user.xp_total || 0) : null;
-    const xp          = user.xp_total || 0;
-    const xpPct       = Math.min(100, ((xp - rm.min) / (rm.max - rm.min + 1)) * 100);
 
     return (
       <div>
@@ -142,10 +138,6 @@ const D = ADM_DATA;
             <div style={{ fontSize: 13, color: "var(--rpg-muted)", marginBottom: 8 }}>{user.email}{user.team ? ` · ${user.team}` : ""}</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
               <RankBadge rank={user.rank} />
-              <span style={{ fontSize: 13, color: rm.color, fontWeight: 700 }}>{xp.toLocaleString("vi-VN")} XP</span>
-              {xpToNext !== null && (
-                <span style={{ fontSize: 11, color: "var(--rpg-muted)" }}>còn {xpToNext} XP lên rank tiếp</span>
-              )}
             </div>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -169,17 +161,6 @@ const D = ADM_DATA;
           <Field label="Learning formats" value={user.learning_formats} />
           <Field label="Weekly hours" value={user.weekly_hours} />
           <Field label="Preferred trainers" value={user.preferred_trainers} />
-        </div>
-
-        {/* XP progress bar */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 11, color: "var(--rpg-muted)" }}>
-            <span>Tiến độ rank — {rm.name}</span>
-            <span>{xp} / {rm.max} XP</span>
-          </div>
-          <div style={{ height: 6, background: "rgba(255,255,255,.06)", borderRadius: 999, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${xpPct}%`, background: rm.color, borderRadius: 999, transition: "width .6s" }} />
-          </div>
         </div>
 
         {/* Stats row */}
@@ -219,7 +200,6 @@ const D = ADM_DATA;
                     <div style={{ fontWeight: 600, color: "#fff", fontSize: 13, marginBottom: 2 }}>{e.course_title || e.title}</div>
                     <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>
                       Đăng ký {(e.enrolled_at||"").slice(5).replace("-","/")}
-                      {e.xp_earned > 0 && <span style={{ color: "#FFBA00", marginLeft: 8 }}>+{e.xp_earned} XP</span>}
                     </div>
                   </div>
                   <EnrollBadge status={e.status} />

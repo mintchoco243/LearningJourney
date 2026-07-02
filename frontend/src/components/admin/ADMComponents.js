@@ -48,6 +48,7 @@ const { Icon } = GLHUI;
     { id: "dashboard",    label: "Dashboard",      icon: "layout-dashboard" },
     { id: "users",        label: "Users",           icon: "users-round" },
     { id: "courses",      label: "Khóa học",        icon: "book-open" },
+    { id: "sessions",     label: "Lịch học",        icon: "calendar-days" },
     { id: "requests",     label: "L&D Requests",    icon: "message-square", badge: 8 },
     { id: "policy",       label: "Chính sách",      icon: "layers" },
     { id: "testimonials", label: "Testimonials",    icon: "star" },

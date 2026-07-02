@@ -42,7 +42,7 @@ const { CourseModal } = GLHParts;
     const stats = [
       { label: "Khóa học", value: completedCourses.length.toString() },
       { label: "Sự kiện", value: registeredEvents.length.toString() },
-      { label: "Tổng XP", value: user.xp.toString() },
+      { label: "Giờ học", value: `${Number(user.hours_total || 0)}h` },
     ];
 
     const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
@@ -187,10 +187,8 @@ const { CourseModal } = GLHParts;
               },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 8, lineHeight: 1.3 } }, c.title),
                 React.createElement("div", { style: { fontSize: 11, color: "var(--rpg-muted)", marginBottom: 10 } }, "👨‍🏫 " + c.trainer),
-                React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-                  React.createElement("span", { style: { fontSize: 12, fontWeight: 700, color: "var(--glh-accent)" } }, "+" + (c.xp_reward || 20) + " XP"),
-                  React.createElement("span", { style: { fontSize: 10, fontWeight: 700, padding: "2px 6px", background: "rgba(31,138,91,0.3)", color: "#5FD9C8", borderRadius: 3 } }, "✅")
-                )
+                React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", alignItems: "center" } },
+                  React.createElement("span", { style: { fontSize: 10, fontWeight: 700, padding: "2px 6px", background: "rgba(31,138,91,0.3)", color: "#5FD9C8", borderRadius: 3 } }, "✅"))
               )
             )
           )
@@ -263,7 +261,7 @@ const { CourseModal } = GLHParts;
         title: "Câu hỏi thường gặp",
         items: [
           { title: "Tôi có thể học bao nhiêu khóa mỗi quý?", desc: "Không giới hạn số khóa học nội bộ. Khuyến khích tối thiểu 1 khóa/quý." },
-          { title: "Khi nào XP được cộng?", desc: "XP được cộng ngay khi bạn đánh dấu hoàn thành hoặc L&D xác minh tham gia." },
+          { title: "Khi nào giờ học được ghi nhận?", desc: "Giờ học được ghi nhận khi bạn hoàn thành khóa hoặc khi L&D xác minh tham gia." },
         ],
       },
     ];

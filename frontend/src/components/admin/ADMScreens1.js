@@ -494,7 +494,7 @@ const COURSE_TYPES = [
               <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'rank_targets', title: 'Chọn rank target' })}>
                 <Icon name="award" size={13} /> Rank
               </button>
-              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'xp_reward', title: 'Chọn XP' })}>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" style={{ display: "none" }} onClick={() => setBatchActionModal({ type: 'xp_reward', title: 'Chọn XP' })}>
                 <Icon name="zap" size={13} /> XP
               </button>
               <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={handleBatchDelete} style={{ color: "#E41E26" }}>
@@ -516,7 +516,7 @@ const COURSE_TYPES = [
                 <th>Tên khóa học</th>
                 <th style={{ width: 120 }}>Ngày tổ chức</th>
                 <th style={{ width: 108 }}>Format</th>
-                <th style={{ width: 60 }}>XP</th>
+                <th style={{ width: 60, display: "none" }}>XP</th>
                 <th>Rank targets</th>
                 <th style={{ width: 100 }}>Enrollments</th>
                 <th style={{ width: 110 }}>Hiển thị</th>
@@ -539,7 +539,7 @@ const COURSE_TYPES = [
                     {c.session_time && <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.session_time}</div>}
                   </td>
                   <td><Badge status={c.format} /></td>
-                  <td><span style={{ fontWeight: 700, color: "var(--amber)" }}>+{c.xp}</span></td>
+                  <td style={{ display: "none" }}><span style={{ fontWeight: 700, color: "var(--amber)" }}>+{c.xp}</span></td>
                   <td>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {(c.rank_targets || []).map(r => (
@@ -745,7 +745,7 @@ const COURSE_TYPES = [
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Format</label>
             <select className="adm-select" value={form.format} onChange={e => set("format", e.target.value)}>
@@ -758,7 +758,7 @@ const COURSE_TYPES = [
             <label className="adm-label">Thời lượng (giờ)</label>
             <input className="adm-input" type="number" min="0.5" step="0.5" value={form.duration_hours} onChange={e => set("duration_hours", e.target.value)} />
           </div>
-          <div className="adm-form-group">
+          <div className="adm-form-group" style={{ display: "none" }}>
             <label className="adm-label">XP reward</label>
             <input className="adm-input" type="number" min="0" value={form.xp_reward} onChange={e => set("xp_reward", e.target.value)} />
           </div>
@@ -819,25 +819,6 @@ const COURSE_TYPES = [
           <div className="adm-form-group">
             <label className="adm-label">Số người tối thiểu</label>
             <input className="adm-input" type="number" min="1" value={form.min_participants} onChange={e => set("min_participants", e.target.value)} placeholder="Không bắt buộc" />
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
-          <div className="adm-form-group">
-            <label className="adm-label">Ngày tổ chức</label>
-            <input className="adm-input" type="date" value={form.session_date} onChange={e => set("session_date", e.target.value)} />
-          </div>
-          <div className="adm-form-group">
-            <label className="adm-label">Giờ tổ chức</label>
-            <input className="adm-input" value={form.session_time} onChange={e => set("session_time", e.target.value)} placeholder="09:00" />
-          </div>
-          <div className="adm-form-group">
-            <label className="adm-label">Địa điểm</label>
-            <input className="adm-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="Phòng / Online link" />
-          </div>
-          <div className="adm-form-group">
-            <label className="adm-label">Sức chứa tối đa</label>
-            <input className="adm-input" type="number" min="1" value={form.max_participants} onChange={e => set("max_participants", e.target.value)} placeholder="Không bắt buộc" />
           </div>
         </div>
 
@@ -1072,7 +1053,7 @@ const COURSE_TYPES = [
     return (
       <div>
         <div style={{ fontSize: 12, color: "var(--rpg-muted)", marginBottom: 12, lineHeight: 1.5 }}>
-          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, xp_reward, is_active</code> — <code>rating</code> là tuỳ chọn (0-5, ví dụ 4.5). <code>type</code> dùng scheduled/interest/elearning/external/material_only. Các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, rating, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
+          Cột cần có: <code>course_code, title, trainer, format, duration_hours, type, is_active</code> — <code>rating</code> là tuỳ chọn (0-5, ví dụ 4.5). <code>type</code> dùng scheduled/interest/elearning/external/material_only. Các cột khác tuỳ chọn (description, skill_tags, rank_targets, role_targets, min_participants, registration_url, trainer_type, rating, status, material_url, session_date, session_time, location, max_participants). Điền lặp lại <code>course_code</code> ở nhiều dòng để tạo nhiều buổi cho cùng 1 khóa.
         </div>
         <label className="adm-upload-zone" style={{ cursor: "pointer" }}>
           <input type="file" accept=".csv" style={{ display: "none" }} onChange={handleFile} />

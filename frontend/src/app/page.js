@@ -45,25 +45,13 @@ const D = GLH_DATA;
 
   /* ---------- XP burst toast ---------- */
   function XpToast() {
-    const { xpBurst, actions } = useGame();
-    React.useEffect(() => {
-      if (!xpBurst) return;
-      const t = setTimeout(() => actions.clearXpBurst(), 1700);
-      return () => clearTimeout(t);
-    }, [actions, xpBurst]);
-    if (!xpBurst) return null;
-    return React.createElement("div", { className: "xp-burst", key: xpBurst.id },
-      React.createElement(Icon, { name: "zap", size: 18, color: "var(--amber)" }),
-      "+" + xpBurst.amount + " XP",
-      xpBurst.label ? React.createElement("span", { style: { fontWeight: 400, color: "var(--rpg-muted)", fontSize: 13 } }, "· " + xpBurst.label) : null);
+    return null;
   }
 
   /* ---------- Q&A section ---------- */
   const QA_SAMPLES = [
     { id: 1, q: "Tôi có thể đăng ký bao nhiêu khóa học trong một tháng?", a: "Không giới hạn số lượng khóa đăng ký. Tuy nhiên, bạn nên cân nhắc lịch học để đảm bảo hoàn thành đúng hạn." },
-    { id: 2, q: "Điểm XP được tính như thế nào?", a: "XP được cộng sau khi hoàn thành khóa học và được xác nhận bởi trainer. Mỗi khóa có số XP khác nhau tùy theo độ dài và mức độ." },
     { id: 3, q: "Tôi có thể đề xuất chủ đề đào tạo mới không?", a: "Có. Bạn có thể gửi đề xuất qua nút \"Gửi yêu cầu khóa học\" hoặc liên hệ trực tiếp team L&D qua email." },
-    { id: 4, q: "Chính sách hoàn trả XP khi hủy đăng ký là gì?", a: "XP chỉ được ghi nhận sau khi hoàn thành, do đó không phát sinh vấn đề hoàn trả khi hủy đăng ký trước khi khóa diễn ra." },
     { id: 5, q: "Khóa học E-learning có hạn truy cập không?", a: "Hiện tại các khóa E-learning được mở truy cập không thời hạn. Thông tin này có thể thay đổi, bạn nên theo dõi mục Chính sách để cập nhật." },
   ];
 
@@ -204,7 +192,7 @@ const D = GLH_DATA;
               React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
             React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
               React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
-              React.createElement("div", { className: "lv" }, user.xp + " XP tích lũy")))
+              React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")))
         )));
   }
 
@@ -282,7 +270,7 @@ const D = GLH_DATA;
         })
         .then((data) => {
           if (data && data.user && data.user.email) {
-            actions.setUserProfile(data.user);
+            actions.setUserProfile(data.user, data.enrollments, data.reservations);
             setPhase(user.quiz_result ? "app" : "onboarding");
           }
         })

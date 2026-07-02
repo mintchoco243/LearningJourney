@@ -24,7 +24,7 @@ adminSessionsRouter.get("/", async (req, res, next) => {
 // POST /admin/api/sessions -> Create session (copies course info from master row)
 adminSessionsRouter.post("/", async (req, res, next) => {
   try {
-    const { course_id, session_date, session_time, location, max_participants } = req.body;
+    const { course_id, session_date, session_time, location, min_participants, max_participants } = req.body;
 
     if (!course_id || !session_date) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
@@ -44,11 +44,11 @@ adminSessionsRouter.post("/", async (req, res, next) => {
           description, xp_reward, is_active, status, material_url,
           session_date, session_time, location, max_participants, current_count, session_status)
        SELECT UUID(), course_code, title, trainer, trainer_type, format, duration_hours,
-          rating, skill_tags, rank_targets, role_targets, type, min_participants, registration_url,
+          rating, skill_tags, rank_targets, role_targets, type, COALESCE($6, min_participants), registration_url,
           description, xp_reward, is_active, status, material_url,
           $2, $3, $4, $5, 0, 'open'
        FROM courses WHERE course_code = $1 AND session_date IS NULL LIMIT 1`,
-      [course_id, session_date, session_time || null, location || null, max_participants || null]
+      [course_id, session_date, session_time || null, location || null, max_participants || null, min_participants || null]
     );
 
     const result = await query(
@@ -66,7 +66,7 @@ adminSessionsRouter.post("/", async (req, res, next) => {
 adminSessionsRouter.put("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { course_id, session_date, session_time, location, max_participants, status } = req.body;
+    const { course_id, session_date, session_time, location, min_participants, max_participants, status } = req.body;
 
     if (!course_id || !session_date) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });
@@ -78,9 +78,9 @@ adminSessionsRouter.put("/:id", async (req, res, next) => {
     await query(
       `UPDATE courses
        SET course_code = $2, session_date = $3, session_time = $4,
-           location = $5, max_participants = $6, session_status = $7
+           location = $5, min_participants = $6, max_participants = $7, session_status = $8
        WHERE id = $1`,
-      [id, course_id, session_date, session_time || null, location || null, max_participants || null, status || "open"]
+      [id, course_id, session_date, session_time || null, location || null, min_participants || null, max_participants || null, status || "open"]
     );
 
     const result = await query("SELECT * FROM courses WHERE id = $1", [id]);

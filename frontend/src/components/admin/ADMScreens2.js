@@ -107,7 +107,7 @@ const D = ADM_DATA;
         if (data.session) setSessions(ss => [mapSession(data.session), ...ss]);
         setCreateModal(false);
       } catch (e) {
-        setCreateError(e.message || "Tạo session thất bại");
+        setCreateError(e.message || "Tạo buổi học thất bại");
       } finally {
         setCreating(false);
       }
@@ -122,11 +122,11 @@ const D = ADM_DATA;
     return (
       <div data-screen-label="Sessions">
         <PageHeader
-          title="Quản lý Sessions"
-          subtitle={`${sessions.length} sessions · ${sessions.filter(s => s.status === "open").length} đang mở đăng ký`}
+          title="Lịch học / Đặt chỗ"
+          subtitle={`${sessions.length} buổi học · ${sessions.filter(s => s.status === "open").length} đang mở đăng ký`}
           action={
             <button className="adm-btn adm-btn--primary" onClick={() => { setCreateError(""); setCreateModal(true); }}>
-              <Icon name="file-plus" size={14} /> Tạo session
+              <Icon name="file-plus" size={14} /> Tạo buổi học
             </button>
           }
         />
@@ -202,14 +202,14 @@ const D = ADM_DATA;
               })}
             </tbody>
           </table>
-          {!loading && filtered.length === 0 && <div className="adm-empty">Không có sessions nào phù hợp</div>}
+          {!loading && filtered.length === 0 && <div className="adm-empty">Không có buổi học nào phù hợp</div>}
         </div>
 
         <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)} title={attendeesModal ? `Danh sách đặt chỗ · ${attendeesModal.id}` : ""} width={600}>
           {attendeesModal && <AttendeesView session={attendeesModal} />}
         </Modal>
 
-        <Modal open={createModal} onClose={() => setCreateModal(false)} title="Tạo session mới" width={560}>
+        <Modal open={createModal} onClose={() => setCreateModal(false)} title="Tạo buổi học mới" width={560}>
           <SessionForm onClose={() => setCreateModal(false)} onCreate={handleCreate} creating={creating} error={createError} />
         </Modal>
 
@@ -219,7 +219,7 @@ const D = ADM_DATA;
             return (
               <div>
                 <p style={{ color: "var(--rpg-text)", marginBottom: 18, lineHeight: 1.7, fontSize: 14 }}>
-                  Xác nhận sẽ đổi trạng thái session <strong style={{ color: "#fff" }}>{confirmId}</strong> thành <Badge status="confirmed" />{" "}
+                  Xác nhận sẽ đổi trạng thái buổi học <strong style={{ color: "#fff" }}>{confirmId}</strong> thành <Badge status="confirmed" />{" "}
                   và gửi email tự động đến <strong style={{ color: "#fff" }}>{sess?.current_count} người</strong> đã đặt chỗ.
                 </p>
                 <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
@@ -343,7 +343,7 @@ const D = ADM_DATA;
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
           <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={creating}>Huỷ</button>
           <button className="adm-btn adm-btn--primary" onClick={() => onCreate(form)} disabled={creating || !form.course_id || !form.session_date}>
-            {creating ? "Đang tạo..." : <><Icon name="check" size={13} /> Tạo session</>}
+            {creating ? "Đang tạo..." : <><Icon name="check" size={13} /> Tạo buổi học</>}
           </button>
         </div>
       </div>

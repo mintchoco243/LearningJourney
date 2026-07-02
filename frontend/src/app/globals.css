@@ -882,6 +882,7 @@ img { max-width: 100%; }
 .u-btn--sec:hover { background: rgba(255,255,255,0.10); }
 .u-btn--ghost { background: rgba(255,255,255,0.06); color: var(--rpg-text); }
 .u-btn--ghost:hover { background: rgba(255,255,255,0.12); }
+.u-btn:disabled { opacity: .62; cursor: wait; }
 .u-pill { font-size: 11px; font-weight: 700; letter-spacing:.04em; text-transform: uppercase; background: rgba(255,255,255,0.07); color: var(--rpg-muted); padding: 4px 10px; border-radius: 999px; }
 .u-pill--brand { background: transparent; color: #FF8A8E; border: 1px solid rgba(228,30,38,0.55); }
 .u-pill--match { background: var(--garena-red); color:#fff; }

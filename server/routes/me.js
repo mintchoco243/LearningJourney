@@ -6,7 +6,7 @@ export const meRouter = express.Router();
 meRouter.get("/", async (req, res) => {
   const profile = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   const enrollments = await query(
-    `SELECT e.*, c.title, c.trainer, c.format
+    `SELECT e.*, c.course_code, c.title, c.trainer, c.format
      FROM enrollments e
      JOIN courses c ON c.id = e.course_id
      WHERE e.user_id = $1

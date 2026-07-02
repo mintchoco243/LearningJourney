@@ -20,10 +20,10 @@ async function nextCourseCode() {
   return `LC-${String(max + 1).padStart(3, "0")}`;
 }
 
-// GET /admin/api/courses -> List all course rows. One row is one manageable offering.
+// GET /admin/api/courses -> List master course rows. Session rows live in /admin/api/sessions.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
-    const result = await query("SELECT * FROM courses ORDER BY created_at DESC");
+    const result = await query("SELECT * FROM courses WHERE session_date IS NULL ORDER BY created_at DESC");
     res.json({ courses: result.rows });
   } catch (error) {
     next(error);

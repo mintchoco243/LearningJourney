@@ -92,14 +92,12 @@ const D = GLH_DATA;
       },
     },
       React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
-        // format chip + XP
+        // format chip + status
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
           React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
             FORMAT_LABEL[c.format] || c.format),
           statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: "rgba(138,147,168,0.14)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(138,147,168,0.22)" } },
-            statusChipText),
-          React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--amber)" } },
-            React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")),
+            statusChipText)),
         c.rating ? React.createElement(Stars, { value: c.rating }) : null,
         // countdown (dashboard recommended only)
         showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
@@ -133,6 +131,8 @@ const D = GLH_DATA;
     const [courseRating, setCourseRating] = React.useState(0);
     const [courseReview, setCourseReview] = React.useState("");
     const [ratingSubmittedCourseId, setRatingSubmittedCourseId] = React.useState(null);
+    const [busyAction, setBusyAction] = React.useState(null);
+    const [reservedSessionId, setReservedSessionId] = React.useState(null);
 
     React.useEffect(() => {
       if (!c) return;
@@ -179,17 +179,26 @@ const D = GLH_DATA;
       min_participants: c.min_participants ?? session?.min_participants ?? null,
       current_count: c.current_count ?? session?.current_count ?? null,
     });
-    const effectiveUser = completedNow && !(user.completed_courses || []).includes(c.course_id)
-      ? Object.assign({}, user, { completed_courses: [...(user.completed_courses || []), c.course_id] })
-      : user;
+    const reservedNow = reservedSessionId === modalCourse.session_id;
+    const effectiveUser = Object.assign({}, user, {
+      completed_courses: completedNow
+        ? Array.from(new Set([...(user.completed_courses || []), c.course_id]))
+        : user.completed_courses,
+      registered_events: reservedNow
+        ? Array.from(new Set([...(user.registered_events || []), modalCourse.session_id]))
+        : user.registered_events,
+    });
     const cta = getCourseCta(modalCourse, effectiveUser);
     const canOpenMaterial = Boolean(modalCourse.material_url) && modalCourse.course_status === "ended" && modalCourse.format !== "elearning";
     const completionButtonStyle = { minWidth: 180 };
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
     };
-    const markComplete = () => {
-      actions.completeCourse(c);
+    const markComplete = async () => {
+      setBusyAction("complete");
+      const ok = await actions.completeCourse(c);
+      setBusyAction(null);
+      if (!ok) return;
       setCompletedCourseId(c.course_id);
       setRatingFormCourseId(null);
     };
@@ -208,7 +217,7 @@ const D = GLH_DATA;
       setRatingSubmittedCourseId(c.course_id);
       setRatingFormCourseId(null);
     };
-    const handlePrimary = () => {
+    const handlePrimary = async () => {
       if (cta.action === "material" && canOpenMaterial) {
         openMaterial();
         return;
@@ -218,7 +227,10 @@ const D = GLH_DATA;
         return;
       }
       if (cta.action === "reserve") {
-        actions.reserveCourseSession(modalCourse);
+        setBusyAction("reserve");
+        const ok = await actions.reserveCourseSession(modalCourse);
+        setBusyAction(null);
+        if (ok) setReservedSessionId(modalCourse.session_id);
         return;
       }
       if (cta.action === "complete") {
@@ -236,9 +248,7 @@ const D = GLH_DATA;
             statusChipText ? React.createElement("span", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0, textTransform: "none", padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.07)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(255,255,255,0.12)" } }, statusChipText) : null,
             rec ? React.createElement("span", { className: "u-pill u-pill--match" }, "Phù hợp với bạn") : null,
             rating ? React.createElement(Stars, { value: rating }) : null),
-          React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: "0 0 8px", lineHeight: 1.2, color: "#fff" } }, c.title),
-          React.createElement("div", { style: { color: "var(--amber)", fontWeight: 700, display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--glh-display)", fontSize: 14 } },
-            React.createElement(Icon, { name: "zap", size: 16, color: "var(--amber)" }), "+" + c.xp_reward + " XP khi hoàn thành")),
+          React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.2, color: "#fff" } }, c.title)),
         React.createElement("div", { style: { padding: "24px 28px 28px" } },
           React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--rpg-text)", margin: "0 0 18px" } }, c.description),
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
@@ -263,7 +273,25 @@ const D = GLH_DATA;
                   React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
               : null,
             React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
-              !cta.disabled ? React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText) : null,
+              !cta.disabled ? React.createElement("button", {
+                className: "u-btn u-btn--primary",
+                style: {
+                  flex: 1,
+                  minWidth: 220,
+                  minHeight: 52,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  cursor: busyAction ? "wait" : "pointer",
+                  boxShadow: "0 10px 24px rgba(228,30,38,0.22)",
+                },
+                onClick: handlePrimary,
+                disabled: !!busyAction,
+              },
+                React.createElement(Icon, { name: cta.action === "reserve" ? "check-circle" : "arrow-right", size: 18, color: "#fff" }),
+                busyAction === "reserve" ? "Đang đặt chỗ..." : busyAction === "complete" ? "Đang lưu..." : cta.modalText
+              ) : null,
               canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
               done
                 ? React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: () => setRatingFormCourseId(showRatingForm ? null : c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi đánh giá" : "Gửi đánh giá")

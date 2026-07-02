@@ -3,7 +3,7 @@
 import React from "react";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
-import { RequestsScreen } from '@/components/admin/ADMScreens2';
+import { SessionsScreen, RequestsScreen } from '@/components/admin/ADMScreens2';
 import { PolicyScreen, AccountsScreen, TestimonialsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
@@ -45,6 +45,7 @@ function AdminGateMessage({ title, message, action }) {
     dashboard:    { label: "Dashboard" },
     users:        { label: "Quản lý Users" },
     courses:      { label: "Quản lý Khóa học" },
+    sessions:     { label: "Lịch học / Đặt chỗ" },
     requests:     { label: "L&D Requests" },
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
@@ -63,8 +64,7 @@ function AdminGateMessage({ title, message, action }) {
       () => {
         try {
           if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("adm_page") || "dashboard";
-            return saved === "sessions" ? "courses" : saved;
+            return localStorage.getItem("adm_page") || "dashboard";
           }
         } catch (e) {}
         return "dashboard";
@@ -152,6 +152,7 @@ function AdminGateMessage({ title, message, action }) {
       dashboard:    <Dashboard />,
       users:        <UsersScreen />,
       courses:      <CoursesScreen />,
+      sessions:     <SessionsScreen />,
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,

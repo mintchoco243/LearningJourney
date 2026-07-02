@@ -152,7 +152,18 @@ const D = GLH_DATA;
     const actions = React.useMemo(() => ({
       reset() { clearUser(); persist(Object.assign({}, DEFAULT_USER)); },
       setEmail(email) { persist(Object.assign({}, user, { email, onboarded: true })); },
-      setUserProfile(profile) {
+      setUserProfile(profile, enrollments, reservations) {
+        const hasEnrollmentSnapshot = Array.isArray(enrollments);
+        const completedCourses = hasEnrollmentSnapshot
+          ? Array.from(new Set(enrollments.flatMap((item) => [item.course_code, item.course_id]).filter(Boolean)))
+          : user.completed_courses;
+        const hasReservationSnapshot = Array.isArray(reservations);
+        const registeredEvents = hasReservationSnapshot
+          ? Array.from(new Set(reservations.map((item) => item.session_id).filter(Boolean)))
+          : user.registered_events;
+        const enrollmentHours = hasEnrollmentSnapshot
+          ? enrollments.reduce((sum, item) => sum + Number(item.hours_earned || 0), 0)
+          : user.hours_total;
         persist(Object.assign({}, user, {
           email: profile.email || user.email,
           full_name: profile.full_name || user.full_name,
@@ -160,7 +171,9 @@ const D = GLH_DATA;
           db_team: profile.team || user.db_team,
           db_rank: profile.rank || user.db_rank,
           xp: profile.xp_total ?? user.xp,
-          hours_total: profile.hours_total ?? user.hours_total,
+          hours_total: hasEnrollmentSnapshot ? enrollmentHours : (profile.hours_total ?? user.hours_total),
+          completed_courses: completedCourses,
+          registered_events: registeredEvents,
           onboarded: true,
         }));
       },
@@ -179,31 +192,52 @@ const D = GLH_DATA;
         persist(Object.assign({}, user, { xp: nextXp }));
         setXpBurst({ amount, label, id: Date.now() });
       },
-      completeCourse(course) {
+      async completeCourse(course) {
         if ((user.completed_courses || []).includes(course.course_id)) return false;
-        const nextXp = (user.xp || 0) + (course.xp_reward || D.XP.course_complete_default);
-        persist(Object.assign({}, user, {
-          xp: nextXp,
-          completed_courses: [...(user.completed_courses || []), course.course_id],
-        }));
-        setXpBurst({ amount: course.xp_reward || 20, label: "Hoàn thành khóa học", id: Date.now() });
-        // Persist to backend (fire-and-forget — local state already updated)
-        const apiCourseId = course._id || course.course_id;
-        if (apiCourseId) {
-          fetch("/api/courses/" + apiCourseId + "/complete", { method: "POST", credentials: "include" }).catch(() => {});
+        const apiCourseId = course._id || course.id || course.course_row_id;
+        if (!apiCourseId) return false;
+
+        const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
+          method: "POST",
+          credentials: "include",
+        });
+        let data = null;
+        try { data = await response.json(); } catch (e) {}
+
+        if (!response.ok) {
+          if (response.status === 409) {
+            persist(Object.assign({}, user, {
+              xp: data?.xp_total ?? data?.new_total_xp ?? user.xp,
+              hours_total: data?.hours_total ?? data?.new_total_hours ?? user.hours_total,
+              completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
+            }));
+            return true;
+          }
+          return false;
         }
+
+        persist(Object.assign({}, user, {
+          xp: data?.new_total_xp ?? user.xp,
+          hours_total: data?.new_total_hours ?? ((Number(user.hours_total) || 0) + (Number(course.duration_minutes || 0) / 60)),
+          completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
+        }));
         return true;
       },
-      reserveCourseSession(course) {
+      async reserveCourseSession(course) {
         const sessionId = course.session_id;
         if (!sessionId || (user.registered_events || []).includes(sessionId)) return false;
-        const nextXp = (user.xp || 0) + D.XP.event_register;
+
+        const response = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/reserve", {
+          method: "POST",
+          credentials: "include",
+        });
+        let data = null;
+        try { data = await response.json(); } catch (e) {}
+        if (!response.ok && data?.error !== "ALREADY_RESERVED") return false;
+
         persist(Object.assign({}, user, {
-          xp: nextXp,
-          registered_events: [...(user.registered_events || []), sessionId],
+          registered_events: Array.from(new Set([...(user.registered_events || []), sessionId])),
         }));
-        setXpBurst({ amount: D.XP.event_register, label: "Đăng ký khóa học", id: Date.now() });
-        fetch("/api/sessions/" + sessionId + "/reserve", { method: "POST", credentials: "include" }).catch(() => {});
         return true;
       },
       registerEvent(ev) {
