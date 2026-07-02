@@ -398,9 +398,34 @@ const D = ADM_DATA;
   }
 
   /* ===================== TESTIMONIALS ===================== */
+  function normalizeTestimonial(t) {
+    return {
+      id: t.id,
+      course_id: t.course_id,
+      course_code: t.course_code || t.course_id,
+      course_title: t.course_title || t.title || t.course_code || t.course_id,
+      user_name: t.user_name || t.full_name || "Người dùng",
+      user_role: t.user_role || t.user_team || "Learner",
+      rating: Number(t.rating || 0),
+      content: t.content || "",
+      is_featured: Boolean(t.is_featured),
+      created_at: String(t.created_at || "").slice(0, 10),
+    };
+  }
+
   export function TestimonialsScreen() {
     const [testimonials, setTestimonials] = React.useState(D.ADMIN_TESTIMONIALS);
     const [filterCourse, setFilterCourse] = React.useState("all");
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/testimonials")
+        .then(data => {
+          if (data.testimonials) setTestimonials(data.testimonials.map(normalizeTestimonial));
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
 
     const courses = [...new Set(testimonials.map(t => t.course_id))].map(id => ({
       id, title: (testimonials.find(t => t.course_id === id) || {}).course_title || id,
@@ -408,8 +433,24 @@ const D = ADM_DATA;
 
     const filtered = filterCourse === "all" ? testimonials : testimonials.filter(t => t.course_id === filterCourse);
 
-    function toggleFeatured(id) {
-      setTestimonials(ts => ts.map(t => t.id === id ? { ...t, is_featured: !t.is_featured } : t));
+    async function toggleFeatured(id) {
+      const current = testimonials.find(t => t.id === id);
+      if (!current) return;
+      const nextVal = !current.is_featured;
+      setTestimonials(ts => ts.map(t => t.id === id ? { ...t, is_featured: nextVal } : t));
+      try {
+        const data = await apiFetch(`/admin/api/testimonials/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ is_featured: nextVal }),
+        });
+        if (data.testimonial) {
+          const updated = normalizeTestimonial(data.testimonial);
+          setTestimonials(ts => ts.map(t => t.id === id ? updated : t));
+        }
+      } catch {
+        setTestimonials(ts => ts.map(t => t.id === id ? { ...t, is_featured: current.is_featured } : t));
+      }
     }
 
     return (
@@ -418,6 +459,8 @@ const D = ADM_DATA;
           title="Testimonials"
           subtitle={`${testimonials.filter(t => t.is_featured).length} nổi bật · ${testimonials.length} tổng cộng`}
         />
+
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải testimonials...</div>}
 
         <div className="adm-filter-row">
           <div className="adm-tab-filter">
@@ -456,6 +499,9 @@ const D = ADM_DATA;
             </div>
           ))}
         </div>
+        {!loading && filtered.length === 0 && (
+          <div className="adm-empty" style={{ marginTop: 28 }}>Chưa có testimonial nào từ user.</div>
+        )}
       </div>
     );
   }

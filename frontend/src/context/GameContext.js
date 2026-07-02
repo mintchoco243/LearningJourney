@@ -19,6 +19,7 @@ const D = GLH_DATA;
     quiz_result: null, // { class_id, rank_id, personality, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
     xp: 0,
+    hours_total: 0,
     completed_courses: [],
     registered_events: [],
     unlocked_skills: [], // skill ids unlocked beyond quiz baseline
@@ -158,6 +159,8 @@ const D = GLH_DATA;
           db_role: profile.role || user.db_role,
           db_team: profile.team || user.db_team,
           db_rank: profile.rank || user.db_rank,
+          xp: profile.xp_total ?? user.xp,
+          hours_total: profile.hours_total ?? user.hours_total,
           onboarded: true,
         }));
       },

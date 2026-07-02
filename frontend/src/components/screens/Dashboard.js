@@ -112,7 +112,7 @@ export function Dashboard(props) {
   const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
   const deptLabel   = user.db_team || user.db_role || cls.name;
   const hasSurvey   = !!(qr._answers?.length > 0);
-  const totalHours  = Math.round(user.xp * 0.5);
+  const totalHours  = Number(user.hours_total || 0);
 
   const [upcoming, setUpcoming]       = React.useState([]);
   const [recommended, setRecommended] = React.useState([]);
@@ -137,7 +137,7 @@ export function Dashboard(props) {
         React.createElement("div", { style: { fontSize: 13, color: "var(--amber)", fontWeight: 700, marginTop: 8 } }, `${user.xp} XP`)),
       React.createElement("div", { style: { display: "flex", gap: 24 } },
         React.createElement(Stat, { value: user.completed_courses.length, label: "Khóa đã học" }),
-        React.createElement(Stat, { value: `${totalHours}h`, label: "Giờ học tích lũy" }))),
+        React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
     // ── Lịch sắp tới ─────────────────────────────────────────────────────────
     upcoming.length > 0 && React.createElement(React.Fragment, null,

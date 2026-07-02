@@ -22,6 +22,7 @@ import { adminUsersRouter } from "./routes/admin/users.js";
 import { adminLdRequestsRouter } from "./routes/admin/ldRequests.js";
 import { adminPoliciesRouter } from "./routes/admin/policies.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
+import { adminTestimonialsRouter } from "./routes/admin/testimonials.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -71,6 +72,7 @@ app.use("/admin/api/users", requireAuth, requireAdmin, adminUsersRouter);
 app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRouter);
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
+app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsRouter);
 
 // Next.js (App Router, includes /admin) handles every remaining route.
 if (config.apiOnly) {
