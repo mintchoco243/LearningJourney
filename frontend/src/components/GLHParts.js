@@ -183,7 +183,8 @@ const D = GLH_DATA;
       ? Object.assign({}, user, { completed_courses: [...(user.completed_courses || []), c.course_id] })
       : user;
     const cta = getCourseCta(modalCourse, effectiveUser);
-    const canOpenMaterial = Boolean(modalCourse.material_url) && modalCourse.course_status === "ended";
+    const canOpenMaterial = Boolean(modalCourse.material_url) && modalCourse.course_status === "ended" && modalCourse.format !== "elearning";
+    const completionButtonStyle = { minWidth: 180 };
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
     };
@@ -197,7 +198,7 @@ const D = GLH_DATA;
         alert("Vui lòng chọn số sao");
         return;
       }
-      const courseId = c.course_code || c.course_id || c._id;
+      const courseId = c._id || c.course_id || c.course_code;
       fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
         method: "POST",
         credentials: "include",
@@ -265,8 +266,8 @@ const D = GLH_DATA;
               !cta.disabled ? React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText) : null,
               canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
               done
-                ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => setRatingFormCourseId(showRatingForm ? null : c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi rating" : "Rating")
-                : cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: markComplete }, "Đánh dấu đã hoàn thành") : null),
+                ? React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: () => setRatingFormCourseId(showRatingForm ? null : c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi đánh giá" : "Gửi đánh giá")
+                : cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: markComplete }, "Đánh dấu đã hoàn thành") : null),
             showRatingForm ? React.createElement("div", { style: { marginTop: 14, padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid var(--rpg-border)" } },
               React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
                 [1, 2, 3, 4, 5].map((s) => React.createElement("button", {
@@ -282,7 +283,7 @@ const D = GLH_DATA;
                 rows: 3,
                 style: { width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 10, background: "var(--rpg-bg)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--rpg-text)", fontSize: 13 },
               }),
-              React.createElement("button", { className: "u-btn u-btn--primary", onClick: submitCourseRating }, "Gửi rating")) : null))));
+              React.createElement("button", { className: "u-btn u-btn--primary", onClick: submitCourseRating }, "Gửi đánh giá")) : null))));
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

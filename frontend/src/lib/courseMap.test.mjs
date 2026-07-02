@@ -79,6 +79,7 @@ assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", stat
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "material");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "complete");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", format: "video", status: "ended", registration_url: "https://learn.example", material_url: "https://docs.example" }, TODAY)).key, "learn");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
