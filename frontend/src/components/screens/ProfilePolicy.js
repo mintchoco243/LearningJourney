@@ -4,12 +4,14 @@ import React from "react";
 import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
+import { GLHParts } from '../GLHParts';
 import { GLH_DATA } from '@/data/glhData';
 
 const D = GLH_DATA;
 const { Icon, fmtDate } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
+const { CourseModal } = GLHParts;
 
 
   
@@ -19,6 +21,7 @@ const { Avatar } = GLHAvatar;
   /* ---------- Profile Screen ---------- */
   export function Profile(props) {
     const { user, actions } = useGame();
+    const [selectedCourse, setSelectedCourse] = React.useState(null);
     const qr = user.quiz_result;
     if (!qr) return null;
 
@@ -177,7 +180,11 @@ const { Avatar } = GLHAvatar;
           React.createElement("h3", { style: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "#fff" } }, "Khóa đã hoàn thành"),
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 } },
             completedCourses.slice(0, 6).map((c) =>
-              React.createElement("div", { key: c.course_id, style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14 } },
+              React.createElement("button", {
+                key: c.course_id,
+                onClick: () => setSelectedCourse(c),
+                style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 14, textAlign: "left", cursor: "pointer" },
+              },
                 React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 8, lineHeight: 1.3 } }, c.title),
                 React.createElement("div", { style: { fontSize: 11, color: "var(--rpg-muted)", marginBottom: 10 } }, "👨‍🏫 " + c.trainer),
                 React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
@@ -204,7 +211,8 @@ const { Avatar } = GLHAvatar;
             )
           )
         ) : null
-      )
+      ),
+      selectedCourse ? React.createElement(CourseModal, { course: selectedCourse, onClose: () => setSelectedCourse(null) }) : null
     );
   }
 

@@ -561,7 +561,7 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
                 description, xp_reward, is_active, status, material_url,
                 session_date, session_time, location, max_participants, current_count, session_status)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21, $22, $23, 0, 'open')`,
+                $15, $16, $17, $18, $19, $20, $21, $22, $23, 0, $24)`,
             [
               courseId, row.course_code, row.title, row.trainer, row.trainer_type || "internal",
               row.format, row.duration_hours, row.rating || 0, toJsonArray(row.skill_tags),
@@ -570,6 +570,7 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
               row.is_active, row.status || "open", row.material_url || null,
               row.session_date || null, row.session_time || null, row.location || null,
               row.max_participants || null,
+              row.session_date ? (row.status || "open") : null,
             ]
           );
         }

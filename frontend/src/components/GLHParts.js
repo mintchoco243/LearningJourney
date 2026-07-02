@@ -128,6 +128,11 @@ const D = GLH_DATA;
     const meta = (D.COURSE_META || {})[c?.course_id] || {};
     const [session, setSession] = React.useState(null);
     const [testimonials, setTestimonials] = React.useState(null);
+    const [completedCourseId, setCompletedCourseId] = React.useState(null);
+    const [ratingFormCourseId, setRatingFormCourseId] = React.useState(null);
+    const [courseRating, setCourseRating] = React.useState(0);
+    const [courseReview, setCourseReview] = React.useState("");
+    const [ratingSubmittedCourseId, setRatingSubmittedCourseId] = React.useState(null);
 
     React.useEffect(() => {
       if (!c) return;
@@ -156,7 +161,10 @@ const D = GLH_DATA;
 
     if (!c) return null;
     const isEnded = c.course_status === "ended";
-    const done = (user.completed_courses || []).includes(c.course_id);
+    const completedNow = completedCourseId === c.course_id;
+    const showRatingForm = ratingFormCourseId === c.course_id;
+    const ratingSubmitted = ratingSubmittedCourseId === c.course_id;
+    const done = completedNow || (user.completed_courses || []).includes(c.course_id);
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
@@ -171,10 +179,37 @@ const D = GLH_DATA;
       min_participants: c.min_participants ?? session?.min_participants ?? null,
       current_count: c.current_count ?? session?.current_count ?? null,
     });
-    const cta = getCourseCta(modalCourse, user);
+    const effectiveUser = completedNow && !(user.completed_courses || []).includes(c.course_id)
+      ? Object.assign({}, user, { completed_courses: [...(user.completed_courses || []), c.course_id] })
+      : user;
+    const cta = getCourseCta(modalCourse, effectiveUser);
+    const canOpenMaterial = Boolean(modalCourse.material_url) && modalCourse.course_status === "ended";
+    const openMaterial = () => {
+      if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
+    };
+    const markComplete = () => {
+      actions.completeCourse(c);
+      setCompletedCourseId(c.course_id);
+      setRatingFormCourseId(null);
+    };
+    const submitCourseRating = () => {
+      if (!courseRating) {
+        alert("Vui lòng chọn số sao");
+        return;
+      }
+      const courseId = c.course_code || c.course_id || c._id;
+      fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rating: courseRating, content: courseReview.trim() || null }),
+      }).catch(() => {});
+      setRatingSubmittedCourseId(c.course_id);
+      setRatingFormCourseId(null);
+    };
     const handlePrimary = () => {
-      if (cta.action === "material" && modalCourse.material_url) {
-        window.open(modalCourse.material_url, "_blank", "noreferrer");
+      if (cta.action === "material" && canOpenMaterial) {
+        openMaterial();
         return;
       }
       if (cta.action === "url" && modalCourse.url && modalCourse.url !== "#") {
@@ -186,8 +221,7 @@ const D = GLH_DATA;
         return;
       }
       if (cta.action === "complete") {
-        actions.completeCourse(c);
-        props.onClose();
+        markComplete();
       }
     };
     const stop = (e) => e.stopPropagation();
@@ -222,12 +256,33 @@ const D = GLH_DATA;
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
               React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
               React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
-          cta.disabled
-            ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
-                React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
-            : React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
-                React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText),
-                !done && cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => { actions.completeCourse(c); props.onClose(); } }, "Đánh dấu đã hoàn thành") : null))));
+          React.createElement(React.Fragment, null,
+            cta.disabled
+              ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, marginBottom: 12, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
+                  React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
+              : null,
+            React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
+              !cta.disabled ? React.createElement("button", { className: "u-btn u-btn--primary", style: { flex: 1, minWidth: 180 }, onClick: handlePrimary }, cta.modalText) : null,
+              canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
+              done
+                ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: () => setRatingFormCourseId(showRatingForm ? null : c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi rating" : "Rating")
+                : cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: markComplete }, "Đánh dấu đã hoàn thành") : null),
+            showRatingForm ? React.createElement("div", { style: { marginTop: 14, padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid var(--rpg-border)" } },
+              React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
+                [1, 2, 3, 4, 5].map((s) => React.createElement("button", {
+                  key: s,
+                  onClick: () => setCourseRating(s),
+                  style: { background: "transparent", border: "none", cursor: "pointer", padding: 2 },
+                  title: s + " sao",
+                }, React.createElement(Icon, { name: "star", size: 24, color: courseRating >= s ? "var(--amber)" : "var(--rpg-muted)", fill: courseRating >= s ? "var(--amber)" : "none" })))),
+              React.createElement("textarea", {
+                value: courseReview,
+                onChange: (e) => setCourseReview(e.target.value),
+                placeholder: "Chia sẻ cảm nhận ngắn về khóa học...",
+                rows: 3,
+                style: { width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 10, background: "var(--rpg-bg)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--rpg-text)", fontSize: 13 },
+              }),
+              React.createElement("button", { className: "u-btn u-btn--primary", onClick: submitCourseRating }, "Gửi rating")) : null))));
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

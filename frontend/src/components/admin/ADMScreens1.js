@@ -48,6 +48,14 @@ const COURSE_TYPES = [
     return Array.isArray(value) ? value.join(", ") : (value || "");
   }
 
+  function nextCourseCode(courses) {
+    const max = (courses || []).reduce((current, course) => {
+      const match = String(course.course_code || "").match(/^LC-(\d+)$/i);
+      return match ? Math.max(current, Number(match[1])) : current;
+    }, 0);
+    return `LC-${String(max + 1).padStart(3, "0")}`;
+  }
+
   function mapCourse(c) {
     return {
       id: c.id,
@@ -663,7 +671,7 @@ const COURSE_TYPES = [
         )}
 
         <Modal open={editModal} onClose={() => setEditModal(false)} title={editTarget ? `Chỉnh sửa — ${editTarget.course_code}` : "Tạo khóa học mới"} width={660}>
-          <CourseForm course={editTarget} onSave={handleSave} onClose={() => setEditModal(false)} saving={saving} error={error} />
+          <CourseForm course={editTarget} courses={courses} onSave={handleSave} onClose={() => setEditModal(false)} saving={saving} error={error} />
         </Modal>
 
         <Modal open={importModal} onClose={() => setImportModal(false)} title="Import Participants" width={520}>
@@ -677,9 +685,9 @@ const COURSE_TYPES = [
     );
   }
 
-  function CourseForm({ course, onSave, onClose, saving, error }) {
+  function CourseForm({ course, courses, onSave, onClose, saving, error }) {
     const [form, setForm] = React.useState({
-      id: course?.course_code || "",
+      id: course?.course_code || nextCourseCode(courses),
       title: course?.title || "",
       trainer: course?.trainer || "",
       trainer_type: course?.trainer_type || "internal",
@@ -706,7 +714,7 @@ const COURSE_TYPES = [
     function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
 
     const isEdit = Boolean(course);
-    const canSave = form.title.trim() && form.trainer.trim() && (isEdit || form.id.trim());
+    const canSave = form.title.trim() && form.trainer.trim() && form.id.trim();
 
     return (
       <div>
@@ -715,7 +723,7 @@ const COURSE_TYPES = [
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Mã khoá học <span style={{color:"#E41E26"}}>*</span></label>
-            <input className="adm-input" value={form.id} onChange={e => set("id", e.target.value)} placeholder="VD: LC-013" />
+            <input className="adm-input" value={form.id} onChange={e => set("id", e.target.value.toUpperCase())} placeholder="VD: LC-013" />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Tên khóa học <span style={{color:"#E41E26"}}>*</span></label>

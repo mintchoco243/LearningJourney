@@ -11,6 +11,15 @@ function normalizeRating(value) {
   return Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null;
 }
 
+async function nextCourseCode() {
+  const result = await query("SELECT course_code FROM courses");
+  const max = result.rows.reduce((current, row) => {
+    const match = String(row.course_code || "").match(/^LC-(\d+)$/i);
+    return match ? Math.max(current, Number(match[1])) : current;
+  }, 0);
+  return `LC-${String(max + 1).padStart(3, "0")}`;
+}
+
 // GET /admin/api/courses -> List all course rows. One row is one manageable offering.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
@@ -31,12 +40,14 @@ adminCoursesRouter.post("/suggest-xp", (req, res) => {
 adminCoursesRouter.post("/", async (req, res, next) => {
   try {
     const {
-      id: course_code,
+      id,
+      course_code: bodyCourseCode,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, rating, is_active, status, material_url,
       session_date, session_time, location, max_participants,
     } = req.body;
+    const course_code = String(id || bodyCourseCode || await nextCourseCode()).trim().toUpperCase();
 
     if (!course_code || !title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
       return res.status(400).json({ error: "MISSING_REQUIRED_FIELDS" });

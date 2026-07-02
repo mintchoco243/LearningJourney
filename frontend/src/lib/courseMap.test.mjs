@@ -77,7 +77,8 @@ assert.equal(getCourseCta({ course_id: "LC-005", format: "elearning", url: "http
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", status: "open" }, TODAY)).key, "interest");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "complete");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "material");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "complete");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
