@@ -69,6 +69,11 @@ const D = GLH_DATA;
     })[cta?.tone] || "var(--rpg-muted)";
   }
 
+  function scheduleTime(c) {
+    if (!c?.start_time) return null;
+    return c.end_time ? `${c.start_time} - ${c.end_time}` : c.start_time;
+  }
+
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
@@ -77,6 +82,7 @@ const D = GLH_DATA;
     const cta = getCourseCta(c, user);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const desc = c.description_short || c.description;
+    const timeText = scheduleTime(c);
 
     return React.createElement("button", {
       className: "u-card u-card--hover",
@@ -95,13 +101,14 @@ const D = GLH_DATA;
           React.createElement("span", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "var(--amber)" } },
             React.createElement(Icon, { name: "zap", size: 13, color: "var(--amber)" }), "+" + c.xp_reward + " XP")),
         c.rating ? React.createElement(Stars, { value: c.rating }) : null,
-        // date + countdown (dashboard recommended only)
-        showDate && c.start_date && React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "var(--rpg-muted)" } },
-          fmtDate(c.start_date),
-          c.countdown_days != null && React.createElement("span", { style: { marginLeft: 8, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
-            "· còn " + c.countdown_days + " ngày")),
+        // countdown (dashboard recommended only)
+        showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
+          c.countdown_days === 0 ? "Hôm nay" : "Còn " + c.countdown_days + " ngày"),
         // title
         React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3, margin: 0 } }, c.title),
+        (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--rpg-muted)" } },
+          c.start_date && React.createElement(MetaChip, { icon: "calendar" }, fmtDate(c.start_date)),
+          timeText && React.createElement(MetaChip, { icon: "clock" }, timeText)),
         // description
         desc && React.createElement("p", { className: "rec-desc", style: { fontSize: 12, color: "var(--rpg-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, desc),
         // skill tags
