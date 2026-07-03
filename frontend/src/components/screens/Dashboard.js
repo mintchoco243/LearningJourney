@@ -113,6 +113,7 @@ export function Dashboard(props) {
   const deptLabel   = user.db_team || user.db_role || cls.name;
   const hasSurvey   = !!(qr._answers?.length > 0);
   const totalHours  = Number(user.hours_total || 0);
+  const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
 
   const [upcoming, setUpcoming]       = React.useState([]);
   const [recommended, setRecommended] = React.useState([]);
@@ -135,7 +136,7 @@ export function Dashboard(props) {
         React.createElement("div", { className: "dash-rank" }, deptLabel),
         React.createElement("div", { className: "dash-classname", style: { color: "#fff" } }, displayName)),
       React.createElement("div", { style: { display: "flex", gap: 24 } },
-        React.createElement(Stat, { value: user.completed_courses.length, label: "Khóa đã học" }),
+        React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
     // ── Lịch sắp tới ─────────────────────────────────────────────────────────

@@ -40,7 +40,7 @@ const { CourseModal } = GLHParts;
     const quizExt = qr.quiz_extended || {};
 
     const stats = [
-      { label: "Khóa học", value: completedCourses.length.toString() },
+      { label: "Khóa học", value: String(user.completed_sessions_count ?? completedCourses.length) },
       { label: "Sự kiện", value: registeredEvents.length.toString() },
       { label: "Giờ học", value: `${Number(user.hours_total || 0)}h` },
     ];

@@ -78,7 +78,8 @@ const D = GLH_DATA;
     const { user } = useGame();
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
     const isEnded = c.course_status === "ended";
-    const done = (user.completed_courses || []).includes(c.course_id);
+    const rowId = c._id || c.id || c.course_row_id;
+    const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
     const cta = getCourseCta(c, user);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const desc = c.description_short || c.description;
@@ -164,7 +165,8 @@ const D = GLH_DATA;
     const completedNow = completedCourseId === c.course_id;
     const showRatingForm = ratingFormCourseId === c.course_id;
     const ratingSubmitted = ratingSubmittedCourseId === c.course_id;
-    const done = completedNow || (user.completed_courses || []).includes(c.course_id);
+    const rowId = c._id || c.id || c.course_row_id;
+    const done = completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id));
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
@@ -182,7 +184,7 @@ const D = GLH_DATA;
     const reservedNow = reservedSessionId === modalCourse.session_id;
     const effectiveUser = Object.assign({}, user, {
       completed_courses: completedNow
-        ? Array.from(new Set([...(user.completed_courses || []), c.course_id]))
+        ? Array.from(new Set([...(user.completed_courses || []), rowId || c.course_id]))
         : user.completed_courses,
       registered_events: reservedNow
         ? Array.from(new Set([...(user.registered_events || []), modalCourse.session_id]))

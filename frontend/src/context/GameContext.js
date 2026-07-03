@@ -20,6 +20,7 @@ const D = GLH_DATA;
     quiz_extended: null, // { learning_style[], availability, trainers[] }
     xp: 0,
     hours_total: 0,
+    completed_sessions_count: 0,
     completed_courses: [],
     registered_events: [],
     unlocked_skills: [], // skill ids unlocked beyond quiz baseline
@@ -172,6 +173,7 @@ const D = GLH_DATA;
           db_rank: profile.rank || user.db_rank,
           xp: profile.xp_total ?? user.xp,
           hours_total: hasEnrollmentSnapshot ? enrollmentHours : (profile.hours_total ?? user.hours_total),
+          completed_sessions_count: hasEnrollmentSnapshot ? enrollments.length : (user.completed_sessions_count || 0),
           completed_courses: completedCourses,
           registered_events: registeredEvents,
           onboarded: true,
@@ -193,8 +195,8 @@ const D = GLH_DATA;
         setXpBurst({ amount, label, id: Date.now() });
       },
       async completeCourse(course) {
-        if ((user.completed_courses || []).includes(course.course_id)) return false;
         const apiCourseId = course._id || course.id || course.course_row_id;
+        if ((user.completed_courses || []).includes(apiCourseId)) return false;
         if (!apiCourseId) return false;
 
         const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
@@ -209,6 +211,7 @@ const D = GLH_DATA;
             persist(Object.assign({}, user, {
               xp: data?.xp_total ?? data?.new_total_xp ?? user.xp,
               hours_total: data?.hours_total ?? data?.new_total_hours ?? user.hours_total,
+              completed_sessions_count: user.completed_sessions_count || user.completed_courses?.length || 0,
               completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
             }));
             return true;
@@ -219,6 +222,7 @@ const D = GLH_DATA;
         persist(Object.assign({}, user, {
           xp: data?.new_total_xp ?? user.xp,
           hours_total: data?.new_total_hours ?? ((Number(user.hours_total) || 0) + (Number(course.duration_minutes || 0) / 60)),
+          completed_sessions_count: (user.completed_sessions_count || 0) + 1,
           completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
         }));
         return true;

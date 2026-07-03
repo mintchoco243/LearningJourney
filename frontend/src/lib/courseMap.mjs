@@ -148,7 +148,10 @@ export function mapCourseToCard(c, today = new Date()) {
 export function getCourseCta(course, user = {}) {
   const c = course || {};
   const type = courseType(c) || (c.format === "elearning" ? "elearning" : "scheduled");
-  const completed = (user.completed_courses || []).includes(c.course_id);
+  const rowId = c._id || c.id || c.course_row_id;
+  const completed = rowId
+    ? (user.completed_courses || []).includes(rowId)
+    : (user.completed_courses || []).includes(c.course_id);
   const reserved = c.session_id && (user.registered_events || []).includes(c.session_id);
   const hasMaterial = Boolean(c.material_url);
   const hasUrl = Boolean(c.url && c.url !== "#");
