@@ -32,4 +32,15 @@ if (
   process.exit(1);
 }
 
+const adminCoursesSource = fs.readFileSync(path.join(root, "server", "routes", "admin", "courses.js"), "utf8");
+const userCoursesSource = fs.readFileSync(path.join(root, "server", "routes", "courses.js"), "utf8");
+if (/\b(WHERE|AND)\s+c?\.?session_date\s+IS\s+NULL/i.test(adminCoursesSource) || /\b(WHERE|AND)\s+c?\.?session_date\s+IS\s+NULL/i.test(userCoursesSource)) {
+  console.error("Course routes must not use session_date IS NULL as a course/session split.");
+  process.exit(1);
+}
+if (/master course rows|Session rows live/i.test(adminCoursesSource + userCoursesSource)) {
+  console.error("Runtime course routes must not reintroduce master course/session wording.");
+  process.exit(1);
+}
+
 console.log("Syntax check passed");

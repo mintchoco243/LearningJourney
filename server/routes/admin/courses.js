@@ -5,6 +5,14 @@ import { sendMail } from "../../services/mail.js";
 
 export const adminCoursesRouter = express.Router();
 
+// Single-source course model invariant:
+// - Every row in `courses` is one learning item (scheduled class, interest pool,
+//   e-learning, external course, or material).
+// - `courses.id` is the only action identity for reserve/complete/import/review.
+// - `course_code` is display/grouping only and may repeat.
+// - `session_date` is just a schedule field on the row, not a separate entity
+//   boundary. Do not recreate a master-course/session split here.
+
 function normalizeRating(value) {
   if (value === undefined || value === null || value === "") return 0;
   const rating = Number(value);
@@ -20,10 +28,38 @@ async function nextCourseCode() {
   return `LC-${String(max + 1).padStart(3, "0")}`;
 }
 
-// GET /admin/api/courses -> List master course rows. Session rows live in /admin/api/sessions.
+async function refreshCourseCounts(client, id) {
+  await client.query(
+    `UPDATE courses
+     SET current_count = (
+           SELECT COUNT(*) FROM reservations
+           WHERE session_id = $1 AND status <> 'cancelled'
+         ),
+         enrolled_count = (
+           SELECT COUNT(*) FROM enrollments WHERE course_id = $1
+         )
+     WHERE id = $1`,
+    [id]
+  );
+}
+
+// GET /admin/api/courses -> List every learning row. Calendar is a view, not a data model.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
-    const result = await query("SELECT * FROM courses WHERE session_date IS NULL ORDER BY created_at DESC");
+    const result = await query(
+      `SELECT c.*,
+              (SELECT COUNT(*) FROM reservations r WHERE r.session_id = c.id AND r.status <> 'cancelled') AS active_reservation_count,
+              (SELECT COUNT(*) FROM reservations r WHERE r.session_id = c.id) AS reservation_count,
+              (SELECT COUNT(*) FROM enrollments e WHERE e.course_id = c.id) AS enrollment_count
+       FROM courses c
+       ORDER BY
+         CASE WHEN c.session_date IS NOT NULL AND c.session_date >= CURRENT_DATE THEN 0
+              WHEN c.session_date IS NULL THEN 1
+              ELSE 2 END,
+         c.session_date ASC,
+         c.updated_at DESC,
+         c.created_at DESC`
+    );
     res.json({ courses: result.rows });
   } catch (error) {
     next(error);
@@ -62,7 +98,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
           registration_url, description, xp_reward, is_active, status, material_url,
           session_date, session_time, location, max_participants, current_count, session_status)
        VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, 0, 'open')`,
+          $18, $19, $20, $21, $22, 0, $17)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
         normalizedRating, skill_tags, rank_targets, role_targets, type, min_participants,
@@ -108,6 +144,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
            min_participants = $13, registration_url = $14, description = $15,
            xp_reward = $16, is_active = $17, status = $18, material_url = $19,
            session_date = $20, session_time = $21, location = $22, max_participants = $23,
+           session_status = $18,
            updated_at = NOW()
        WHERE id = $1`,
       [
@@ -127,20 +164,93 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
   }
 });
 
-// DELETE /admin/api/courses/:id -> Delete one course row (:id = UUID)
+// DELETE /admin/api/courses/:id -> Hard-delete only unused rows; otherwise preserve history by cancelling/hiding.
 adminCoursesRouter.delete("/:id", async (req, res, next) => {
   try {
     const { id } = req.params;
     const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
     if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
 
-    await withTransaction(async (client) => {
-      await client.query("DELETE FROM enrollments WHERE course_id = $1", [id]);
-      await client.query("DELETE FROM testimonials WHERE course_id = $1", [id]);
-      await client.query("DELETE FROM reservations WHERE session_id = $1", [id]);
-      await client.query("DELETE FROM courses WHERE id = $1", [id]);
+    const result = await withTransaction(async (client) => {
+      const activity = await client.query(
+        `SELECT
+           (SELECT COUNT(*) FROM enrollments WHERE course_id = $1) AS enrollments,
+           (SELECT COUNT(*) FROM testimonials WHERE course_id = $1) AS testimonials,
+           (SELECT COUNT(*) FROM reservations WHERE session_id = $1) AS reservations`,
+        [id]
+      );
+      const row = activity.rows[0] || {};
+      const hasActivity = Number(row.enrollments || 0) + Number(row.testimonials || 0) + Number(row.reservations || 0) > 0;
+      if (!hasActivity) {
+        await client.query("DELETE FROM courses WHERE id = $1", [id]);
+        return { ok: true, mode: "deleted" };
+      }
+      await client.query(
+        `UPDATE courses
+         SET is_active = FALSE, status = 'cancelled', session_status = 'cancelled', updated_at = NOW()
+         WHERE id = $1`,
+        [id]
+      );
+      return { ok: true, mode: "cancelled" };
     });
-    res.json({ ok: true });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /admin/api/courses/:id/reservations -> Attendees/bookings for this row.
+adminCoursesRouter.get("/:id/reservations", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
+    if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+
+    const result = await query(
+      `SELECT r.*, u.full_name, u.email
+       FROM reservations r JOIN users u ON r.user_id = u.id
+       WHERE r.session_id = $1 ORDER BY r.reserved_at ASC`,
+      [id]
+    );
+    res.json({ reservations: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /admin/api/courses/:id/confirm -> Confirm this learning row and notify booked users.
+adminCoursesRouter.post("/:id/confirm", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const courseRes = await query("SELECT * FROM courses WHERE id = $1", [id]);
+    if (!courseRes.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+    const course = courseRes.rows[0];
+
+    await withTransaction(async (client) => {
+      await client.query(
+        "UPDATE courses SET status = 'confirmed', session_status = 'confirmed', updated_at = NOW() WHERE id = $1",
+        [id]
+      );
+      await client.query("UPDATE reservations SET status = 'confirmed' WHERE session_id = $1 AND status <> 'cancelled'", [id]);
+      await refreshCourseCounts(client, id);
+
+      const usersRes = await client.query(
+        `SELECT u.email, u.full_name FROM reservations r JOIN users u ON r.user_id = u.id
+         WHERE r.session_id = $1 AND r.status = 'confirmed'`,
+        [id]
+      );
+
+      for (const user of usersRes.rows) {
+        await sendMail({
+          to: user.email,
+          subject: `Xác nhận: Lớp [${course.title}] chính thức mở!`,
+          html: `<p>Chào ${user.full_name},</p><p>Khóa học <strong>${course.title}</strong>${course.session_date ? ` vào ngày <strong>${course.session_date}</strong>` : ""} đã được Ban L&D xác nhận mở lớp chính thức.</p><p>Địa điểm: <strong>${course.location || "Online"}</strong>.</p>`,
+        });
+      }
+    });
+
+    res.json({ ok: true, status: "confirmed" });
   } catch (error) {
     next(error);
   }
@@ -209,16 +319,13 @@ adminCoursesRouter.post("/:id/import-participants", async (req, res, next) => {
         });
       }
 
-      await client.query(
-        `UPDATE courses SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1)
-         WHERE id = $1`,
-        [id]
-      );
+      await refreshCourseCounts(client, id);
     });
 
     res.json({
       total_in_file: emails.length,
       matched_and_enrolled: matched_count,
+      already_completed: existed_count,
       already_existed: existed_count,
       not_found_in_system: not_found_count,
       enrolled: matched_count,

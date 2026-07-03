@@ -156,7 +156,7 @@ const D = GLH_DATA;
       setUserProfile(profile, enrollments, reservations) {
         const hasEnrollmentSnapshot = Array.isArray(enrollments);
         const completedCourses = hasEnrollmentSnapshot
-          ? Array.from(new Set(enrollments.flatMap((item) => [item.course_code, item.course_id]).filter(Boolean)))
+          ? Array.from(new Set(enrollments.map((item) => item.course_id).filter(Boolean)))
           : user.completed_courses;
         const hasReservationSnapshot = Array.isArray(reservations);
         const registeredEvents = hasReservationSnapshot
@@ -212,7 +212,7 @@ const D = GLH_DATA;
               xp: data?.xp_total ?? data?.new_total_xp ?? user.xp,
               hours_total: data?.hours_total ?? data?.new_total_hours ?? user.hours_total,
               completed_sessions_count: user.completed_sessions_count || user.completed_courses?.length || 0,
-              completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
+              completed_courses: Array.from(new Set([...(user.completed_courses || []), apiCourseId])),
             }));
             return true;
           }
@@ -223,7 +223,7 @@ const D = GLH_DATA;
           xp: data?.new_total_xp ?? user.xp,
           hours_total: data?.new_total_hours ?? ((Number(user.hours_total) || 0) + (Number(course.duration_minutes || 0) / 60)),
           completed_sessions_count: (user.completed_sessions_count || 0) + 1,
-          completed_courses: Array.from(new Set([...(user.completed_courses || []), course.course_id, apiCourseId])),
+          completed_courses: Array.from(new Set([...(user.completed_courses || []), apiCourseId])),
         }));
         return true;
       },

@@ -3,7 +3,7 @@
 import React from "react";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
-import { SessionsScreen, RequestsScreen } from '@/components/admin/ADMScreens2';
+import { RequestsScreen } from '@/components/admin/ADMScreens2';
 import { PolicyScreen, AccountsScreen, TestimonialsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
@@ -45,7 +45,6 @@ function AdminGateMessage({ title, message, action }) {
     dashboard:    { label: "Dashboard" },
     users:        { label: "Quản lý Users" },
     courses:      { label: "Quản lý Khóa học" },
-    sessions:     { label: "Lịch học / Đặt chỗ" },
     requests:     { label: "L&D Requests" },
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
@@ -64,7 +63,8 @@ function AdminGateMessage({ title, message, action }) {
       () => {
         try {
           if (typeof window !== "undefined") {
-            return localStorage.getItem("adm_page") || "dashboard";
+            const savedPage = localStorage.getItem("adm_page") || "dashboard";
+            return savedPage === "sessions" ? "courses" : savedPage;
           }
         } catch (e) {}
         return "dashboard";
@@ -100,11 +100,11 @@ function AdminGateMessage({ title, message, action }) {
     }, [mounted]);
 
     React.useEffect(() => {
-      localStorage.setItem("adm_page", page);
+      localStorage.setItem("adm_page", page === "sessions" ? "courses" : page);
     }, [page]);
 
     function navigate(p) {
-      setPage(p);
+      setPage(p === "sessions" ? "courses" : p);
       // scroll main content area to top
       const el = document.querySelector(".adm-content");
       if (el) el.scrollTop = 0;
@@ -152,7 +152,6 @@ function AdminGateMessage({ title, message, action }) {
       dashboard:    <Dashboard />,
       users:        <UsersScreen />,
       courses:      <CoursesScreen />,
-      sessions:     <SessionsScreen />,
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,

@@ -125,7 +125,6 @@ const D = GLH_DATA;
     const { user, actions } = useGame();
     const c = props.course;
     const meta = (D.COURSE_META || {})[c?.course_id] || {};
-    const [session, setSession] = React.useState(null);
     const [testimonials, setTestimonials] = React.useState(null);
     const [completedCourseId, setCompletedCourseId] = React.useState(null);
     const [ratingFormCourseId, setRatingFormCourseId] = React.useState(null);
@@ -139,20 +138,6 @@ const D = GLH_DATA;
       if (!c) return;
       let active = true;
       const rowId = c._id || c.course_id;
-      const courseQueryId = c.course_code || c.course_id || rowId;
-      fetch(`/api/sessions?course_id=${encodeURIComponent(courseQueryId)}`, { credentials: "include" })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data) => {
-          if (!active) return;
-          const upcoming = (data?.sessions || [])
-            .filter((s) => s.status !== "cancelled")
-            .sort((a, b) => new Date(a.session_date) - new Date(b.session_date))[0];
-          const selected = c.session_id
-            ? (data?.sessions || []).find((s) => s.id === c.session_id)
-            : null;
-          setSession(selected || upcoming || null);
-        })
-        .catch(() => {});
       fetch(`/api/courses/${encodeURIComponent(rowId)}/testimonials`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => { if (active) setTestimonials(data?.testimonials?.length ? data.testimonials : null); })
@@ -172,14 +157,14 @@ const D = GLH_DATA;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const modalCourse = Object.assign({}, c, {
-      session_id: c.session_id || session?.id || null,
-      session_status: c.session_status || session?.status || null,
-      location: c.location || session?.location || meta.location,
-      start_date: c.start_date || session?.session_date || null,
-      start_time: c.start_time || (session?.session_time ? String(session.session_time).slice(0, 5) : null),
-      max_participants: c.max_participants ?? session?.max_participants ?? null,
-      min_participants: c.min_participants ?? session?.min_participants ?? null,
-      current_count: c.current_count ?? session?.current_count ?? null,
+      session_id: c.session_id || null,
+      session_status: c.session_status || null,
+      location: c.location || meta.location,
+      start_date: c.start_date || null,
+      start_time: c.start_time || null,
+      max_participants: c.max_participants ?? null,
+      min_participants: c.min_participants ?? null,
+      current_count: c.current_count ?? null,
     });
     const reservedNow = reservedSessionId === modalCourse.session_id;
     const effectiveUser = Object.assign({}, user, {

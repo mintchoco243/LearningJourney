@@ -13,8 +13,10 @@ export function normalizeFormat(f) {
 }
 
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
-const courseCode = (row) => row.course_code || row.course_id || row.id;
-const courseRowId = (row) => row.id || row._id || courseCode(row);
+// Single-source invariant: UI actions use the unique DB row id. `course_code`
+// is display/grouping only and may repeat across multiple learning rows.
+const displayCourseCode = (row) => row.course_code || row.code || row.id;
+const courseRowId = (row) => row.id || row._id || row.course_row_id || row.course_id || displayCourseCode(row);
 const courseType = (row) => String(row.type || "").trim().toLowerCase();
 
 function listValue(value) {
@@ -69,8 +71,8 @@ export function mapSessionToUpcoming(s, today = new Date()) {
   const countdown = daysUntil(date, today);
   return {
     session_id: s.id || s.session_id || null,
-    course_id: courseCode(s),
-    course_code: courseCode(s),
+    course_id: courseRowId(s),
+    course_code: displayCourseCode(s),
     _id: courseRowId(s),
     title: s.title,
     type: courseType(s) || "scheduled",
@@ -113,10 +115,12 @@ export function mapCourseToCard(c, today = new Date()) {
   const status = effectiveLifecycle(c.status, date, today);
   const type = courseType(c) || (normalizeFormat(c.format) === "elearning" ? "elearning" : "scheduled");
   const usesReservationFlow = type === "scheduled" || type === "interest";
+  const rowId = courseRowId(c);
   return {
-    course_id: courseCode(c),
-    course_code: courseCode(c),
-    _id: courseRowId(c),
+    course_id: rowId,
+    course_code: displayCourseCode(c),
+    _id: rowId,
+    course_row_id: rowId,
     title: c.title,
     type,
     description: c.description || "",
@@ -130,7 +134,7 @@ export function mapCourseToCard(c, today = new Date()) {
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
-    session_id: usesReservationFlow && date ? courseRowId(c) : null,
+    session_id: usesReservationFlow ? rowId : null,
     session_status: c.session_status || null,
     start_date: date,
     start_time: times[0] || null,

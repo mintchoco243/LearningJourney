@@ -1,8 +1,12 @@
 const RANK_XP = {
   Associate: [40, 80],
+  "Senior Associate": [80, 120],
   Senior: [80, 120],
+  "Assistant Manager": [120, 180],
   Lead: [120, 180],
   Manager: [140, 220],
+  "Senior Manager": [180, 260],
+  Director: [180, 260],
 };
 
 export function suggestXp(rankTargets = []) {

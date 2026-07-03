@@ -3,6 +3,10 @@ import { query, withTransaction } from "../db.js";
 
 export const coursesRouter = express.Router();
 
+// Runtime invariant: `courses` is the single source of truth. A row is one
+// learning item; `courses.id` is the action id. `course_code` may repeat and is
+// display/grouping only. Do not filter this list to no-date rows.
+
 function fitTag(course, user) {
   const roleFit = course.role_targets?.includes("All") || course.role_targets?.includes(user.role);
   const rankFit = user.rank && (course.rank_targets?.includes("All") || course.rank_targets?.includes(user.rank));
@@ -17,7 +21,7 @@ coursesRouter.get("/", async (req, res, next) => {
     const limit = Math.min(Math.max(Number(req.query.limit || 20), 1), 100);
     const offset = (page - 1) * limit;
     const params = [req.user.id, limit, offset];
-    const filters = ["c.is_active = TRUE", "c.status <> 'draft'", "c.session_date IS NULL"];
+    const filters = ["c.is_active = TRUE", "c.status <> 'draft'"];
 
     if (req.query.search) {
       params.push(`%${req.query.search}%`);
@@ -36,11 +40,19 @@ coursesRouter.get("/", async (req, res, next) => {
     }
 
     const result = await query(
-      `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
+      `SELECT c.*,
+              (e.id IS NOT NULL) AS is_enrolled,
+              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved
        FROM courses c
        LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1
+       LEFT JOIN reservations r ON r.session_id = c.id AND r.user_id = $1
        WHERE ${filters.join(" AND ")}
-       ORDER BY COALESCE(c.session_date, c.created_at) DESC, c.created_at DESC
+       ORDER BY
+         CASE WHEN c.session_date IS NOT NULL AND c.session_date >= CURRENT_DATE THEN 0
+              WHEN c.session_date IS NULL THEN 1
+              ELSE 2 END,
+         c.session_date ASC,
+         c.created_at DESC
        LIMIT $2 OFFSET $3`,
       params
     );
@@ -57,9 +69,12 @@ coursesRouter.get("/", async (req, res, next) => {
 coursesRouter.get("/:id", async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT c.*, (e.id IS NOT NULL) AS is_enrolled
+      `SELECT c.*,
+              (e.id IS NOT NULL) AS is_enrolled,
+              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved
        FROM courses c
        LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $2
+       LEFT JOIN reservations r ON r.session_id = c.id AND r.user_id = $2
        WHERE c.id = $1 AND c.is_active = TRUE`,
       [req.params.id, req.user.id]
     );
@@ -88,7 +103,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       );
       if (!enrollment.rowCount) {
         const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
-        return { duplicate: true, user: user.rows[0] };
+        return { duplicate: true, course: c, user: user.rows[0] };
       }
       await client.query(
         `UPDATE users SET xp_total = xp_total + $2, hours_total = hours_total + $3, updated_at = NOW() WHERE id = $1`,
@@ -96,17 +111,34 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       );
       const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
       await client.query(
-        "UPDATE courses SET enrolled_count = enrolled_count + 1 WHERE id = $1",
+        `UPDATE courses
+         SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1)
+         WHERE id = $1`,
         [c.id]
       );
       return { duplicate: false, course: c, user: user.rows[0] };
     });
     if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
-    if (result.duplicate) return res.status(409).json({ error: "ALREADY_COMPLETED", ...result.user });
+    if (result.duplicate) {
+      return res.status(409).json({
+        error: "ALREADY_COMPLETED",
+        course_id: result.course.id,
+        xp_earned: 0,
+        hours_earned: 0,
+        new_total_xp: result.user.xp_total,
+        new_total_hours: result.user.hours_total,
+        xp_total: result.user.xp_total,
+        hours_total: result.user.hours_total,
+        already_completed: true,
+      });
+    }
     res.json({
+      course_id: result.course.id,
       xp_earned: result.course.xp_reward,
+      hours_earned: result.course.duration_hours,
       new_total_xp: result.user.xp_total,
       new_total_hours: result.user.hours_total,
+      already_completed: false,
     });
   } catch (error) {
     next(error);

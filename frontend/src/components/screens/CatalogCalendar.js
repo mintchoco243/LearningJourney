@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
-import { getCalendarEvents, getStaticCalendarCourses } from '@/lib/mockApi';
+import { getCalendarEvents } from '@/lib/mockApi';
 import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
@@ -30,44 +30,6 @@ function ctaColor(cta) {
   })[cta?.tone] || "var(--rpg-muted)";
 }
 
-function attachNearestSession(courses, sessions) {
-  const today = new Date();
-  const byCourse = new Map();
-  for (const session of sessions || []) {
-    if (!session?.course_id || !session.start_date) continue;
-    const items = byCourse.get(session.course_id) || [];
-    items.push(session);
-    byCourse.set(session.course_id, items);
-  }
-
-  return (courses || []).map((course) => {
-    if (course.start_date || course.format === "elearning") return course;
-    const candidates = (byCourse.get(course.course_id) || []).slice().sort((a, b) => {
-      const aDate = new Date(a.start_date);
-      const bDate = new Date(b.start_date);
-      const aFuture = aDate >= today ? 0 : 1;
-      const bFuture = bDate >= today ? 0 : 1;
-      return aFuture - bFuture || aDate - bDate;
-    });
-    const session = candidates[0];
-    if (!session) return course;
-    return {
-      ...course,
-      session_id: session.session_id,
-      session_status: session.session_status,
-      start_date: session.start_date,
-      start_time: session.start_time,
-      end_time: session.end_time,
-      location: session.location || course.location,
-      max_participants: session.max_participants ?? course.max_participants,
-      current_count: session.current_count ?? course.current_count,
-      min_participants: session.min_participants ?? course.min_participants,
-      course_status: session.course_status || course.course_status,
-    };
-  });
-}
-
-
   
   
   
@@ -85,18 +47,16 @@ function attachNearestSession(courses, sessions) {
     const [sortMode,       setSortMode]       = React.useState("newest");
 
     React.useEffect(() => {
-      Promise.all([
-        fetch("/api/courses?limit=100", { credentials: "include" }).then((res) => (res.ok ? res.json() : null)),
-        getCalendarEvents(),
-      ])
-        .then(([data, sessions]) => {
+      fetch("/api/courses?limit=100", { credentials: "include" })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
           const sourceCourses = data?.courses?.length
             ? data.courses.map((course) => mapCourseToCard(course))
             : D.COURSES;
-          setCourses(attachNearestSession(sourceCourses, sessions?.length ? sessions : getStaticCalendarCourses()));
+          setCourses(sourceCourses);
         })
         .catch(() => {
-          setCourses(attachNearestSession(D.COURSES, getStaticCalendarCourses()));
+          setCourses(D.COURSES);
         });
     }, []);
 

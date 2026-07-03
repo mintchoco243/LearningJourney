@@ -4,6 +4,9 @@ import { query, withTransaction } from "../../db.js";
 
 export const adminDataPrepRouter = express.Router();
 
+// Legacy CSV/data-prep area. Runtime course management is row-level in
+// /admin/api/courses. Do not use this file to recreate a master course/session
+// data model; keep it only as a compatibility import path while needed.
 const specs = {
   courses: {
     table: "staging_courses",

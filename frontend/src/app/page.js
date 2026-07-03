@@ -112,6 +112,15 @@ const D = GLH_DATA;
     const cls = D.CLASSES[user.quiz_result.class_id];
     const rank = rankForUser(user);
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+    const pageTitles = {
+      home: "Garena Learning Hub",
+      library: "Thư viện đào tạo",
+      policy: "Chính sách đào tạo",
+      store: "Kho đổi quà",
+      qa: "Q&A",
+      profile: "Thông tin cá nhân",
+    };
+    const pageTitle = pageTitles[props.tab] || pageTitles.home;
     const tabs = [
       ["home",    null],                    // icon only
       ["library", "Thư viện đào tạo"],
@@ -158,7 +167,8 @@ const D = GLH_DATA;
             : label
             );
           })),
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+        React.createElement("div", { className: "appbar__title", title: pageTitle }, pageTitle),
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" } },
           // Tutorial button
           React.createElement("button", {
             onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
@@ -330,13 +340,19 @@ const D = GLH_DATA;
     } else if (phase === "reveal") {
       body = React.createElement(Reveal, { crisp, onNext: () => goApp() });
     } else if (phase === "profile") {
-      body = React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); }, onReset: () => { setPhase("onboarding"); window.scrollTo(0, 0); } });
+      body = React.createElement("div", { className: "glh-light" },
+        React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+        React.createElement("main", null,
+          React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); }, onReset: () => { setPhase("onboarding"); window.scrollTo(0, 0); } })));
     } else if (phase === "store") {
       body = React.createElement("div", { className: "glh-light" },
         React.createElement(AppBar, { tab: "store", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
         React.createElement(Store, {}));
     } else if (phase === "policy") {
-      body = React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } });
+      body = React.createElement("div", { className: "glh-light" },
+        React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+        React.createElement("main", null,
+          React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } })));
     } else if (phase === "qa") {
       body = React.createElement("div", { className: "glh-light" },
         React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),

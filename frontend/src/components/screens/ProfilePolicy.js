@@ -52,8 +52,8 @@ const { CourseModal } = GLHParts;
     const goalLabel = qr._answers && qr._answers[2] ? qr._answers[2].label : null;
     const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
 
-    return React.createElement("div", { className: "glh-dark", style: { minHeight: "100vh", paddingBottom: 80 } },
-      React.createElement("div", { style: { padding: "24px clamp(16px,4vw,40px)", maxWidth: 960, margin: "0 auto" } },
+    return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 80 } },
+      React.createElement("div", { className: "glh-container", style: { paddingTop: 24, paddingBottom: 80 } },
         // Back button
         React.createElement("button", {
           onClick: props.onBack,

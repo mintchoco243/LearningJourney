@@ -4,6 +4,9 @@ import { sendMail } from "../services/mail.js";
 
 export const sessionsRouter = express.Router();
 
+// Compatibility calendar view over `courses`.
+// `session_date IS NOT NULL` is allowed here only to render calendar/upcoming
+// views. It must not become a separate session data model again.
 sessionsRouter.get("/", async (req, res) => {
   const params = [];
   const filters = ["c.is_active = TRUE", "c.status <> 'draft'", "c.session_date IS NOT NULL"];
@@ -67,25 +70,29 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
 
       const minParticipants = session.rows[0].min_participants;
       const maxParticipants = session.rows[0].max_participants;
-      const oldCount = Number(session.rows[0].current_count || 0);
-      const newCount = oldCount + 1;
+      const countRes = await client.query(
+        "SELECT COUNT(*) AS count FROM reservations WHERE session_id = $1 AND status <> 'cancelled'",
+        [req.params.id]
+      );
+      const newCount = Number(countRes.rows[0]?.count || 0);
+      const oldCount = Math.max(newCount - 1, 0);
       const triggerSessionFull = minParticipants !== null && oldCount < minParticipants && newCount >= minParticipants;
       const triggerCapacityFull = maxParticipants !== null && newCount >= maxParticipants;
 
       await client.query(
         `UPDATE courses
-         SET current_count = COALESCE(current_count, 0) + 1,
+         SET current_count = $2,
              status = CASE
-               WHEN max_participants IS NOT NULL AND COALESCE(current_count, 0) + 1 >= max_participants THEN 'full'
-               WHEN min_participants IS NOT NULL AND type = 'interest' AND COALESCE(current_count, 0) + 1 >= min_participants THEN 'full'
+               WHEN max_participants IS NOT NULL AND $2 >= max_participants THEN 'full'
+               WHEN min_participants IS NOT NULL AND type = 'interest' AND $2 >= min_participants THEN 'full'
                ELSE status
              END,
              session_status = CASE
-               WHEN max_participants IS NOT NULL AND COALESCE(current_count, 0) + 1 >= max_participants THEN 'full'
+               WHEN max_participants IS NOT NULL AND $2 >= max_participants THEN 'full'
                ELSE session_status
              END
          WHERE id = $1`,
-        [req.params.id]
+        [req.params.id, newCount]
       );
       const reservation = await client.query(
         "SELECT * FROM reservations WHERE user_id = $1 AND session_id = $2",
@@ -154,13 +161,18 @@ sessionsRouter.delete("/:id/reserve", async (req, res, next) => {
         [req.user.id, req.params.id]
       );
       if (!updateResult.rowCount) return null;
+      const countRes = await client.query(
+        "SELECT COUNT(*) AS count FROM reservations WHERE session_id = $1 AND status <> 'cancelled'",
+        [req.params.id]
+      );
+      const activeCount = Number(countRes.rows[0]?.count || 0);
       await client.query(
         `UPDATE courses
-         SET current_count = GREATEST(current_count - 1, 0),
+         SET current_count = $2,
              status = CASE WHEN status = 'full' THEN 'open' ELSE status END,
              session_status = CASE WHEN session_status = 'full' THEN 'open' ELSE session_status END
          WHERE id = $1`,
-        [req.params.id]
+        [req.params.id, activeCount]
       );
       const cancelled = await client.query(
         "SELECT * FROM reservations WHERE user_id = $1 AND session_id = $2",

@@ -18,11 +18,11 @@ assert.equal(daysUntil("2026-06-30", TODAY), -1);
 
 // session -> upcoming item (pg-style ISO date + "HH:MM:SS")
 const up = mapSessionToUpcoming(
-  { id: "s1", course_id: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", duration_hours: 2, xp_reward: 100, rating: "4.8", session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
+  { id: "s1", course_code: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", duration_hours: 2, xp_reward: 100, rating: "4.8", session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
   TODAY
 );
 assert.equal(up.session_id, "s1");
-assert.equal(up.course_id, "LC-001");
+assert.equal(up.course_id, "s1");
 assert.equal(up.course_code, "LC-001");
 assert.equal(up._id, "s1");
 assert.equal(up.format, "offline");
@@ -51,7 +51,7 @@ assert.doesNotThrow(() => [
 
 // course -> card (duration_hours -> minutes)
 const card = mapCourseToCard({ id: "row-002", course_code: "LC-002", title: "Data", trainer: "Data Guild", format: "Video", duration_hours: 1.5, xp_reward: 80, skill_tags: ["Data Analysis"], registration_url: null, fit_tag: "best_fit" });
-assert.equal(card.course_id, "LC-002");
+assert.equal(card.course_id, "row-002");
 assert.equal(card.course_code, "LC-002");
 assert.equal(card._id, "row-002");
 assert.equal(card.format, "elearning");
@@ -97,7 +97,7 @@ const rec = pickRecommended([
 ]);
 assert.deepEqual(rec.map((c) => c.course_id), ["y", "z", "x"]);
 
-// Imported DB rows: id is row UUID, course_code is the stable course identity.
+// Imported DB rows: id is the only action identity; course_code is display/grouping only.
 const importedSession = mapSessionToUpcoming({
   id: "uuid-session-1",
   course_code: "LC-04",
@@ -107,23 +107,25 @@ const importedSession = mapSessionToUpcoming({
   session_date: "2026-07-15",
   status: "ended",
 }, TODAY);
-assert.equal(importedSession.course_id, "LC-04");
+assert.equal(importedSession.course_id, "uuid-session-1");
+assert.equal(importedSession.course_code, "LC-04");
 assert.equal(importedSession._id, "uuid-session-1");
 assert.equal(importedSession.session_id, "uuid-session-1");
 assert.equal(importedSession.course_status, "upcoming_open");
 
 const importedCourse = mapCourseToCard({
-  id: "uuid-master-1",
+  id: "uuid-interest-1",
   course_code: "LC-04",
   title: "ChatGPT",
-  type: "scheduled",
+  type: "interest",
   format: "online",
   session_date: null,
   status: "open",
 }, TODAY);
-assert.equal(importedCourse.course_id, "LC-04");
-assert.equal(importedCourse._id, "uuid-master-1");
-assert.equal(importedCourse.session_id, null);
+assert.equal(importedCourse.course_id, "uuid-interest-1");
+assert.equal(importedCourse.course_code, "LC-04");
+assert.equal(importedCourse._id, "uuid-interest-1");
+assert.equal(importedCourse.session_id, "uuid-interest-1");
 
 const jsonBackedCourse = mapCourseToCard({
   id: "uuid-master-json",
@@ -137,10 +139,10 @@ assert.deepEqual(jsonBackedCourse.class_ids, ["General"]);
 assert.deepEqual(jsonBackedCourse.rank_ids, ["Associate", "Senior Associate"]);
 
 const deduped = pickRecommended([
-  { id: "uuid-session-2", course_code: "LC-20", title: "Session row", session_date: "2026-07-20", fit_tag: "best_fit" },
-  { id: "uuid-master-2", course_code: "LC-20", title: "Master row", session_date: null, fit_tag: "best_fit" },
+  { id: "uuid-session-2", course_code: "LC-20", title: "First row", session_date: "2026-07-20", fit_tag: "best_fit" },
+  { id: "uuid-session-3", course_code: "LC-20", title: "Second row", session_date: "2026-07-27", fit_tag: "best_fit" },
 ]);
-assert.equal(deduped.length, 1);
-assert.equal(deduped[0]._id, "uuid-master-2");
+assert.equal(deduped.length, 2);
+assert.deepEqual(deduped.map((c) => c.course_id), ["uuid-session-2", "uuid-session-3"]);
 
 console.log("courseMap.test.mjs: all assertions passed");

@@ -853,12 +853,24 @@ img { max-width: 100%; }
   background: rgba(11,15,21,0.88); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--rpg-border);
 }
-.appbar__in { max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px,4vw,40px); height: 64px; display: flex; align-items: center; gap: 28px; }
+.appbar__in { max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px,4vw,40px); height: 64px; display: flex; align-items: center; gap: 20px; min-width: 0; }
 .appbar__logo { height: 24px; }
-.appbar__nav { display: flex; gap: 6px; margin-left: 8px; flex: 1; }
+.appbar__nav { display: flex; gap: 6px; margin-left: 8px; flex: 1 1 auto; min-width: 0; }
+.appbar__title {
+  flex: 0 1 220px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--rpg-text);
+  font-size: 14px;
+  font-weight: 700;
+}
 .appbar__link {
   background: none; border: none; font-size: 14px; font-weight: 500; color: var(--rpg-muted);
   padding: 8px 14px; border-radius: 6px; transition: background .12s, color .12s;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 .appbar__link:hover { background: rgba(255,255,255,0.06); color: #fff; }
 .appbar__link.is-active { color: #fff; font-weight: 700; background: var(--glh-accent-soft); box-shadow: inset 0 0 0 1px var(--glh-accent); }
@@ -1009,6 +1021,7 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
   .appbar__in { gap: 12px; }
   .appbar__nav { gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .appbar__nav::-webkit-scrollbar { display: none; }
+  .appbar__title { flex-basis: 150px; font-size: 13px; }
   .appbar__link { padding: 8px 10px; white-space: nowrap; }
   .appbar__mini .nm, .appbar__mini .lv { display: none; }
   .appbar__mini { padding: 4px; }
