@@ -232,6 +232,7 @@ const COURSE_TYPES = [
     const [importModal, setImportModal] = React.useState(false);
     const [importTarget, setImportTarget] = React.useState(null);
     const [attendeesModal, setAttendeesModal] = React.useState(null);
+    const [completionsModal, setCompletionsModal] = React.useState(null);
     const [confirmTarget, setConfirmTarget] = React.useState(null);
     const [confirming, setConfirming] = React.useState(false);
     const [syncModal, setSyncModal] = React.useState(false);
@@ -597,7 +598,13 @@ const COURSE_TYPES = [
                       </button>
                     ) : "-"}
                   </td>
-                  <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>{completionCount(c)}</td>
+                  <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
+                    {completionCount(c) > 0 ? (
+                      <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setCompletionsModal(c)} title="Danh sach hoan thanh">
+                        {completionCount(c)}
+                      </button>
+                    ) : "0"}
+                  </td>
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Toggle value={c.is_active} onChange={() => toggleActive(c.id)} />
@@ -736,6 +743,10 @@ const COURSE_TYPES = [
 
         <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)} title={attendeesModal ? `Danh sach dang ky - ${attendeesModal.course_code}` : ""} width={680}>
           {attendeesModal && <AttendeesView course={attendeesModal} />}
+        </Modal>
+
+        <Modal open={!!completionsModal} onClose={() => setCompletionsModal(null)} title={completionsModal ? `Danh sach hoan thanh - ${completionsModal.course_code}` : ""} width={720}>
+          {completionsModal && <CompletionsView course={completionsModal} />}
         </Modal>
 
         <Modal open={!!confirmTarget} onClose={() => setConfirmTarget(null)} title="Xac nhan mo lop" width={440}>
@@ -943,23 +954,79 @@ const COURSE_TYPES = [
         .finally(() => setLoading(false));
     }, [course.id]);
 
+    function exportReservations() {
+      window.location.href = `/admin/api/courses/${course.id}/reservations/export`;
+    }
+
     if (loading) return <div style={{ color: "var(--rpg-muted)", padding: 24, textAlign: "center" }}>Dang tai...</div>;
     return (
-      <div className="adm-table-wrap">
-        <table className="adm-table">
-          <thead><tr><th>Ten</th><th>Email</th><th>Ngay dat</th><th>Status</th></tr></thead>
-          <tbody>
-            {list.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--rpg-muted)" }}>Chua co ai dat cho</td></tr>}
-            {list.map((a, i) => (
-              <tr key={i}>
-                <td style={{ fontWeight: 600 }}>{a.full_name || a.email}</td>
-                <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.email}</td>
-                <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{(a.reserved_at || "").slice(0, 10)}</td>
-                <td><Badge status={a.status || "reserved"} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ color: "var(--rpg-muted)", fontSize: 13 }}>{list.length} nguoi dang ky / dat cho</div>
+          <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={exportReservations} disabled={list.length === 0}>
+            <Icon name="download" size={13} /> Xuat CSV
+          </button>
+        </div>
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead><tr><th>Ten</th><th>Email</th><th>Ngay dat</th><th>Status</th></tr></thead>
+            <tbody>
+              {list.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--rpg-muted)" }}>Chua co ai dat cho</td></tr>}
+              {list.map((a, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 600 }}>{a.full_name || a.email}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.email}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{(a.reserved_at || "").slice(0, 10)}</td>
+                  <td><Badge status={a.status || "reserved"} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  function CompletionsView({ course }) {
+    const [list, setList] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+      apiFetch(`/admin/api/courses/${course.id}/completions`)
+        .then(data => { if (data.completions) setList(data.completions); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, [course.id]);
+
+    function exportCompletions() {
+      window.location.href = `/admin/api/courses/${course.id}/completions/export`;
+    }
+
+    if (loading) return <div style={{ color: "var(--rpg-muted)", padding: 24, textAlign: "center" }}>Dang tai...</div>;
+    return (
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ color: "var(--rpg-muted)", fontSize: 13 }}>{list.length} nguoi da hoan thanh</div>
+          <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={exportCompletions} disabled={list.length === 0}>
+            <Icon name="download" size={13} /> Xuat CSV
+          </button>
+        </div>
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead><tr><th>Ten</th><th>Email</th><th>Ngay hoan thanh</th><th>Nguon</th></tr></thead>
+            <tbody>
+              {list.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", color: "var(--rpg-muted)" }}>Chua co ai hoan thanh</td></tr>}
+              {list.map((a, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 600 }}>{a.full_name || a.email}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.email}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{(a.completed_at || "").slice(0, 10)}</td>
+                  <td style={{ fontSize: 12, color: "var(--rpg-muted)" }}>{a.source || "admin_import"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     );
   }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { GLHEngine } from '@/context/GameContext';
@@ -48,64 +48,42 @@ const D = GLH_DATA;
     return null;
   }
 
-  /* ---------- Q&A section ---------- */
-  const QA_SAMPLES = [
+  /* ---------- FAQ section ---------- */
+  const FAQ_SAMPLES = [
     { id: 1, q: "Tôi có thể đăng ký bao nhiêu khóa học trong một tháng?", a: "Không giới hạn số lượng khóa đăng ký. Tuy nhiên, bạn nên cân nhắc lịch học để đảm bảo hoàn thành đúng hạn." },
     { id: 3, q: "Tôi có thể đề xuất chủ đề đào tạo mới không?", a: "Có. Bạn có thể gửi đề xuất qua nút \"Gửi yêu cầu khóa học\" hoặc liên hệ trực tiếp team L&D qua email." },
     { id: 5, q: "Khóa học E-learning có hạn truy cập không?", a: "Hiện tại các khóa E-learning được mở truy cập không thời hạn. Thông tin này có thể thay đổi, bạn nên theo dõi mục Chính sách để cập nhật." },
   ];
 
-  function QASection() {
+  function FAQSection() {
     const [expanded, setExpanded] = React.useState(null);
-    const [showForm, setShowForm] = React.useState(false);
-    const [question, setQuestion] = React.useState("");
-    const [submitted, setSubmitted] = React.useState(false);
 
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      if (!question.trim()) return;
-      setSubmitted(true);
-      setQuestion("");
-      setTimeout(() => { setSubmitted(false); setShowForm(false); }, 3000);
-    };
+    return React.createElement("div", { className: "glh-container", style: { padding: "28px clamp(16px,4vw,40px)" } },
+      React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(26px,4vw,36px)" } }, "FAQ"),
+      React.createElement("p", { style: { color: "var(--ui-muted)", marginBottom: 32, fontSize: 14 } }, "Các câu hỏi thường gặp về đăng ký, đề xuất và truy cập khóa học."),
 
-    return React.createElement("section", { style: { padding: "clamp(16px,4vw,40px)" } },
-      React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 } },
-        React.createElement("h2", { style: { fontSize: "clamp(18px,2.5vw,22px)", fontWeight: 700, margin: 0 } }, "Câu hỏi thường gặp"),
-        React.createElement("button", {
-          className: "glh-btn glh-btn--secondary",
-          onClick: () => { setShowForm(v => !v); setSubmitted(false); },
-        }, showForm ? "Hủy" : "Gửi câu hỏi mới")),
-      showForm && React.createElement("form", {
-        onSubmit: handleSubmit,
-        style: { background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 10, padding: 16, marginBottom: 20 },
-      },
-        submitted
-          ? React.createElement("p", { style: { color: "var(--glh-accent)", margin: 0 } }, "✓ Câu hỏi đã được gửi. Team L&D sẽ phản hồi sớm nhất!")
-          : React.createElement(React.Fragment, null,
-              React.createElement("textarea", {
-                value: question, onChange: e => setQuestion(e.target.value),
-                placeholder: "Nhập câu hỏi của bạn...",
-                rows: 3,
-                style: { width: "100%", resize: "vertical", background: "var(--rpg-bg)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--rpg-text)", fontSize: 14, boxSizing: "border-box" },
-              }),
-              React.createElement("button", { type: "submit", className: "glh-btn glh-btn--primary", style: { marginTop: 10 } }, "Gửi"))),
-      QA_SAMPLES.map(item =>
-        React.createElement("div", {
-          key: item.id,
-          style: { borderBottom: "1px solid var(--rpg-border)", padding: "14px 0" },
-        },
-          React.createElement("button", {
-            onClick: () => setExpanded(expanded === item.id ? null : item.id),
-            style: { width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, color: "var(--rpg-text)", fontWeight: 600, fontSize: 15 },
+      React.createElement("div", { className: "u-card", style: { marginBottom: 16, padding: 20 } },
+        React.createElement("h3", { className: "u-eyebrow", style: { marginBottom: 12 } }, "Câu hỏi thường gặp"),
+        FAQ_SAMPLES.map(item =>
+          React.createElement("div", {
+            key: item.id,
+            style: { borderTop: "1px solid var(--ui-box-border)", padding: "16px 0" },
           },
-            item.q,
-            React.createElement(Icon, { name: expanded === item.id ? "chevron-down" : "chevron-right", size: 16, color: "var(--rpg-muted)" })),
-          expanded === item.id && React.createElement("p", {
-            style: { margin: "10px 0 0", color: "var(--rpg-muted)", fontSize: 14, lineHeight: 1.6 },
-          }, item.a))));
+            React.createElement("button", {
+              onClick: () => setExpanded(expanded === item.id ? null : item.id),
+              style: {
+                background: "none", border: "none", color: "var(--ui-heading)", fontSize: 14, fontWeight: 600,
+                width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between",
+                alignItems: "center", cursor: "pointer", padding: "8px 0",
+              },
+            },
+              item.q,
+              React.createElement(Icon, { name: expanded === item.id ? "chevron-down" : "chevron-right", size: 16, color: "var(--ui-muted)" })),
+            expanded === item.id && React.createElement("div", {
+              style: { fontSize: 13, color: "var(--ui-muted)", marginTop: 12, lineHeight: 1.6 },
+            }, item.a))))
+    );
   }
-
   /* ---------- App bar (utility) ---------- */
   function AppBar(props) {
     const { user } = useGame();
@@ -114,19 +92,19 @@ const D = GLH_DATA;
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
     const pageTitles = {
       home: "Garena Learning Hub",
-      library: "Thư viện đào tạo",
-      policy: "Chính sách đào tạo",
-      store: "Kho đổi quà",
-      qa: "Q&A",
-      profile: "Thông tin cá nhân",
+      library: "ThÆ° viá»‡n Ä‘Ã o táº¡o",
+      policy: "ChÃ­nh sÃ¡ch Ä‘Ã o táº¡o",
+      store: "Kho Ä‘á»•i quÃ ",
+      qa: "FAQ",
+      profile: "ThÃ´ng tin cÃ¡ nhÃ¢n",
     };
     const pageTitle = pageTitles[props.tab] || pageTitles.home;
     const tabs = [
       ["home",    null],                    // icon only
-      ["library", "Thư viện đào tạo"],
-      ["policy",  "Chính sách đào tạo"],
-      ["store",   "Kho đổi quà"],           // disabled
-      ["qa",      "Q&A"],
+      ["library", "ThÆ° viá»‡n Ä‘Ã o táº¡o"],
+      ["policy",  "ChÃ­nh sÃ¡ch Ä‘Ã o táº¡o"],
+      ["store",   "Kho Ä‘á»•i quÃ "],           // disabled
+      ["qa",      "FAQ"],
     ];
 
     const [isDark, setIsDark] = React.useState(() => {
@@ -172,36 +150,36 @@ const D = GLH_DATA;
           // Tutorial button
           React.createElement("button", {
             onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
-            title: "Hướng dẫn sử dụng",
+            title: "HÆ°á»›ng dáº«n sá»­ dá»¥ng",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
           }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--rpg-muted)" })),
           // Rating button
           React.createElement("button", {
             onClick: () => props.onOpenRating && props.onOpenRating(),
-            title: "Đánh giá site",
+            title: "ÄÃ¡nh giÃ¡ site",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
           }, React.createElement(Icon, { name: "star", size: 16, color: "var(--amber)" })),
           // Theme toggle
           React.createElement("button", {
             onClick: toggleTheme,
-            title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
+            title: isDark ? "Chuyá»ƒn sang Light Mode" : "Chuyá»ƒn sang Dark Mode",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
           }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--rpg-muted)" })),
           // Logout button
           React.createElement("button", {
-            title: "Đăng xuất",
+            title: "ÄÄƒng xuáº¥t",
             onClick: () => {
-              if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
+              if (!confirm("Báº¡n cÃ³ cháº¯c muá»‘n Ä‘Äƒng xuáº¥t?")) return;
               fetch("/auth/logout", { method: "POST", credentials: "include" })
                 .finally(() => { props.onLogout && props.onLogout(); });
             },
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
           }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" })),
-          React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => props.onNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
+          React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => props.onNav("profile"), title: "ThÃ´ng tin tÃ´i", style: { cursor: "pointer" } },
             React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
               React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
             React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
-              React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
+              React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "NgÆ°á»i dÃ¹ng"),
               React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")))
         )));
   }
@@ -219,31 +197,31 @@ const D = GLH_DATA;
     const t = props.t, setTweak = props.setTweak;
     const { actions } = useGame();
     return React.createElement(TweaksPanel, null,
-      React.createElement(TweakSection, { label: "Thương hiệu" }),
+      React.createElement(TweakSection, { label: "ThÆ°Æ¡ng hiá»‡u" }),
       React.createElement(TweakRadio, {
-        label: "Màu nhấn", value: t.accent, options: ["red", "amber"],
+        label: "MÃ u nháº¥n", value: t.accent, options: ["red", "amber"],
         onChange: (v) => setTweak("accent", v),
       }),
       React.createElement(TweakSelect, {
-        label: "Font hiển thị", value: t.displayFont, options: ["Chakra Petch", "Oxanium", "Press Start 2P"],
+        label: "Font hiá»ƒn thá»‹", value: t.displayFont, options: ["Chakra Petch", "Oxanium", "Press Start 2P"],
         onChange: (v) => setTweak("displayFont", v),
       }),
-      React.createElement(TweakSection, { label: "Nhân vật pixel" }),
+      React.createElement(TweakSection, { label: "NhÃ¢n váº­t pixel" }),
       React.createElement(TweakSlider, {
-        label: "Kích thước sprite", value: t.spriteScale, min: 0.75, max: 1.5, step: 0.05, unit: "×",
+        label: "KÃ­ch thÆ°á»›c sprite", value: t.spriteScale, min: 0.75, max: 1.5, step: 0.05, unit: "Ã—",
         onChange: (v) => setTweak("spriteScale", v),
       }),
       React.createElement(TweakToggle, {
-        label: "Viền pixel sắc nét", value: t.crisp, onChange: (v) => setTweak("crisp", v),
+        label: "Viá»n pixel sáº¯c nÃ©t", value: t.crisp, onChange: (v) => setTweak("crisp", v),
       }),
-      React.createElement(TweakSection, { label: "Chuyển động" }),
+      React.createElement(TweakSection, { label: "Chuyá»ƒn Ä‘á»™ng" }),
       React.createElement(TweakRadio, {
-        label: "Cường độ hiệu ứng", value: t.anim, options: ["subtle", "normal", "celebratory"],
+        label: "CÆ°á»ng Ä‘á»™ hiá»‡u á»©ng", value: t.anim, options: ["subtle", "normal", "celebratory"],
         onChange: (v) => setTweak("anim", v),
       }),
       React.createElement(TweakSection, { label: "Prototype" }),
       React.createElement(TweakButton, {
-        label: "Chơi lại từ đầu", onClick: () => { if (confirm("Xóa toàn bộ tiến độ và chơi lại?")) { actions.reset(); window.scrollTo(0, 0); } },
+        label: "ChÆ¡i láº¡i tá»« Ä‘áº§u", onClick: () => { if (confirm("XÃ³a toÃ n bá»™ tiáº¿n Ä‘á»™ vÃ  chÆ¡i láº¡i?")) { actions.reset(); window.scrollTo(0, 0); } },
       }));
   }
 
@@ -259,7 +237,7 @@ const D = GLH_DATA;
     const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
     const verifiedSessionRef = React.useRef(false);
 
-    // initial phase — now starts with login check
+    // initial phase â€” now starts with login check
     const [phase, setPhase] = React.useState(() => {
       if (!user.email && !user.onboarded) return "login";
       if (!user.quiz_result) return "onboarding";
@@ -356,9 +334,9 @@ const D = GLH_DATA;
     } else if (phase === "qa") {
       body = React.createElement("div", { className: "glh-light" },
         React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement(QASection, null));
+        React.createElement(FAQSection, null));
     } else {
-      // app — tab-based navigation
+      // app â€” tab-based navigation
       const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
       const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
       let tabContent;
@@ -378,10 +356,10 @@ const D = GLH_DATA;
           React.createElement("button", {
             className: "library-fab",
             onClick: utilCommon.onOpenLdRequest,
-            title: "Gửi yêu cầu học tập",
+            title: "Gá»­i yÃªu cáº§u há»c táº­p",
           },
             React.createElement(Icon, { name: "send", size: 18, color: "#fff" }),
-            React.createElement("span", { className: "library-fab__label" }, "Gửi yêu cầu")));
+            React.createElement("span", { className: "library-fab__label" }, "Gá»­i yÃªu cáº§u")));
       }
       body = React.createElement("div", { className: "glh-light" }, appBar, React.createElement("main", null, tabContent));
     }
@@ -397,7 +375,7 @@ const D = GLH_DATA;
       // Floating rating button
       phase === "app" ? React.createElement("button", {
         onClick: () => setShowRating(true),
-        title: "Đánh giá site",
+        title: "ÄÃ¡nh giÃ¡ site",
         style: {
           position: "fixed", bottom: 88, right: 24, zIndex: 98,
           padding: "8px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700,
@@ -408,7 +386,7 @@ const D = GLH_DATA;
         onMouseEnter: (e) => { e.currentTarget.style.borderColor = "var(--glh-accent)"; e.currentTarget.style.color = "var(--glh-accent)"; },
         onMouseLeave: (e) => { e.currentTarget.style.borderColor = "var(--rpg-border)"; e.currentTarget.style.color = "var(--rpg-muted)"; },
       },
-        React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " Đánh giá"
+        React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " ÄÃ¡nh giÃ¡"
       ) : null,
       React.createElement(XpToast, null),
       React.createElement(TweaksUI, { t, setTweak }));

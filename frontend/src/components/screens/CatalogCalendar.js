@@ -26,8 +26,8 @@ function ctaColor(cta) {
     warning: "#FF9E00",
     purple: "#A38BFF",
     success: "var(--garena-positive)",
-    muted: "var(--rpg-muted)",
-  })[cta?.tone] || "var(--rpg-muted)";
+    muted: "var(--ui-muted)",
+  })[cta?.tone] || "var(--ui-muted)";
 }
 
   
@@ -107,11 +107,7 @@ function ctaColor(cta) {
         options.map(o => React.createElement("option", { key: o.id, value: o.id }, o.label)));
 
     const chip = (label, active, onClick) =>
-      React.createElement("button", { onClick, style: { padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1px solid", transition: "all 150ms",
-        borderColor: active ? "var(--glh-accent)" : "var(--rpg-border)",
-        background: active ? "rgba(228,30,38,0.15)" : "transparent",
-        color: active ? "#fff" : "var(--rpg-muted)",
-      }}, label);
+      React.createElement("button", { className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
 
 
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
@@ -182,8 +178,8 @@ function ctaColor(cta) {
               style: {
                 marginTop: 8,
                 padding: "20px 24px",
-                background: "var(--rpg-panel)",
-                border: "1px solid var(--rpg-border)",
+                background: "var(--ui-box)",
+                border: "1px solid var(--ui-box-border)",
                 borderRadius: 8,
                 display: "flex",
                 alignItems: "center",
@@ -226,8 +222,8 @@ function ctaColor(cta) {
               style: {
                 margin: "0 auto", maxWidth: 480,
                 padding: "20px 24px",
-                background: "var(--rpg-panel)",
-                border: "1px solid var(--rpg-border)",
+                background: "var(--ui-box)",
+                border: "1px solid var(--ui-box-border)",
                 borderRadius: 8,
                 display: "flex",
                 alignItems: "center",
@@ -267,11 +263,7 @@ function ctaColor(cta) {
     );
 
     const calChip = (label, active, onClick) =>
-      React.createElement("button", { onClick, style: { padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer", border: "1px solid", transition: "all 150ms",
-        borderColor: active ? "var(--glh-accent)" : "var(--rpg-border)",
-        background: active ? "rgba(228,30,38,0.15)" : "transparent",
-        color: active ? "#fff" : "var(--rpg-muted)",
-      }}, label);
+      React.createElement("button", { className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
 
     const filterSection = React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 } },
       React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Kỹ năng"),
@@ -283,7 +275,7 @@ function ctaColor(cta) {
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 } },
         React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, "Lịch đào tạo 2026"),
-        React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 4 } },
+        React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4 } },
           [["quarter", "Năm"], ["month", "Tháng"]].map(([v, l]) => React.createElement("button", {
             key: v, onClick: () => setView(v),
             className: "appbar__link" + (view === v ? " is-active" : ""),
@@ -363,12 +355,12 @@ function ctaColor(cta) {
               const daysLeft = Math.ceil((d - today) / 86400000);
               const fc = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
               const cta = getCourseCta(e, user);
-              const cdColor = daysLeft <= 5 ? "#E41E26" : daysLeft <= 14 ? "#FF9E00" : "var(--rpg-muted)";
+              const cdColor = daysLeft <= 5 ? "#E41E26" : daysLeft <= 14 ? "#FF9E00" : "var(--ui-muted)";
               const timeMeta = [e.start_time && e.end_time ? `${e.start_time} – ${e.end_time}` : e.start_time, e.location].filter(Boolean);
 
               return React.createElement("button", {
                 key: e.session_id || e.course_id, className: "u-card u-card--hover",
-                style: { textAlign: "left", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", background: "var(--rpg-panel)" },
+                style: { textAlign: "left", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", background: "var(--ui-box)" },
                 onClick: () => props.onOpen(e),
               },
                 // date block

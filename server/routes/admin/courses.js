@@ -43,6 +43,23 @@ async function refreshCourseCounts(client, id) {
   );
 }
 
+function csvEscape(value) {
+  if (value === undefined || value === null) return "";
+  const text = String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function sendCsv(res, filename, columns, rows) {
+  const csv = [
+    columns.map((column) => csvEscape(column.label)).join(","),
+    ...rows.map((row) => columns.map((column) => csvEscape(row[column.key])).join(",")),
+  ].join("\n");
+
+  res.setHeader("content-type", "text/csv; charset=utf-8");
+  res.setHeader("content-disposition", `attachment; filename="${filename}"`);
+  res.send(`\uFEFF${csv}`);
+}
+
 // GET /admin/api/courses -> List every learning row. Calendar is a view, not a data model.
 adminCoursesRouter.get("/", async (req, res, next) => {
   try {
@@ -213,6 +230,107 @@ adminCoursesRouter.get("/:id/reservations", async (req, res, next) => {
       [id]
     );
     res.json({ reservations: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /admin/api/courses/:id/reservations/export -> CSV of attendees/bookings for this row.
+adminCoursesRouter.get("/:id/reservations/export", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const courseRes = await query("SELECT course_code, title FROM courses WHERE id = $1", [id]);
+    if (!courseRes.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+
+    const result = await query(
+      `SELECT c.course_code, c.title AS course_title, c.session_date, c.session_time,
+              r.status, r.reserved_at,
+              u.full_name, u.email, u.role, u.rank
+       FROM reservations r
+       JOIN users u ON r.user_id = u.id
+       JOIN courses c ON c.id = r.session_id
+       WHERE r.session_id = $1
+       ORDER BY r.reserved_at ASC`,
+      [id]
+    );
+
+    sendCsv(
+      res,
+      `${courseRes.rows[0].course_code || "course"}-reservations.csv`,
+      [
+        { key: "course_code", label: "course_code" },
+        { key: "course_title", label: "course_title" },
+        { key: "session_date", label: "session_date" },
+        { key: "session_time", label: "session_time" },
+        { key: "full_name", label: "full_name" },
+        { key: "email", label: "email" },
+        { key: "role", label: "role" },
+        { key: "rank", label: "rank" },
+        { key: "status", label: "booking_status" },
+        { key: "reserved_at", label: "reserved_at" },
+      ],
+      result.rows
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /admin/api/courses/:id/completions -> Users marked as completed for this row.
+adminCoursesRouter.get("/:id/completions", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
+    if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+
+    const result = await query(
+      `SELECT e.*, u.full_name, u.email
+       FROM enrollments e JOIN users u ON e.user_id = u.id
+       WHERE e.course_id = $1 ORDER BY e.completed_at ASC`,
+      [id]
+    );
+    res.json({ completions: result.rows });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /admin/api/courses/:id/completions/export -> CSV of completed users for this row.
+adminCoursesRouter.get("/:id/completions/export", async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const courseRes = await query("SELECT course_code, title FROM courses WHERE id = $1", [id]);
+    if (!courseRes.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+
+    const result = await query(
+      `SELECT c.course_code, c.title AS course_title, e.completed_at, e.source,
+              e.xp_earned, e.hours_earned,
+              u.full_name, u.email, u.role, u.rank
+       FROM enrollments e
+       JOIN users u ON e.user_id = u.id
+       JOIN courses c ON c.id = e.course_id
+       WHERE e.course_id = $1
+       ORDER BY e.completed_at ASC`,
+      [id]
+    );
+
+    sendCsv(
+      res,
+      `${courseRes.rows[0].course_code || "course"}-completions.csv`,
+      [
+        { key: "course_code", label: "course_code" },
+        { key: "course_title", label: "course_title" },
+        { key: "full_name", label: "full_name" },
+        { key: "email", label: "email" },
+        { key: "role", label: "role" },
+        { key: "rank", label: "rank" },
+        { key: "completed_at", label: "completed_at" },
+        { key: "source", label: "completion_source" },
+        { key: "xp_earned", label: "xp_earned" },
+        { key: "hours_earned", label: "hours_earned" },
+      ],
+      result.rows
+    );
   } catch (error) {
     next(error);
   }

@@ -21,7 +21,7 @@ const { useGame } = GLHEngine;
       React.createElement("div", { style: { marginBottom: 32 } },
         React.createElement("div", { className: "u-eyebrow" }, "Phần thưởng"),
         React.createElement("h1", { className: "u-h2", style: { fontSize: "clamp(26px,4vw,38px)", marginBottom: 8 } }, "Kho Đổi Quà"),
-        React.createElement("p", { style: { fontSize: 14, color: "var(--rpg-muted)", margin: 0 } },
+        React.createElement("p", { style: { fontSize: 14, color: "var(--ui-muted)", margin: 0 } },
           "Tính năng đổi quà sẽ được mở ở phase sau.")
       ),
 
@@ -30,21 +30,21 @@ const { useGame } = GLHEngine;
         style: {
           display: "flex", alignItems: "flex-start", gap: 14,
           padding: "20px 24px",
-          background: "rgba(124,92,255,0.08)",
-          border: "1px solid rgba(124,92,255,0.3)",
+          background: "var(--ui-box)",
+          border: "1px solid var(--ui-box-border)",
           borderRadius: 8,
         }
       },
         React.createElement("div", {
           style: {
             width: 40, height: 40, borderRadius: 8, flexShrink: 0,
-            background: "rgba(124,92,255,0.15)",
+            background: "var(--glh-accent-soft)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }
-        }, React.createElement(Icon, { name: "lock", size: 18, color: "#A38BFF" })),
+        }, React.createElement(Icon, { name: "lock", size: 18, color: "var(--glh-accent)" })),
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 6 } }, "Tính năng đang được phát triển"),
-          React.createElement("div", { style: { fontSize: 13, color: "var(--rpg-muted)", lineHeight: 1.6 } },
+          React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--ui-box-heading)", marginBottom: 6 } }, "Tính năng đang được phát triển"),
+          React.createElement("div", { style: { fontSize: 13, color: "var(--ui-box-muted)", lineHeight: 1.6 } },
             "Danh mục quà tặng và cơ chế đổi thưởng đang được L&D team xây dựng."
           )
         )
