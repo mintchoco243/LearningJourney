@@ -195,7 +195,7 @@ const D = GLH_DATA;
         setXpBurst({ amount, label, id: Date.now() });
       },
       async completeCourse(course) {
-        const apiCourseId = course._id || course.id || course.course_row_id;
+        const apiCourseId = course._id || course.id || course.course_row_id || course.course_id;
         if ((user.completed_courses || []).includes(apiCourseId)) return false;
         if (!apiCourseId) return false;
 
@@ -228,7 +228,7 @@ const D = GLH_DATA;
         return true;
       },
       async reserveCourseSession(course) {
-        const sessionId = course.session_id;
+        const sessionId = course.session_id || course._id || course.id || course.course_row_id || course.course_id;
         if (!sessionId || (user.registered_events || []).includes(sessionId)) return false;
 
         const response = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/reserve", {

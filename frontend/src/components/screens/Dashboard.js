@@ -48,7 +48,7 @@ function UpcomingItem({ course, onOpen }) {
   },
     // date block
     dayNum && React.createElement("div", { style: { textAlign: "center", minWidth: 44, flexShrink: 0 } },
-      React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 } }, dayNum),
+      React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "var(--ui-heading)", lineHeight: 1 } }, dayNum),
       React.createElement("div", { style: { fontSize: 11, color: "var(--garena-grey)", textTransform: "uppercase", marginTop: 2 } }, dow)),
 
     // content
@@ -90,15 +90,15 @@ function UpcomingList({ courses, onOpen }) {
 // ─── Stat box ─────────────────────────────────────────────────────────────────
 function Stat({ value, label }) {
   return React.createElement("div", { style: { textAlign: "center", minWidth: 64 } },
-    React.createElement("div", { className: "glh-display", style: { fontSize: 28, fontWeight: 700, color: "#fff", lineHeight: 1 } }, value),
-    React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--rpg-muted)", marginTop: 6 } }, label));
+    React.createElement("div", { className: "glh-display", style: { fontSize: 28, fontWeight: 700, color: "var(--ui-heading)", lineHeight: 1 } }, value),
+    React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ui-muted)", marginTop: 6 } }, label));
 }
 
 function SectionRow({ title, action }) {
   return React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", margin: "36px 0 16px", gap: 16 },
   },
-    React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "#fff" } }, title),
+    React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, title),
     action && React.createElement("button", { className: "u-btn u-btn--ghost", style: { fontSize: 13 }, onClick: action.onClick }, action.label));
 }
 
@@ -134,7 +134,7 @@ export function Dashboard(props) {
         React.createElement(Avatar, { opts: revealOpts, size: 80, crisp: props.crisp })),
       React.createElement("div", { style: { minWidth: 0 } },
         React.createElement("div", { className: "dash-rank" }, deptLabel),
-        React.createElement("div", { className: "dash-classname", style: { color: "#fff" } }, displayName)),
+        React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayName)),
       React.createElement("div", { style: { display: "flex", gap: 24 } },
         React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),

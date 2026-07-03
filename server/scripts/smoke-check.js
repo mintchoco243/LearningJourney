@@ -43,4 +43,17 @@ if (/master course rows|Session rows live/i.test(adminCoursesSource + userCourse
   process.exit(1);
 }
 
+for (const uiFile of [
+  path.join(root, "frontend", "src", "app", "page.js"),
+  path.join(root, "frontend", "src", "components", "admin", "ADMScreens1.js"),
+  path.join(root, "frontend", "src", "components", "screens", "CatalogCalendar.js"),
+  path.join(root, "frontend", "src", "lib", "mockApi.js"),
+]) {
+  const source = fs.readFileSync(uiFile, "utf8");
+  if (/[�\u0000-\u0008\u000b\u000c\u000e-\u001f]|(?:Ã|Æ|Ä|Â|â€|â€”|â€“|â†|âœ|áº|á»)/.test(source)) {
+    console.error(`UI text encoding guard failed: ${path.relative(root, uiFile)}`);
+    process.exit(1);
+  }
+}
+
 console.log("Syntax check passed");

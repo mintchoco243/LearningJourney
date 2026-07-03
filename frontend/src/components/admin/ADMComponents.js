@@ -52,13 +52,13 @@ const { Icon } = GLHUI;
     { id: "dashboard",    label: "Dashboard",      icon: "layout-dashboard" },
     { id: "users",        label: "Users",           icon: "users-round" },
     { id: "courses",      label: "Khóa học",        icon: "book-open" },
-    { id: "requests",     label: "L&D Requests",    icon: "message-square", badge: 8 },
+    { id: "requests",     label: "L&D Requests",    icon: "message-square" },
     { id: "policy",       label: "Chính sách",      icon: "layers" },
     { id: "testimonials", label: "Testimonials",    icon: "star" },
     { id: "accounts",     label: "Admin Accounts",  icon: "shield", superOnly: true },
   ];
 
-  function Sidebar({ activePage, onNavigate, adminRole }) {
+  function Sidebar({ activePage, onNavigate, adminRole, requestBadge = 0 }) {
     return (
       <aside className="adm-sidebar">
         <div className="adm-sidebar__logo">
@@ -67,7 +67,9 @@ const { Icon } = GLHUI;
           <span className="adm-sidebar__badge">Admin</span>
         </div>
         <nav className="adm-sidebar__nav">
-          {NAV.filter(n => !n.superOnly || adminRole === "super_admin").map(n => (
+          {NAV.filter(n => !n.superOnly || adminRole === "super_admin").map(n => {
+            const badge = n.id === "requests" ? requestBadge : n.badge;
+            return (
             <button
               key={n.id}
               className={`adm-sidebar__item${activePage === n.id ? " is-active" : ""}`}
@@ -75,11 +77,12 @@ const { Icon } = GLHUI;
             >
               <Icon name={n.icon} size={16} />
               <span style={{ flex: 1 }}>{n.label}</span>
-              {n.badge && activePage !== n.id
-                ? <span className="adm-notif-dot">{n.badge}</span>
+              {badge > 0 && activePage !== n.id
+                ? <span className="adm-notif-dot">{badge}</span>
                 : null}
             </button>
-          ))}
+            );
+          })}
         </nav>
         <div className="adm-sidebar__foot">
           <div className="adm-sidebar__user">

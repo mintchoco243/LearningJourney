@@ -28,8 +28,8 @@ adminStatsRouter.get("/", async (req, res) => {
     ),
     query(
       mysql
-        ? "SELECT COUNT(*) AS pending_ld_requests FROM ld_requests WHERE status IN ('new', 'in_review')"
-        : "SELECT COUNT(*)::int AS pending_ld_requests FROM ld_requests WHERE status IN ('new', 'in_review')",
+        ? "SELECT COUNT(*) AS pending_ld_requests FROM ld_requests WHERE status IN ('pending', 'new', 'in_review')"
+        : "SELECT COUNT(*)::int AS pending_ld_requests FROM ld_requests WHERE status IN ('pending', 'new', 'in_review')",
     ),
   ]);
 

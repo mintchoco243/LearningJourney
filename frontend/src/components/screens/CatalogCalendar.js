@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
-import { getCalendarEvents } from '@/lib/mockApi';
+import { getCalendarEvents, getStaticCalendarCourses } from '@/lib/mockApi';
 import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
@@ -115,7 +115,7 @@ function ctaColor(cta) {
 
 
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
-      React.createElement("h2", { style: { margin: "0 0 16px", fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "#fff" } },
+      React.createElement("h2", { style: { margin: "0 0 16px", fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } },
         "Kho khóa đào tạo"),
 
       // Row 1: Search
@@ -130,7 +130,7 @@ function ctaColor(cta) {
         React.createElement(Sel, { placeholder: "Kỹ năng", value: tagFilter, onChange: setTagFilter, options: allSkillIds.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
         React.createElement(Sel, { placeholder: "Trainer", value: trainerFilter, onChange: setTrainerFilter, options: allTrainers.map(t => ({ id: t, label: t })) }),
         React.createElement(Sel, { placeholder: "Thời lượng", value: durationFilter, onChange: setDurationFilter, options: durationOptions.map(d => ({ id: d.id, label: d.label })) }),
-        React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--rpg-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
+        React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
         React.createElement(Sel, { noDefault: true, value: sortMode, onChange: setSortMode, options: [{ id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] }),
         activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
 
@@ -142,7 +142,7 @@ function ctaColor(cta) {
           .map(r => chip(r.label, cmFilter === r.id, () => setCmFilter(cmFilter === r.id ? "all" : r.id)))),
 
       // Result count
-      React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", marginBottom: 16 } },
+      React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", marginBottom: 16 } },
         filtered.length + " / " + courses.length + " khóa học"
         + (activeFilterCount > 0 || q.trim() ? " · đang lọc" : "")),
 
@@ -155,7 +155,7 @@ function ctaColor(cta) {
               React.createElement("button", {
                 onClick: () => setPage((p) => Math.max(1, p - 1)),
                 disabled: page === 1,
-                style: { padding: "8px 14px", borderRadius: 6, border: "1px solid var(--rpg-border)", background: "transparent", color: page === 1 ? "var(--rpg-muted)" : "#fff", cursor: page === 1 ? "default" : "pointer", fontSize: 13, fontWeight: 600 },
+                style: { padding: "8px 14px", borderRadius: 6, border: "1px solid var(--rpg-border)", background: "transparent", color: page === 1 ? "var(--ui-muted)" : "var(--ui-heading)", cursor: page === 1 ? "default" : "pointer", fontSize: 13, fontWeight: 600 },
               }, "← Trước"),
               Array.from({ length: totalPages }, (_, i) => i + 1).map((p) =>
                 React.createElement("button", {
@@ -165,7 +165,7 @@ function ctaColor(cta) {
                     width: 36, height: 36, borderRadius: 6, border: "1px solid",
                     borderColor: p === page ? "var(--glh-accent)" : "var(--rpg-border)",
                     background: p === page ? "var(--glh-accent)" : "transparent",
-                    color: p === page ? "#fff" : "var(--rpg-muted)",
+                    color: p === page ? "#fff" : "var(--ui-muted)",
                     cursor: "pointer", fontSize: 13, fontWeight: 700,
                   }
                 }, p)
@@ -173,7 +173,7 @@ function ctaColor(cta) {
               React.createElement("button", {
                 onClick: () => setPage((p) => Math.min(totalPages, p + 1)),
                 disabled: page === totalPages,
-                style: { padding: "8px 14px", borderRadius: 6, border: "1px solid var(--rpg-border)", background: "transparent", color: page === totalPages ? "var(--rpg-muted)" : "#fff", cursor: page === totalPages ? "default" : "pointer", fontSize: 13, fontWeight: 600 },
+                style: { padding: "8px 14px", borderRadius: 6, border: "1px solid var(--rpg-border)", background: "transparent", color: page === totalPages ? "var(--ui-muted)" : "var(--ui-heading)", cursor: page === totalPages ? "default" : "pointer", fontSize: 13, fontWeight: 600 },
               }, "Sau →")
             ) : null,
             // Request banner
@@ -203,8 +203,8 @@ function ctaColor(cta) {
                   React.createElement(Icon, { name: "file-plus", size: 20, color: "var(--glh-accent)" })
                 ),
                 React.createElement("div", null,
-                  React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "#fff", marginBottom: 3 } }, "Không tìm thấy khóa học phù hợp?"),
-                  React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)" } }, "Gửi yêu cầu — L&D team sẽ xử lý trong 2-3 ngày làm việc")
+                  React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 3 } }, "Không tìm thấy khóa học phù hợp?"),
+                  React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)" } }, "Gửi yêu cầu — L&D team sẽ xử lý trong 2-3 ngày làm việc")
                 )
               ),
               React.createElement("button", {
@@ -238,8 +238,8 @@ function ctaColor(cta) {
               React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12 } },
                 React.createElement(Icon, { name: "file-plus", size: 20, color: "var(--glh-accent)" }),
                 React.createElement("div", null,
-                  React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 2 } }, "Gửi yêu cầu học tập"),
-                  React.createElement("div", { style: { fontSize: 11, color: "var(--rpg-muted)" } }, "L&D team sẽ phản hồi sớm")
+                  React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 2 } }, "Gửi yêu cầu học tập"),
+                  React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted)" } }, "L&D team sẽ phản hồi sớm")
                 )
               ),
               React.createElement("button", {
@@ -282,7 +282,7 @@ function ctaColor(cta) {
 
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 } },
-        React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "#fff" } }, "Lịch đào tạo 2026"),
+        React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, "Lịch đào tạo 2026"),
         React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 4 } },
           [["quarter", "Năm"], ["month", "Tháng"]].map(([v, l]) => React.createElement("button", {
             key: v, onClick: () => setView(v),
@@ -361,7 +361,7 @@ function ctaColor(cta) {
               const d = new Date(e.start_date);
               const isPast = d < today;
               const daysLeft = Math.ceil((d - today) / 86400000);
-              const fc = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
+              const fc = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
               const cta = getCourseCta(e, user);
               const cdColor = daysLeft <= 5 ? "#E41E26" : daysLeft <= 14 ? "#FF9E00" : "var(--rpg-muted)";
               const timeMeta = [e.start_time && e.end_time ? `${e.start_time} – ${e.end_time}` : e.start_time, e.location].filter(Boolean);
@@ -373,7 +373,7 @@ function ctaColor(cta) {
               },
                 // date block
                 React.createElement("div", { style: { textAlign: "center", minWidth: 44, flexShrink: 0 } },
-                  React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "#fff", lineHeight: 1 } }, d.getDate()),
+                  React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "var(--ui-heading)", lineHeight: 1 } }, d.getDate()),
                   React.createElement("div", { style: { fontSize: 11, color: "var(--garena-grey)", textTransform: "uppercase", marginTop: 2 } }, DOW_VI[(d.getDay() + 6) % 7])),
                 // content
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },

@@ -12,7 +12,7 @@ export const ADMIN_STATS = {
       { source: "Manager gợi ý", count: 21, color: "#2BB6A3" },
       { source: "Import CSV", count: 13, color: "#F5A623" },
     ],
-    pending_ld_requests: 8,
+    pending_ld_requests: 0,
     active_courses: 12,
     top_courses: [
       { name: "Giao tiếp hiệu quả", code: "LC-003", enrollments: 94 },

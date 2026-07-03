@@ -50,7 +50,7 @@ const D = GLH_DATA;
         React.createElement(Icon, { name: props.icon, size: 16, color: "var(--garena-grey)" })),
       React.createElement("div", null,
         React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)" } }, props.label),
-        React.createElement("div", { style: { fontSize: 14, color: "#fff", fontWeight: 500, marginTop: 2 } }, props.value)));
+        React.createElement("div", { style: { fontSize: 14, color: "var(--ui-heading)", fontWeight: 500, marginTop: 2 } }, props.value)));
   }
 
   const FORMAT_COLOR = {
@@ -76,7 +76,7 @@ const D = GLH_DATA;
 
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
-    const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--rpg-muted)" };
+    const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
     const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
@@ -105,11 +105,11 @@ const D = GLH_DATA;
           c.countdown_days === 0 ? "Hôm nay" : "Còn " + c.countdown_days + " ngày"),
         // title
         React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3, margin: 0 } }, c.title),
-        (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--rpg-muted)" } },
+        (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--ui-muted)" } },
           c.start_date && React.createElement(MetaChip, { icon: "calendar" }, fmtDate(c.start_date)),
           timeText && React.createElement(MetaChip, { icon: "clock" }, timeText)),
         // description
-        desc && React.createElement("p", { className: "rec-desc", style: { fontSize: 12, color: "var(--rpg-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, desc),
+        desc && React.createElement("p", { className: "rec-desc", style: { fontSize: 12, color: "var(--ui-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, desc),
         // skill tags
         (c.skill_tags || []).length > 0 && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
           (c.skill_tags || []).slice(0, 2).map(sid => React.createElement(SkillPill, { key: sid, id: sid }))),
@@ -237,7 +237,7 @@ const D = GLH_DATA;
             rating ? React.createElement(Stars, { value: rating }) : null),
           React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.2, color: "#fff" } }, c.title)),
         React.createElement("div", { style: { padding: "24px 28px 28px" } },
-          React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--rpg-text)", margin: "0 0 18px" } }, c.description),
+          React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--ui-text)", margin: "0 0 18px" } }, c.description),
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 } },
@@ -252,8 +252,8 @@ const D = GLH_DATA;
             modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Số lượng", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.max_participants }) : null),
           testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
             testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
-              React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--rpg-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
-              React.createElement("div", { style: { fontSize: 12, color: "var(--rpg-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
+              React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
+              React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
           React.createElement(React.Fragment, null,
             cta.disabled
               ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, marginBottom: 12, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
@@ -290,13 +290,13 @@ const D = GLH_DATA;
                   onClick: () => setCourseRating(s),
                   style: { background: "transparent", border: "none", cursor: "pointer", padding: 2 },
                   title: s + " sao",
-                }, React.createElement(Icon, { name: "star", size: 24, color: courseRating >= s ? "var(--amber)" : "var(--rpg-muted)", fill: courseRating >= s ? "var(--amber)" : "none" })))),
+                }, React.createElement(Icon, { name: "star", size: 24, color: courseRating >= s ? "var(--amber)" : "var(--ui-muted)", fill: courseRating >= s ? "var(--amber)" : "none" })))),
               React.createElement("textarea", {
                 value: courseReview,
                 onChange: (e) => setCourseReview(e.target.value),
                 placeholder: "Chia sẻ cảm nhận ngắn về khóa học...",
                 rows: 3,
-                style: { width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 10, background: "var(--rpg-bg)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--rpg-text)", fontSize: 13 },
+                style: { width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 10, background: "var(--ui-surface-2)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--ui-text)", fontSize: 13 },
               }),
               React.createElement("button", { className: "u-btn u-btn--primary", onClick: submitCourseRating }, "Gửi đánh giá")) : null))));
   }

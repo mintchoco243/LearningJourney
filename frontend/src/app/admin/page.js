@@ -58,6 +58,7 @@ function AdminGateMessage({ title, message, action }) {
       return () => cancelAnimationFrame(frame);
     }, []);
     const [adminSession, setAdminSession] = React.useState({ status: "loading", user: null, role: null });
+    const [requestBadge, setRequestBadge] = React.useState(0);
 
     const [page, setPage] = React.useState(
       () => {
@@ -102,6 +103,28 @@ function AdminGateMessage({ title, message, action }) {
     React.useEffect(() => {
       localStorage.setItem("adm_page", page === "sessions" ? "courses" : page);
     }, [page]);
+
+    React.useEffect(() => {
+      if (adminSession.status !== "ready") return;
+      let cancelled = false;
+      fetch("/admin/api/ld-requests", { credentials: "include" })
+        .then(async (res) => {
+          if (!res.ok) return { requests: [] };
+          return res.json();
+        })
+        .then((data) => {
+          if (cancelled) return;
+          const openStatuses = new Set(["pending", "new", "in_review", "in_progress"]);
+          const requests = Array.isArray(data?.requests) ? data.requests : [];
+          setRequestBadge(
+            requests.filter((request) => openStatuses.has(String(request.status || "").toLowerCase())).length,
+          );
+        })
+        .catch(() => {
+          if (!cancelled) setRequestBadge(0);
+        });
+      return () => { cancelled = true; };
+    }, [adminSession.status, page]);
 
     function navigate(p) {
       setPage(p === "sessions" ? "courses" : p);
@@ -162,7 +185,7 @@ function AdminGateMessage({ title, message, action }) {
 
     return (
       <div className="adm-layout">
-        <Sidebar activePage={page} onNavigate={navigate} adminRole={adminRole} />
+        <Sidebar activePage={page} onNavigate={navigate} adminRole={adminRole} requestBadge={requestBadge} />
 
         <main className="adm-main">
           {/* Topbar */}
