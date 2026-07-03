@@ -25,6 +25,8 @@ const D = ADM_DATA;
     completed:   { label: "Hoàn thành",   color: "#2BB6A3", bg: "rgba(43,182,163,.12)",  bdr: "rgba(43,182,163,.3)"  },
     in_progress: { label: "Đang học",     color: "#9b7fff", bg: "rgba(124,92,255,.12)",  bdr: "rgba(124,92,255,.3)"  },
     enrolled:    { label: "Đã đăng ký",  color: "#6aa3e0", bg: "rgba(59,111,176,.12)",  bdr: "rgba(59,111,176,.3)"  },
+    confirmed:   { label: "Đã xác nhận", color: "#4CAF50", bg: "rgba(76,175,80,.12)",   bdr: "rgba(76,175,80,.3)"   },
+    cancelled:   { label: "Đã huỷ",      color: "#C0504D", bg: "rgba(192,80,77,.12)",   bdr: "rgba(192,80,77,.3)"   },
     dropped:     { label: "Đã huỷ",      color: "#C0504D", bg: "rgba(192,80,77,.12)",   bdr: "rgba(192,80,77,.3)"   },
   };
 
@@ -52,6 +54,11 @@ const D = ADM_DATA;
     if (list.length > 1) return list.join(", ");
     if (list.length === 1) return list[0];
     return "—";
+  }
+
+  function formatDate(value) {
+    if (!value) return "";
+    return String(value).slice(0, 10);
   }
 
   function Field({ label, value }) {
@@ -105,18 +112,22 @@ const D = ADM_DATA;
 
   /* ===================== USER DETAIL MODAL ===================== */
   function UserDetailModal({ user, onClose }) {
-    const [enrollments, setEnrollments] = React.useState(D.USER_ENROLLMENTS[user.id] || []);
+    const [history, setHistory] = React.useState(D.USER_ENROLLMENTS[user.id] || []);
     const [loadingEnr, setLoadingEnr]   = React.useState(true);
 
     React.useEffect(() => {
       apiFetch(`/admin/api/users/${user.id}`)
-        .then(data => { if (data.enrollments) setEnrollments(data.enrollments); })
+        .then(data => {
+          if (data.learning_history) setHistory(data.learning_history);
+          else if (data.enrollments) setHistory(data.enrollments);
+        })
         .catch(() => {})
         .finally(() => setLoadingEnr(false));
     }, [user.id]);
 
-    const completed   = enrollments.filter(e => e.status === "completed");
-    const ongoing     = enrollments.filter(e => e.status !== "completed");
+    const completed   = history.filter(e => e.status === "completed");
+    const registered  = history.filter(e => e.status !== "completed" && e.status !== "cancelled");
+    const cancelled   = history.filter(e => e.status === "cancelled");
     const rm          = RANK_META[user.rank] || RANK_META.rank_01;
 
     return (
@@ -167,8 +178,8 @@ const D = ADM_DATA;
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 20 }}>
           {[
             { l: "Khóa đã hoàn thành", v: completed.length, c: "#2BB6A3" },
-            { l: "Đang theo học",       v: ongoing.filter(e=>e.status==="in_progress").length, c: "#9b7fff" },
-            { l: "Đã đăng ký",         v: ongoing.filter(e=>e.status==="enrolled").length, c: "#6aa3e0" },
+            { l: "Đã đăng ký",         v: registered.length, c: "#6aa3e0" },
+            { l: "Đã huỷ",             v: cancelled.length, c: "#C0504D" },
           ].map(s => (
             <div key={s.l} style={{ background: "rgba(255,255,255,.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", textAlign: "center" }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: s.c, marginBottom: 2 }}>{s.v}</div>
@@ -180,17 +191,17 @@ const D = ADM_DATA;
         {/* Enrollment list */}
         {loadingEnr ? (
           <div style={{ textAlign: "center", color: "var(--rpg-muted)", padding: "20px 0", fontSize: 13 }}>Đang tải...</div>
-        ) : enrollments.length === 0 ? (
+        ) : history.length === 0 ? (
           <div style={{ textAlign: "center", color: "var(--rpg-muted)", padding: "20px 0", fontSize: 13 }}>
             Chưa đăng ký khóa học nào.
           </div>
         ) : (
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "var(--rpg-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
-              Lịch sử khóa học ({enrollments.length})
+              Lịch sử khóa học ({history.length})
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {enrollments.map((e, i) => (
+              {history.map((e, i) => (
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 12,
                   background: "rgba(255,255,255,.025)", border: "1px solid var(--rpg-border)",
@@ -199,7 +210,10 @@ const D = ADM_DATA;
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: 600, color: "#fff", fontSize: 13, marginBottom: 2 }}>{e.course_title || e.title}</div>
                     <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>
-                      Đăng ký {(e.enrolled_at||"").slice(5).replace("-","/")}
+                      {e.course_code && <span>{e.course_code} · </span>}
+                      {e.registered_at && <span>Đăng ký {formatDate(e.registered_at)}</span>}
+                      {e.completed_at && <span>{e.registered_at ? " · " : ""}Hoàn thành {formatDate(e.completed_at)}</span>}
+                      {!e.registered_at && !e.completed_at && e.session_date && <span>Lịch học {formatDate(e.session_date)}</span>}
                     </div>
                   </div>
                   <EnrollBadge status={e.status} />

@@ -1,10 +1,10 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
 import { RequestsScreen } from '@/components/admin/ADMScreens2';
-import { PolicyScreen, AccountsScreen, TestimonialsScreen } from '@/components/admin/ADMScreens3';
+import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
 const { Sidebar } = ADMComponents;
@@ -48,6 +48,7 @@ function AdminGateMessage({ title, message, action }) {
     requests:     { label: "L&D Requests" },
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
+    site_feedback:{ label: "Site Feedback" },
     accounts:     { label: "Admin Accounts" },
   };
 
@@ -178,6 +179,7 @@ function AdminGateMessage({ title, message, action }) {
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,
+      site_feedback:<SiteFeedbackScreen />,
       accounts:     adminRole === "super_admin" ? <AccountsScreen /> : null,
     };
 

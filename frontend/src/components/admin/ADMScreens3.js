@@ -413,6 +413,96 @@ const D = ADM_DATA;
     };
   }
 
+  function parseJsonMaybe(value, fallback = {}) {
+    if (!value) return fallback;
+    if (typeof value === "object") return value;
+    try { return JSON.parse(value); } catch { return fallback; }
+  }
+
+  export function SiteFeedbackScreen() {
+    const [items, setItems] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const aspectLabels = {
+      visual: "Hình thức",
+      content: "Nội dung",
+      usability: "Tiện lợi, dễ sử dụng",
+      usefulness: "Hữu ích cho tôi",
+    };
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/site-feedback")
+        .then(data => {
+          const rows = Array.isArray(data.feedback) ? data.feedback : [];
+          setItems(rows.map(item => ({
+            ...item,
+            aspect_ratings: parseJsonMaybe(item.aspect_ratings),
+            aspect_feedback: parseJsonMaybe(item.aspect_feedback),
+            created_at: String(item.created_at || "").slice(0, 16).replace("T", " "),
+          })));
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, []);
+
+    return (
+      <div data-screen-label="Site Feedback">
+        <PageHeader
+          title="Site Feedback"
+          subtitle={`${items.length} đánh giá từ người dùng`}
+        />
+
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải feedback...</div>}
+
+        <div style={{ display: "grid", gap: 12 }}>
+          {items.map(item => (
+            <div key={item.id} className="adm-section-card" style={{ margin: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 12 }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#fff", fontSize: 14 }}>
+                    {item.is_anonymous ? "Ẩn danh" : (item.user_name || "Người dùng")}
+                  </div>
+                  {!item.is_anonymous && (
+                    <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 3 }}>
+                      {[item.user_team, item.user_role].filter(Boolean).join(" · ") || "Chưa có team/role"}
+                    </div>
+                  )}
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: "var(--amber)", fontWeight: 800, fontSize: 18 }}>{item.overall_rating}/5</div>
+                  <div style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{item.created_at}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: item.additional_feedback ? 12 : 0 }}>
+                {Object.entries(aspectLabels).map(([key, label]) => (
+                  <div key={key} style={{ border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, background: "rgba(255,255,255,0.03)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: item.aspect_feedback?.[key] ? 6 : 0 }}>
+                      <span style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 700 }}>{label}</span>
+                      <span style={{ color: "var(--rpg-text)", fontSize: 12, fontWeight: 800 }}>{item.aspect_ratings?.[key] || "-"}/5</span>
+                    </div>
+                    {item.aspect_feedback?.[key] && (
+                      <div style={{ color: "var(--rpg-text)", fontSize: 12, lineHeight: 1.5 }}>{item.aspect_feedback[key]}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {item.additional_feedback && (
+                <p style={{ margin: 0, color: "var(--rpg-text)", fontSize: 13, lineHeight: 1.6 }}>
+                  {item.additional_feedback}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {!loading && items.length === 0 && (
+          <div className="adm-empty" style={{ marginTop: 28 }}>Chưa có site feedback nào.</div>
+        )}
+      </div>
+    );
+  }
+
   export function TestimonialsScreen() {
     const [testimonials, setTestimonials] = React.useState(D.ADMIN_TESTIMONIALS);
     const [filterCourse, setFilterCourse] = React.useState("all");
@@ -506,4 +596,4 @@ const D = ADM_DATA;
     );
   }
 
-  export const ADMScreens3 = { PolicyScreen, AccountsScreen, TestimonialsScreen };
+  export const ADMScreens3 = { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen };

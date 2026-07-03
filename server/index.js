@@ -13,6 +13,7 @@ import { coursesRouter } from "./routes/courses.js";
 import { ldRequestsRouter } from "./routes/ldRequests.js";
 import { meRouter } from "./routes/me.js";
 import { policiesRouter } from "./routes/policies.js";
+import { siteFeedbackRouter } from "./routes/siteFeedback.js";
 import { sessionsRouter } from "./routes/sessions.js";
 import { adminDataPrepRouter } from "./routes/admin/dataPrep.js";
 import { adminStatsRouter } from "./routes/admin/stats.js";
@@ -21,6 +22,7 @@ import { adminSessionsRouter } from "./routes/admin/sessions.js";
 import { adminUsersRouter } from "./routes/admin/users.js";
 import { adminLdRequestsRouter } from "./routes/admin/ldRequests.js";
 import { adminPoliciesRouter } from "./routes/admin/policies.js";
+import { adminSiteFeedbackRouter } from "./routes/admin/siteFeedback.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
 import { adminTestimonialsRouter } from "./routes/admin/testimonials.js";
 
@@ -54,6 +56,7 @@ app.use("/api/courses", requireAuth, coursesRouter);
 app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
 app.use("/api/policies", requireAuth, policiesRouter);
+app.use("/api/site-feedback", requireAuth, siteFeedbackRouter);
 app.get("/admin/api/me", requireAuth, requireAdmin, (req, res) => {
   res.json({
     user: {
@@ -71,6 +74,7 @@ app.use("/admin/api/sessions", requireAuth, requireAdmin, adminSessionsRouter);
 app.use("/admin/api/users", requireAuth, requireAdmin, adminUsersRouter);
 app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRouter);
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
+app.use("/admin/api/site-feedback", requireAuth, requireAdmin, adminSiteFeedbackRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsRouter);
 

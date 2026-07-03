@@ -9,7 +9,7 @@ import { Step4LearningStyle, Step5Availability, Step6TrainerPreference } from '.
 
 const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
-const { useGame } = GLHEngine;
+const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 
@@ -130,89 +130,115 @@ const { Avatar } = GLHAvatar;
 
   export function Reveal(props) {
     const { user } = useGame();
-    const qr = user.quiz_result;
-
+    const qr = user.quiz_result || {};
     const quizExt = qr.quiz_extended || {};
-    const roleAnswer = user.db_role || null;
-    const teamAnswer = user.db_team || null;
-    const rankObj = D.RANKS.find((r) => r.id === (user.db_rank || qr.rank_id));
-    const rankAnswer = rankObj ? rankObj.name : (user.db_rank || null);
-
+    const cls = D.CLASSES[qr.class_id] || D.CLASSES.explorer;
+    const rank = rankForUser(user);
+    const avatarOpts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+    const rankObj = D.RANKS.find((r) => r.id === qr.rank_id);
+    const rankAnswer = user.db_rank || (rankObj ? rankObj.name : "Chưa cập nhật");
+    const currentXp = Number(user.xp || 0);
     const displayName = user.full_name ? user.full_name.split(" ").pop() : (user.email ? user.email.split("@")[0] : "Bạn");
-
+    const fullName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
+    const emptyText = "Chưa cập nhật";
     const learningStyleLabels = { video: "Video tự học", workshop: "Workshop", coaching: "Coaching 1-1", reading: "Reading / Tài liệu" };
-    const availabilityLabel = { under1: "Dưới 1 giờ/tuần", "1to2": "1–2 giờ/tuần", "3plus": "3+ giờ/tuần" };
-
+    const availabilityLabel = { under1: "Dưới 1 giờ/tuần", "1to2": "1-2 giờ/tuần", "3plus": "3+ giờ/tuần" };
+    const asList = (value) => {
+      if (Array.isArray(value)) return value.filter(Boolean);
+      if (!value) return [];
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) return parsed.filter(Boolean);
+        } catch (e) {}
+        return value.split(",").map((item) => item.trim()).filter(Boolean);
+      }
+      return [];
+    };
+    const learningFormatsRaw = asList(user.learning_formats).length ? asList(user.learning_formats) : asList(quizExt.learning_style);
+    const learningStyles = learningFormatsRaw.map((s) => learningStyleLabels[s] || s);
+    const weeklyHours = user.weekly_hours || quizExt.availability;
+    const trainerPrefs = asList(user.preferred_trainers).length ? asList(user.preferred_trainers) : asList(quizExt.trainers);
     const summaryItems = [
-      roleAnswer ? { icon: "briefcase", label: "Vai trò", value: roleAnswer } : null,
-      teamAnswer ? { icon: "building-2", label: "Bộ phận", value: teamAnswer } : null,
-      rankAnswer ? { icon: "bar-chart-2", label: "Cấp bậc", value: rankAnswer } : null,
-      quizExt.learning_style && quizExt.learning_style.length > 0 ? {
-        icon: "book-open", label: "Hình thức học",
-        value: quizExt.learning_style.map((s) => learningStyleLabels[s] || s).join(", ")
-      } : null,
-      quizExt.availability ? {
-        icon: "clock", label: "Thời gian/tuần",
-        value: availabilityLabel[quizExt.availability] || quizExt.availability
-      } : null,
-      quizExt.trainers && quizExt.trainers.length > 0 ? {
-        icon: "users", label: "Trainer yêu thích",
-        value: quizExt.trainers.join(", ")
-      } : null,
-    ].filter(Boolean);
+      { icon: "bar-chart-2", label: "Rank", value: rankAnswer },
+      { icon: "briefcase", label: "Role", value: user.db_role || emptyText },
+      { icon: "building-2", label: "Team", value: user.db_team || emptyText },
+      { icon: "clock", label: "Th?i gian h?c", value: weeklyHours ? (availabilityLabel[weeklyHours] || weeklyHours) : emptyText },
+      { icon: "book-open", label: "H?nh th?c h?c", value: learningStyles.length ? learningStyles.join(", ") : emptyText },
+      { icon: "user-check", label: "Trainer y?u th?ch", value: trainerPrefs.length ? trainerPrefs.join(", ") : emptyText },
+    ];
+    const statItems = [
+      { label: "XP hiện có", value: currentXp },
+      { label: "Giờ học", value: Number(user.hours_total || 0) + "h" },
+      { label: "Buổi đã học", value: Number(user.completed_sessions_count || 0) },
+    ];
+
+    const renderChip = (label, i) =>
+      React.createElement("span", { key: i, style: { fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid var(--rpg-border)", borderRadius: 999, padding: "6px 10px" } }, label);
 
     return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad", style: { position: "relative", overflowY: "auto" } },
       React.createElement(Starfield),
-      React.createElement("div", { className: "rv-wrap", style: { maxWidth: 520, width: "100%", textAlign: "left" } },
-        // Header
-        React.createElement("div", { className: "rv-rise", style: { textAlign: "center", marginBottom: 32, animationDelay: ".05s" } },
+      React.createElement("div", { className: "rv-wrap", style: { maxWidth: 760, width: "100%", textAlign: "left", paddingTop: 24, paddingBottom: 24 } },
+        React.createElement("div", { className: "rv-rise", style: { textAlign: "center", marginBottom: 22, animationDelay: ".05s" } },
           React.createElement("div", { style: { fontSize: 13, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".1em", color: "var(--amber)", marginBottom: 10 } }, "Hồ sơ học tập của bạn"),
           React.createElement("h1", { style: { margin: 0, fontSize: "clamp(22px,4vw,32px)", fontWeight: 700, color: "#fff", fontFamily: "var(--glh-display)" } },
             "Xin chào, ", React.createElement("span", { style: { color: "var(--glh-accent)" } }, displayName), "!")
         ),
 
-        // Summary cards
-        React.createElement("div", { style: { display: "grid", gap: 10, marginBottom: 32 } },
+        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".1s", background: "rgba(255,255,255,0.055)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 18, marginBottom: 14, display: "grid", gridTemplateColumns: "auto 1fr", gap: 16, alignItems: "center" } },
+          React.createElement("div", { style: { width: 78, height: 78, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", border: "2px solid var(--glh-accent)", boxShadow: "0 0 20px rgba(228,30,38,0.28)", display: "grid", placeItems: "center" } },
+            React.createElement(Avatar, { opts: avatarOpts, size: 82, crisp: props.crisp })
+          ),
+          React.createElement("div", { style: { minWidth: 0 } },
+            React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 } }, fullName),
+            React.createElement("div", { style: { fontSize: 13, color: "var(--rpg-muted)", marginBottom: 10, overflowWrap: "anywhere" } }, user.email || emptyText),
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } },
+              React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(228,30,38,0.18)", border: "1px solid rgba(228,30,38,0.35)", borderRadius: 999, padding: "5px 9px" } }, rankAnswer),
+              React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(255,158,0,0.16)", border: "1px solid rgba(255,158,0,0.35)", borderRadius: 999, padding: "5px 9px" } }, user.db_team || user.db_role || "Learning Hub")
+            )
+          )
+        ),
+
+        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".16s", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14 } },
+          statItems.map((stat, i) =>
+            React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", textAlign: "center", minWidth: 0 } },
+              React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "var(--amber)", fontFamily: "var(--glh-display)", lineHeight: 1.1 } }, stat.value),
+              React.createElement("div", { style: { fontSize: 10, fontWeight: 800, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginTop: 6 } }, stat.label)
+            )
+          )
+        ),
+
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 10, marginBottom: 14 } },
           summaryItems.map((item, i) =>
             React.createElement("div", {
               key: i,
               className: "rv-rise",
-              style: {
-                animationDelay: (0.1 + i * 0.08) + "s",
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid var(--rpg-border)",
-                borderRadius: 8,
-                padding: "14px 18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-              }
+              style: { animationDelay: (0.3 + i * 0.05) + "s", background: "rgba(255,255,255,0.05)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }
             },
-              React.createElement("div", {
-                style: {
-                  width: 36, height: 36, borderRadius: 6,
-                  background: "rgba(228,30,38,0.15)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  flexShrink: 0,
-                }
-              },
-                React.createElement(Icon, { name: item.icon, size: 18, color: "var(--glh-accent)" })
+              React.createElement("div", { style: { width: 34, height: 34, borderRadius: 6, background: "rgba(228,30,38,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } },
+                React.createElement(Icon, { name: item.icon, size: 17, color: "var(--glh-accent)" })
               ),
-              React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 3 } }, item.label),
-                React.createElement("div", { style: { fontSize: 14, fontWeight: 600, color: "#fff" } }, item.value)
+              React.createElement("div", { style: { minWidth: 0 } },
+                React.createElement("div", { style: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 3 } }, item.label),
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", overflowWrap: "anywhere" } }, item.value)
               )
             )
           )
         ),
 
-        // CTA
+        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".62s", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 24 } },
+          React.createElement("div", { style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 16 } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 10 } }, "Hình thức học phù hợp"),
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, (learningStyles.length ? learningStyles : [emptyText]).map(renderChip))
+          ),
+          React.createElement("div", { style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 16 } },
+            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 10 } }, "Trainer yêu thích"),
+            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, (trainerPrefs.length ? trainerPrefs : [emptyText]).map(renderChip))
+          )
+        ),
+
         React.createElement("div", { className: "rv-rise", style: { animationDelay: ".7s", textAlign: "center" } },
-          React.createElement("button", {
-            className: "glh-btn glh-btn--primary glh-btn--lg",
-            onClick: props.onNext,
-            style: { width: "100%" },
-          },
+          React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: props.onNext, style: { width: "100%" } },
             "Vào trang học tập", React.createElement(Icon, { name: "arrow-right", size: 18, color: "#fff" })
           )
         )

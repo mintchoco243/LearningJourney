@@ -15,6 +15,9 @@ const D = GLH_DATA;
     db_role: "",   // role from DB (pre-populated by admin)
     db_team: "",   // team/department from DB (pre-populated by admin)
     db_rank: "",   // rank from DB (rank_id or imported label)
+    learning_formats: [],
+    weekly_hours: "",
+    preferred_trainers: [],
     character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
     quiz_result: null, // { class_id, rank_id, personality, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
@@ -171,6 +174,9 @@ const D = GLH_DATA;
           db_role: profile.role || user.db_role,
           db_team: profile.team || user.db_team,
           db_rank: profile.rank || user.db_rank,
+          learning_formats: profile.learning_formats ?? user.learning_formats,
+          weekly_hours: profile.weekly_hours ?? user.weekly_hours,
+          preferred_trainers: profile.preferred_trainers ?? user.preferred_trainers,
           xp: profile.xp_total ?? user.xp,
           hours_total: hasEnrollmentSnapshot ? enrollmentHours : (profile.hours_total ?? user.hours_total),
           completed_sessions_count: hasEnrollmentSnapshot ? enrollments.length : (user.completed_sessions_count || 0),

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { GLHUI } from '../GLHUI';
@@ -55,6 +55,7 @@ const { Icon } = GLHUI;
     { id: "requests",     label: "L&D Requests",    icon: "message-square" },
     { id: "policy",       label: "Chính sách",      icon: "layers" },
     { id: "testimonials", label: "Testimonials",    icon: "star" },
+    { id: "site_feedback", label: "Site Feedback",  icon: "message-square" },
     { id: "accounts",     label: "Admin Accounts",  icon: "shield", superOnly: true },
   ];
 

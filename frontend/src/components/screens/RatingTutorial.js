@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import { GLHUI } from '../GLHUI';
@@ -13,108 +13,141 @@ const { useGame } = GLHEngine;
 
   /* ---------- Rating Modal ---------- */
   export function RatingModal(props) {
-    const [rating, setRating] = React.useState(0);
-    const [hover, setHover] = React.useState(0);
-    const [feedback, setFeedback] = React.useState("");
+    const { user } = useGame();
+    const [anonymous, setAnonymous] = React.useState(false);
+    const [overallRating, setOverallRating] = React.useState(0);
+    const [aspectRatings, setAspectRatings] = React.useState({});
+    const [aspectFeedback, setAspectFeedback] = React.useState({});
+    const [additionalFeedback, setAdditionalFeedback] = React.useState("");
+    const [submitting, setSubmitting] = React.useState(false);
+    const [submitError, setSubmitError] = React.useState("");
     const [submitted, setSubmitted] = React.useState(false);
 
-    const aspects = ["Dễ sử dụng", "Nội dung phù hợp", "Thiết kế đẹp", "Tính năng đầy đủ"];
-    const [aspectRatings, setAspectRatings] = React.useState({});
+    const faces = [
+      { value: 1, face: "☹", label: "Quá tệ", bg: "#ff5a5f" },
+      { value: 2, face: "☹", label: "Không hài lòng", bg: "#ff8a4c" },
+      { value: 3, face: "●", label: "Bình thường", bg: "#f6c84c" },
+      { value: 4, face: "☺", label: "Hài lòng", bg: "#94d66b" },
+      { value: 5, face: "☺", label: "Tuyệt vời", bg: "#45b866" },
+    ];
+    const aspects = [
+      { key: "visual", label: "Hình thức" },
+      { key: "content", label: "Nội dung" },
+      { key: "usability", label: "Tiện lợi, dễ sử dụng" },
+      { key: "usefulness", label: "Hữu ích cho tôi" },
+    ];
 
-    const handleSubmit = () => {
-      if (rating === 0) { alert("Vui lòng chọn số sao"); return; }
-      setSubmitted(true);
-      setTimeout(() => props.onClose(), 2000);
+    const setAspectRating = (key, value) => {
+      setAspectRatings((prev) => ({ ...prev, [key]: value }));
+      if (value > 3) setAspectFeedback((prev) => ({ ...prev, [key]: "" }));
+    };
+
+    const handleSubmit = async () => {
+      if (overallRating === 0) { alert("Vui lòng chọn điểm trải nghiệm tổng thể"); return; }
+      const missing = aspects.find((aspect) => !aspectRatings[aspect.key]);
+      if (missing) { alert("Vui lòng đánh giá: " + missing.label); return; }
+
+      setSubmitting(true);
+      setSubmitError("");
+      try {
+        const res = await fetch("/api/site-feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            is_anonymous: anonymous,
+            overall_rating: overallRating,
+            aspect_ratings: aspectRatings,
+            aspect_feedback: aspectFeedback,
+            additional_feedback: additionalFeedback,
+          }),
+        });
+        if (!res.ok) throw new Error("SUBMIT_FAILED");
+        setSubmitted(true);
+        setTimeout(() => props.onClose(), 1800);
+      } catch (error) {
+        setSubmitError("Chưa gửi được đánh giá. Vui lòng thử lại sau.");
+      } finally {
+        setSubmitting(false);
+      }
     };
 
     if (submitted) {
       return React.createElement("div", { className: "modal-bg" },
         React.createElement("div", { className: "modal", style: { textAlign: "center", padding: 48 } },
-          React.createElement("div", { style: { fontSize: 48, marginBottom: 16 } }, "🎉"),
-          React.createElement("h2", { style: { margin: "0 0 8px", fontSize: 20, fontWeight: 700 } }, "Cảm ơn bạn!"),
-          React.createElement("p", { style: { color: "var(--rpg-muted)", fontSize: 13, margin: 0 } }, "Đánh giá của bạn giúp chúng tôi cải thiện Learning Hub.")
+          React.createElement("div", { style: { fontSize: 42, marginBottom: 16, color: "var(--garena-positive)" } }, "✓"),
+          React.createElement("h2", { style: { margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--ui-heading)" } }, "Cảm ơn bạn!"),
+          React.createElement("p", { style: { color: "var(--ui-muted)", fontSize: 13, margin: 0 } }, "Đánh giá của bạn đã được gửi đến admin Learning Hub.")
         )
       );
     }
 
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
-      React.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: 480, padding: 0 } },
-        // Header
-        React.createElement("div", { style: { padding: "24px 24px 0", borderBottom: "1px solid var(--rpg-border)", paddingBottom: 20 } },
+      React.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: 560, padding: 0 } },
+        React.createElement("div", { style: { padding: "24px 24px 0", borderBottom: "1px solid var(--ui-box-border)", paddingBottom: 20 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
             React.createElement("div", null,
-              React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 18, fontWeight: 700 } }, "Đánh giá Garena Learning Hub"),
-              React.createElement("p", { style: { margin: 0, fontSize: 12, color: "var(--rpg-muted)" } }, "Ý kiến của bạn rất có giá trị với chúng tôi")
+              React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--ui-heading)" } }, "Đánh giá Garena Learning Hub"),
+              React.createElement("p", { style: { margin: 0, fontSize: 12, color: "var(--ui-muted)" } }, "Ý kiến của bạn rất có giá trị với chúng tôi")
             ),
-            React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: "var(--rpg-muted)", cursor: "pointer", fontSize: 20, padding: 0 } }, "✕")
+            React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: "var(--ui-muted)", cursor: "pointer", fontSize: 20, padding: 0 } }, "×")
           )
         ),
 
         React.createElement("div", { style: { padding: 24 } },
-          // Star rating
-          React.createElement("div", { style: { textAlign: "center", marginBottom: 28 } },
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--rpg-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" } }, "Trải nghiệm tổng thể"),
-            React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 8 } },
-              [1,2,3,4,5].map((s) =>
-                React.createElement("button", {
-                  key: s,
-                  onClick: () => setRating(s),
-                  onMouseEnter: () => setHover(s),
-                  onMouseLeave: () => setHover(0),
-                  style: { background: "none", border: "none", cursor: "pointer", padding: 4, transition: "transform 150ms" },
-                },
-                  React.createElement("svg", { width: 36, height: 36, viewBox: "0 0 24 24", fill: (hover || rating) >= s ? "var(--amber)" : "none", stroke: (hover || rating) >= s ? "var(--amber)" : "var(--rpg-muted)", strokeWidth: 1.5, style: { transition: "all 150ms" } },
-                    React.createElement("polygon", { points: "12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" })
-                  )
-                )
-              )
-            ),
-            rating > 0 ? React.createElement("div", { style: { marginTop: 8, fontSize: 13, color: "var(--amber)", fontWeight: 600 } },
-              ["", "Cần cải thiện nhiều", "Có thể tốt hơn", "Ổn", "Khá tốt", "Tuyệt vời!"][rating]
-            ) : null
+          React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 22, color: "var(--ui-text)", fontSize: 13, fontWeight: 600 } },
+            React.createElement("input", { type: "checkbox", checked: anonymous, onChange: (e) => setAnonymous(e.target.checked) }),
+            "Gửi ẩn danh"
           ),
 
-          // Aspect ratings
+          !anonymous ? React.createElement("div", { style: { marginBottom: 22, padding: "12px 14px", borderRadius: 8, background: "var(--ui-box-2)", border: "1px solid var(--ui-box-border)", color: "var(--ui-muted)", fontSize: 12, lineHeight: 1.6 } },
+            "Admin sẽ nhận: ",
+            React.createElement("b", { style: { color: "var(--ui-heading)" } }, user.full_name || user.email || "Người dùng"),
+            user.db_team ? " · " + user.db_team : "",
+            user.db_role ? " · " + user.db_role : ""
+          ) : null,
+
+          React.createElement("div", { style: { textAlign: "center", marginBottom: 28 } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" } }, "1. Trải nghiệm tổng thể"),
+            React.createElement(FaceScale, { value: overallRating, onChange: setOverallRating, faces })
+          ),
+
           React.createElement("div", { style: { marginBottom: 20 } },
-            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 } }, "Đánh giá từng khía cạnh"),
-            React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
-              aspects.map((asp) =>
-                React.createElement("div", {
-                  key: asp,
-                  onClick: () => setAspectRatings((p) => ({ ...p, [asp]: p[asp] === "good" ? "bad" : "good" })),
-                  style: {
-                    padding: "10px 14px", borderRadius: 6, border: "1px solid",
-                    borderColor: aspectRatings[asp] === "good" ? "var(--glh-accent)" : "var(--rpg-border)",
-                    background: aspectRatings[asp] === "good" ? "rgba(228,30,38,0.1)" : "transparent",
-                    cursor: "pointer", fontSize: 12, fontWeight: 600,
-                    color: aspectRatings[asp] === "good" ? "#fff" : "var(--rpg-muted)",
-                    display: "flex", alignItems: "center", gap: 8, transition: "all 150ms",
-                  }
-                },
-                  aspectRatings[asp] === "good" ? "✓ " : "",
-                  asp
-                )
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 12 } }, "2. Từng khía cạnh"),
+            aspects.map((aspect) =>
+              React.createElement("div", { key: aspect.key, style: { marginBottom: 16 } },
+                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 8 } }, aspect.label),
+                React.createElement(FaceScale, { value: aspectRatings[aspect.key] || 0, onChange: (value) => setAspectRating(aspect.key, value), faces, compact: true }),
+                aspectRatings[aspect.key] > 0 && aspectRatings[aspect.key] <= 3
+                  ? React.createElement("textarea", {
+                      className: "u-input",
+                      placeholder: "Bạn muốn phần này cải thiện gì?",
+                      value: aspectFeedback[aspect.key] || "",
+                      onChange: (e) => setAspectFeedback((prev) => ({ ...prev, [aspect.key]: e.target.value })),
+                      style: { minHeight: 62, resize: "vertical", marginTop: 8, paddingLeft: 12 },
+                    })
+                  : null
               )
             )
           ),
 
-          // Text feedback
           React.createElement("div", { style: { marginBottom: 24 } },
-            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--rpg-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Góp ý thêm (tùy chọn)"),
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "3. Góp ý thêm (tùy chọn)"),
             React.createElement("textarea", {
               className: "u-input",
-              placeholder: "Bạn muốn thêm tính năng gì? Điều gì chưa tốt?",
-              value: feedback,
-              onChange: (e) => setFeedback(e.target.value),
-              style: { minHeight: 80, resize: "vertical" },
+              placeholder: "Bạn muốn site cải thiện hoặc bổ sung thêm gì không?",
+              value: additionalFeedback,
+              onChange: (e) => setAdditionalFeedback(e.target.value),
+              style: { minHeight: 80, resize: "vertical", paddingLeft: 12 },
             })
           ),
 
-          // Footer
+          submitError ? React.createElement("div", { style: { marginBottom: 14, color: "var(--glh-accent)", fontSize: 13, fontWeight: 700 } }, submitError) : null,
+
           React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end" } },
             React.createElement("button", { className: "glh-btn glh-btn--ghost", onClick: props.onClose }, "Để sau"),
-            React.createElement("button", { className: "glh-btn glh-btn--primary", onClick: handleSubmit, style: { minWidth: 120 } },
-              "Gửi đánh giá"
+            React.createElement("button", { className: "glh-btn glh-btn--primary", onClick: handleSubmit, disabled: submitting, style: { minWidth: 120 } },
+              submitting ? "Đang gửi..." : "Gửi đánh giá"
             )
           )
         )
@@ -122,6 +155,34 @@ const { useGame } = GLHEngine;
     );
   }
 
+  function FaceScale({ value, onChange, faces, compact = false }) {
+    return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: compact ? 6 : 10 } },
+      faces.map((item) =>
+        React.createElement("button", {
+          key: item.value,
+          type: "button",
+          onClick: () => onChange(item.value),
+          title: item.label,
+          style: {
+            minWidth: 0,
+            border: value === item.value ? "2px solid var(--ui-heading)" : "1px solid var(--ui-box-border)",
+            background: value === item.value ? "var(--ui-control-hover)" : "transparent",
+            color: "var(--ui-text)",
+            borderRadius: 8,
+            padding: compact ? "7px 4px" : "9px 5px",
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 5,
+          },
+        },
+          React.createElement("span", { style: { width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: "50%", background: item.bg, display: "grid", placeItems: "center", color: "rgba(0,0,0,0.55)", fontSize: compact ? 18 : 22, fontWeight: 800 } }, item.face),
+          React.createElement("span", { style: { fontSize: compact ? 9 : 10, color: "var(--ui-muted)", lineHeight: 1.2, textAlign: "center" } }, compact ? item.value : item.label)
+        )
+      )
+    );
+  }
   /* ---------- Tutorial Overlay (Guided Tour) ---------- */
   const STEPS = [
     {
