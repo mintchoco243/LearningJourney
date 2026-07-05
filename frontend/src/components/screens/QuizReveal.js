@@ -185,7 +185,7 @@ const { Avatar } = GLHAvatar;
 
         React.createElement("div", { className: "rv-rise", style: { animationDelay: ".1s", background: "rgba(255,255,255,0.055)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 18, marginBottom: 14, display: "grid", gridTemplateColumns: "auto 1fr", gap: 16, alignItems: "center" } },
           React.createElement("div", { style: { width: 78, height: 78, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", border: "2px solid var(--glh-accent)", boxShadow: "0 0 20px rgba(228,30,38,0.28)", display: "grid", placeItems: "center" } },
-            React.createElement(Avatar, { opts: avatarOpts, size: 82, crisp: props.crisp })
+            React.createElement(Avatar, { opts: avatarOpts, size: "100%", crisp: props.crisp })
           ),
           React.createElement("div", { style: { minWidth: 0 } },
             React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 } }, fullName),

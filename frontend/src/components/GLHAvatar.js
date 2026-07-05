@@ -159,7 +159,7 @@ export const OUTFIT = {
     // crown for top ranks
     parts.push(crown(rank, accent));
 
-    return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">${parts.join("")}</svg>`;
+    return `<svg width="100%" height="100%" viewBox="0 8 100 100" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">${parts.join("")}</svg>`;
   }
 
   export function Avatar(props) {

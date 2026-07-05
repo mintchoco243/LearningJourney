@@ -598,6 +598,7 @@ img { max-width: 100%; }
 
 .glh-display { font-family: var(--glh-display); letter-spacing: 0.01em; }
 .glh-avatar { transform: scale(var(--glh-sprite-scale, 1)); transform-origin: center; }
+.glh-avatar svg { display: block; width: 100%; height: 100%; }
 .glh-avatar.is-crisp svg { shape-rendering: crispEdges; }
 
 /* ===== generic screen scaffolding ===== */

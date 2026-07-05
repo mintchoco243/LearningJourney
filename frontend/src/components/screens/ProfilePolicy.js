@@ -67,8 +67,8 @@ export function Profile(props) {
       React.createElement("div", { style: { background: "linear-gradient(135deg, rgba(228,30,38,0.12) 0%, rgba(255,158,0,0.08) 100%)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 32, marginBottom: 40, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center" } },
         // Avatar side
         React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 20 } },
-          React.createElement("div", { style: { width: 88, height: 88, borderRadius: "50%", border: "3px solid var(--glh-accent)", overflow: "hidden", boxShadow: "0 0 20px rgba(228,30,38,0.3)" } },
-            React.createElement(Avatar, { opts: opts, size: 88, crisp: props.crisp })
+          React.createElement("div", { style: { width: 88, height: 88, borderRadius: "50%", border: "3px solid var(--glh-accent)", overflow: "hidden", boxShadow: "0 0 20px rgba(228,30,38,0.3)", display: "grid", placeItems: "center" } },
+            React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })
           ),
           React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 } }, "Vai trò & Cấp bậc"),

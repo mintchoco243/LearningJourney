@@ -108,24 +108,24 @@ const { useGame } = GLHEngine;
             user.db_role ? " · " + user.db_role : ""
           ) : null,
 
-          React.createElement("div", { style: { textAlign: "center", marginBottom: 34 } },
+          React.createElement("div", { style: { textAlign: "left", marginBottom: 34 } },
             React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", marginBottom: 16, textTransform: "uppercase", letterSpacing: ".05em" } }, "1. Trải nghiệm tổng thể"),
             React.createElement(FaceScale, { value: overallRating, onChange: setOverallRating, faces })
           ),
 
-          React.createElement("div", { style: { marginBottom: 28, textAlign: "center" } },
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 18, textAlign: "center" } }, "2. Từng khía cạnh"),
+          React.createElement("div", { style: { marginBottom: 28, textAlign: "left" } },
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 18, textAlign: "left" } }, "2. Từng khía cạnh"),
             aspects.map((aspect) =>
-              React.createElement("div", { key: aspect.key, style: { marginBottom: 22, textAlign: "center" } },
-                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: "var(--ui-heading)", marginBottom: 10, textAlign: "center" } }, aspect.label),
-                React.createElement(FaceScale, { value: aspectRatings[aspect.key] || 0, onChange: (value) => setAspectRating(aspect.key, value), faces, compact: true }),
+              React.createElement("div", { key: aspect.key, style: { marginBottom: 22, textAlign: "left" } },
+                React.createElement("div", { style: { fontSize: 14, fontWeight: 800, color: "var(--ui-heading)", marginBottom: 10, textAlign: "left" } }, aspect.label),
+                React.createElement(FaceScale, { value: aspectRatings[aspect.key] || 0, onChange: (value) => setAspectRating(aspect.key, value), faces }),
                 aspectRatings[aspect.key] > 0 && aspectRatings[aspect.key] <= 3
                   ? React.createElement("textarea", {
                       className: "u-input",
                       placeholder: "Bạn muốn phần này cải thiện gì?",
                       value: aspectFeedback[aspect.key] || "",
                       onChange: (e) => setAspectFeedback((prev) => ({ ...prev, [aspect.key]: e.target.value })),
-                      style: { minHeight: 62, resize: "vertical", margin: "10px auto 0", paddingLeft: 12, textAlign: "left", maxWidth: 500 },
+                      style: { minHeight: 62, resize: "vertical", margin: "10px 0 0", paddingLeft: 12, textAlign: "left", maxWidth: 500 },
                     })
                   : null
               )
@@ -157,7 +157,7 @@ const { useGame } = GLHEngine;
   }
 
   function FaceScale({ value, onChange, faces, compact = false }) {
-    return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: compact ? 8 : 12, width: "100%", maxWidth: compact ? 460 : 550, margin: "0 auto", justifyItems: "stretch" } },
+    return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: compact ? 8 : 12, width: "100%", maxWidth: compact ? 460 : 550, margin: "0", justifyItems: "stretch" } },
       faces.map((item) =>
         React.createElement("button", {
           key: item.value,
@@ -171,7 +171,7 @@ const { useGame } = GLHEngine;
             color: "var(--ui-text)",
             borderRadius: 8,
             padding: compact ? "10px 6px" : "12px 8px",
-            minHeight: compact ? 78 : 108,
+            minHeight: compact ? 52 : 64,
             cursor: "pointer",
             display: "flex",
             flexDirection: "column",
@@ -180,8 +180,7 @@ const { useGame } = GLHEngine;
             gap: 5,
           },
         },
-          React.createElement("span", { style: { width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: "50%", background: item.bg, display: "grid", placeItems: "center", color: "rgba(0,0,0,0.55)", fontSize: compact ? 18 : 22, fontWeight: 800 } }, item.face),
-          React.createElement("span", { style: { fontSize: compact ? 9 : 10, color: "var(--ui-muted)", lineHeight: 1.2, textAlign: "center" } }, compact ? item.value : item.label)
+          React.createElement("span", { style: { width: compact ? 30 : 38, height: compact ? 30 : 38, borderRadius: "50%", background: item.bg, display: "grid", placeItems: "center", color: "rgba(0,0,0,0.55)", fontSize: compact ? 18 : 22, fontWeight: 800 } }, item.face)
         )
       )
     );
