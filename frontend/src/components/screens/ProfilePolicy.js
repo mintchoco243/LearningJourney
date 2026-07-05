@@ -6,7 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLHParts } from '../GLHParts';
 import { GLH_DATA } from '@/data/glhData';
-import { getRecommendedCourses } from '@/lib/mockApi';
+import { getRecommendedCourses, getStaticCalendarCourses } from '@/lib/mockApi';
 import { rankCompassCourses, isCompletedCourse, Stat } from './Dashboard';
 
 const D = GLH_DATA;
@@ -41,8 +41,9 @@ export function Profile(props) {
     .map((id) => D.COURSES.find((c) => c.course_id === id))
     .filter(Boolean);
 
-  const registeredEvents = (user.registered_events || [])
-    .map((id) => D.CALENDAR.find((e) => e.event_id === id))
+  const allUpcoming = getStaticCalendarCourses();
+  const registeredCourses = (user.registered_events || [])
+    .map((id) => allUpcoming.find((c) => c.session_id === id || c._id === id || c.course_id === id))
     .filter(Boolean);
 
   const quizExt = qr.quiz_extended || {};
@@ -124,11 +125,11 @@ export function Profile(props) {
         )
       ),
 
-      // Registered events section
-      registeredEvents.length > 0 ? React.createElement("div", { style: { marginBottom: 40 } },
+      // Registered courses section
+      registeredCourses.length > 0 ? React.createElement("div", { style: { marginBottom: 40 } },
         React.createElement("h3", { style: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Khóa đã đăng ký"),
         React.createElement("div", { className: "rec-grid" },
-          registeredEvents.map((c) => React.createElement(CourseCard, { key: c.event_id || c.course_id || c._id, course: c, onClick: () => setSelectedCourse(c), showDate: true }))
+          registeredCourses.map((c) => React.createElement(CourseCard, { key: c.course_id || c._id, course: c, onClick: () => setSelectedCourse(c), showDate: true }))
         )
       ) : null,
 

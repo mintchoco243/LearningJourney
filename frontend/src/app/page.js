@@ -153,7 +153,7 @@ function AppBar(props) {
             onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
             title: "Hướng dẫn sử dụng",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--rpg-muted)" })),
+          }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--ui-heading)" })),
           // Rating button
           React.createElement("button", {
             onClick: () => props.onOpenRating && props.onOpenRating(),
@@ -165,7 +165,7 @@ function AppBar(props) {
             onClick: toggleTheme,
             title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
-          }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--rpg-muted)" })),
+          }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--ui-heading)" })),
           // Logout button
           React.createElement("button", {
             title: "Đăng xuất",
@@ -175,7 +175,7 @@ function AppBar(props) {
                 .finally(() => { props.onLogout && props.onLogout(); });
             },
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" })),
+          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--ui-heading)" })),
           React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => handleNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
             React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
               React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })),
@@ -260,7 +260,7 @@ function AppBar(props) {
               fetch("/auth/logout", { method: "POST", credentials: "include" })
                 .finally(() => { props.onLogout && props.onLogout(); });
             }
-          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" }))
+          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--ui-heading)" }))
         )
       )
     )
