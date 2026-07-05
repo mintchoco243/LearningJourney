@@ -15,9 +15,9 @@ const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 const FORMAT_COLOR = {
-  offline:   { bg: "rgba(228,30,38,0.18)",   color: "#FF8A8E" },
-  online:    { bg: "rgba(43,182,163,0.18)",   color: "#2BB6A3" },
-  elearning: { bg: "rgba(122,92,255,0.18)",   color: "#A38BFF" },
+  offline: { bg: "rgba(228,30,38,0.18)", color: "#FF8A8E" },
+  online: { bg: "rgba(43,182,163,0.18)", color: "#2BB6A3" },
+  elearning: { bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
 };
 
 function ctaColor(cta) {
@@ -35,8 +35,8 @@ function UpcomingItem({ course, onOpen }) {
   const { user } = useGame();
   const { title, format, location, start_date, start_time, end_time } = course;
   const cta = getCourseCta(course, user);
-  const dayNum  = start_date ? new Date(start_date).getDate() : null;
-  const dow     = start_date ? DOW_VI[(new Date(start_date).getDay() + 6) % 7] : null;
+  const dayNum = start_date ? new Date(start_date).getDate() : null;
+  const dow = start_date ? DOW_VI[(new Date(start_date).getDay() + 6) % 7] : null;
   const countdown = course.countdown_days;
   const countdownColor = countdown != null ? (countdown <= 5 ? "#E41E26" : countdown <= 14 ? "#FF9E00" : "var(--rpg-muted)") : null;
   const timeMeta = [start_time && end_time ? `${start_time} – ${end_time}` : start_time, location].filter(Boolean);
@@ -88,7 +88,7 @@ function UpcomingList({ courses, onOpen }) {
 }
 
 // ─── Stat box ─────────────────────────────────────────────────────────────────
-function Stat({ value, label }) {
+export function Stat({ value, label }) {
   return React.createElement("div", { style: { textAlign: "center", minWidth: 64 } },
     React.createElement("div", { className: "glh-display", style: { fontSize: 28, fontWeight: 700, color: "var(--ui-heading)", lineHeight: 1 } }, value),
     React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--ui-muted)", marginTop: 6 } }, label));
@@ -167,7 +167,7 @@ function isActiveCourse(course) {
   return course.course_status !== "cancelled" && course.session_status !== "cancelled";
 }
 
-function isCompletedCourse(course, user) {
+export function isCompletedCourse(course, user) {
   const rowId = course._id || course.id || course.course_row_id || course.course_id;
   return rowId ? (user.completed_courses || []).includes(rowId) : false;
 }
@@ -205,7 +205,7 @@ function upcomingTime(course) {
   return Number.isFinite(time) && time >= Date.now() - 86400000 ? time : Number.POSITIVE_INFINITY;
 }
 
-function rankCompassCourses(courses, user, rank, cls) {
+export function rankCompassCourses(courses, user, rank, cls) {
   const rankTokens = userRankTokens(user, rank);
   return (courses || [])
     .map((course, index) => ({ course, index }))

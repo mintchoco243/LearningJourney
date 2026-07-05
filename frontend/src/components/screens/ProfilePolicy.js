@@ -6,12 +6,14 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLHParts } from '../GLHParts';
 import { GLH_DATA } from '@/data/glhData';
+import { getRecommendedCourses } from '@/lib/mockApi';
+import { rankCompassCourses, isCompletedCourse, Stat } from './Dashboard';
 
 const D = GLH_DATA;
 const { Icon, fmtDate } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
-const { CourseModal } = GLHParts;
+const { CourseModal, CourseCard } = GLHParts;
 
 
 
@@ -22,6 +24,12 @@ const { CourseModal } = GLHParts;
 export function Profile(props) {
   const { user, actions } = useGame();
   const [selectedCourse, setSelectedCourse] = React.useState(null);
+  const [recommended, setRecommended] = React.useState([]);
+
+  React.useEffect(() => {
+    getRecommendedCourses().then(setRecommended);
+  }, []);
+
   const qr = user.quiz_result;
   if (!qr) return null;
 
@@ -39,18 +47,27 @@ export function Profile(props) {
 
   const quizExt = qr.quiz_extended || {};
 
-  const stats = [
-    { label: "Khóa học", value: String(user.completed_sessions_count ?? completedCourses.length) },
-    { label: "Sự kiện", value: registeredEvents.length.toString() },
-    { label: "Giờ học", value: `${Number.isInteger(user.hours_total) ? user.hours_total : user.hours_total.toFixed(1)}h` },
-  ];
-
   const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
   const roleLabel = user.db_role || (qr._answers && qr._answers[0] ? qr._answers[0].label : cls.name);
   const teamLabel = user.db_team || null;
   const rankLabel = dbRank ? dbRank.name : (user.db_rank || (qr._answers && qr._answers[1] ? qr._answers[1].label : rank.name));
   const goalLabel = qr._answers && qr._answers[2] ? qr._answers[2].label : null;
-  const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
+
+  // Dash-hero stats and meta
+  const displayNameDash = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
+  const roleLabelDash = user.db_team || user.db_role || cls.name;
+  const rankLabelDash = user.db_rank || rank.name;
+  const profileMeta = [roleLabelDash, rankLabelDash].filter(Boolean).join(" · ");
+  const totalHours = Number(user.hours_total || 0);
+  const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
+
+  const rankCourses = React.useMemo(
+    () => rankCompassCourses(recommended, user, rank, cls),
+    [recommended, user, rank, cls]
+  );
+  const progressTotal = rankCourses.length;
+  const progressCompleted = rankCourses.filter((course) => isCompletedCourse(course, user)).length;
+  const progressPercent = progressTotal ? Math.round((progressCompleted / progressTotal) * 100) : 0;
 
   return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 80 } },
     React.createElement("div", { className: "glh-container", style: { paddingTop: 24, paddingBottom: 80 } },
@@ -64,149 +81,62 @@ export function Profile(props) {
       ),
 
       // Hero card - profile header
-      React.createElement("div", { style: { background: "linear-gradient(135deg, rgba(228,30,38,0.12) 0%, rgba(255,158,0,0.08) 100%)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 32, marginBottom: 40, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center" } },
-        // Avatar side
-        React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 20 } },
-          React.createElement("div", { style: { width: 88, height: 88, borderRadius: "50%", border: "3px solid var(--glh-accent)", overflow: "hidden", boxShadow: "0 0 20px rgba(228,30,38,0.3)", display: "grid", placeItems: "center" } },
-            React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })
-          ),
-          React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 } }, "Vai trò & Cấp bậc"),
-            React.createElement("div", { style: { fontSize: 18, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 4 } }, roleLabel),
-            React.createElement("div", { style: { fontSize: 13, color: "var(--amber)", fontWeight: 600 } }, rankLabel)
-          )
-        ),
-        // Info side
-        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
-          React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 } }, "Người dùng"),
-            React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 2 } }, displayName),
-            React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)" } }, user.email || "user@garena.vn")
-          ),
-          goalLabel ? React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 6 } }, "Mục tiêu"),
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 600, color: "var(--ui-heading)" } }, goalLabel)
-          ) : null
-        )
-      ),
+      React.createElement("div", { className: "dash-hero", style: { marginBottom: 40 } },
+        React.createElement("div", { className: "dash-hero__avatar" },
+          React.createElement(Avatar, { opts: opts, size: 80, crisp: props.crisp })),
+        React.createElement("div", { style: { minWidth: 0 } },
+          React.createElement("div", { className: "dash-rank" }, profileMeta),
+          React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayNameDash),
+          React.createElement("div", { style: { marginTop: 14, maxWidth: 420 } },
+            React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 700, marginBottom: 7 } },
+              `Hoàn thành ${progressCompleted}/${progressTotal} khóa gợi ý cho rank của bạn`),
+            React.createElement("div", { className: "xpbar", style: { height: 8 } },
+              React.createElement("div", { className: "xpbar__fill", style: { width: `${progressPercent}%` } })))),
+        React.createElement("div", { style: { display: "flex", gap: 24 } },
+          React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
+          React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
-      // Stats grid
-      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 40 } },
-        stats.map((stat, idx) =>
-          React.createElement("div", { key: idx, style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 16, textAlign: "center" } },
-            React.createElement("div", { style: { fontSize: 28, fontWeight: 700, color: "var(--glh-accent)", marginBottom: 6, fontFamily: "var(--glh-display)" } }, stat.value),
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em" } }, stat.label)
-          )
-        )
-      ),
-
-      // Onboarding profile
+      // Onboarding profile (Filtered)
       React.createElement("div", { style: { marginBottom: 40 } },
-        React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 } },
-          React.createElement("h3", { style: { margin: 0, fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Thông tin từ Onboarding")
-        ),
-        React.createElement("button", {
-          onClick: () => {
-            if (confirm("Bắt đầu lại từ đầu? Toàn bộ tiến độ sẽ bị xóa.")) {
-              actions.reset();
-              props.onReset && props.onReset();
-            }
-          },
-          style: {
-            display: "flex", alignItems: "center", gap: 8,
-            width: "100%", marginBottom: 20,
-            padding: "12px 20px",
-            background: "rgba(228,30,38,0.08)",
-            border: "1px solid rgba(228,30,38,0.3)",
-            borderRadius: 6,
-            color: "var(--glh-accent)",
-            fontSize: 14, fontWeight: 600,
-            cursor: "pointer",
-            justifyContent: "center",
-          },
-        },
-          React.createElement(Icon, { name: "refresh-cw", size: 16, color: "var(--glh-accent)" }),
-          "Làm lại Onboarding"
-        ),
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 } },
-          // Role
-          roleLabel ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Vai trò"),
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, roleLabel)
-          ) : null,
-          // Team
-          teamLabel ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Bộ phận"),
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, teamLabel)
-          ) : null,
-          // Rank level
-          rankLabel ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Cấp bậc"),
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, rankLabel)
-          ) : null,
-          // Goal
-          goalLabel ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Mục tiêu"),
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, goalLabel)
-          ) : null,
           // Learning Style
           quizExt.learning_style && quizExt.learning_style.length > 0 ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Hình thức"),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 8 } },
+              React.createElement(Icon, { name: "book-open", size: 14, color: "var(--ui-muted)" }),
+              React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em" } }, "Hình thức")
+            ),
             React.createElement("div", { style: { fontSize: 12, color: "var(--ui-heading)", lineHeight: 1.4 } },
               quizExt.learning_style.slice(0, 4).map((f, i) => React.createElement("div", { key: i }, { video: "Video tự học", workshop: "Workshop", coaching: "Coaching 1-1", reading: "Reading / Tài liệu" }[f] || f))
             )
           ) : null,
           // Availability
           quizExt.availability ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Thời gian"),
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, marginBottom: 8 } },
+              React.createElement(Icon, { name: "clock", size: 14, color: "var(--ui-muted)" }),
+              React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em" } }, "Thời gian")
+            ),
             React.createElement("div", { style: { fontSize: 12, color: "var(--ui-heading)" } },
               quizExt.availability === "under1" ? "Dưới 1 giờ/tuần" :
                 quizExt.availability === "1to2" ? "1–2 giờ/tuần" :
                   quizExt.availability === "3plus" ? "3+ giờ/tuần" : ""
             )
           ) : null,
-          // Trainers
-          quizExt.trainers && quizExt.trainers.length > 0 ? React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14 } },
-            React.createElement("div", { style: { fontSize: 10, fontWeight: 700, color: "var(--ui-muted)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 } }, "Trainers"),
-            React.createElement("div", { style: { fontSize: 11, color: "var(--ui-heading)", lineHeight: 1.4 } },
-              quizExt.trainers.slice(0, 2).map((t, i) => React.createElement("div", { key: i }, "• " + t)).join("")
-            )
-          ) : null,
         )
       ),
+
+      // Registered events section
+      registeredEvents.length > 0 ? React.createElement("div", { style: { marginBottom: 40 } },
+        React.createElement("h3", { style: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Khóa đã đăng ký"),
+        React.createElement("div", { className: "rec-grid" },
+          registeredEvents.map((c) => React.createElement(CourseCard, { key: c.event_id || c.course_id || c._id, course: c, onClick: () => setSelectedCourse(c), showDate: true }))
+        )
+      ) : null,
 
       // Completed courses section
       completedCourses.length > 0 ? React.createElement("div", { style: { marginBottom: 40 } },
         React.createElement("h3", { style: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Khóa đã hoàn thành"),
-        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 12 } },
-          completedCourses.slice(0, 6).map((c) =>
-            React.createElement("button", {
-              key: c.course_id,
-              onClick: () => setSelectedCourse(c),
-              style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14, textAlign: "left", cursor: "pointer" },
-            },
-              React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 8, lineHeight: 1.3 } }, c.title),
-              React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted)", marginBottom: 10 } }, "👨‍🏫 " + c.trainer),
-              React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", alignItems: "center" } },
-                React.createElement("span", { style: { fontSize: 10, fontWeight: 700, padding: "2px 6px", background: "rgba(31,138,91,0.3)", color: "#5FD9C8", borderRadius: 3 } }, "✅"))
-            )
-          )
-        )
-      ) : null,
-
-      // Registered events section
-      registeredEvents.length > 0 ? React.createElement("div", null,
-        React.createElement("h3", { style: { margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Sự kiện đang chờ"),
-        React.createElement("div", { style: { display: "grid", gap: 10 } },
-          registeredEvents.slice(0, 4).map((e) =>
-            React.createElement("div", { key: e.event_id, style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 6, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "center" } },
-              React.createElement("div", null,
-                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 4 } }, e.title),
-                React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted)" } }, "📅 " + new Date(e.start_date).toLocaleDateString("vi-VN") + " · " + e.time)
-              ),
-              React.createElement("span", { style: { fontSize: 10, fontWeight: 700, padding: "4px 8px", background: "rgba(255,158,0,0.2)", color: "var(--glh-accent)", borderRadius: 3, whiteSpace: "nowrap" } }, "⏳")
-            )
-          )
+        React.createElement("div", { className: "rec-grid" },
+          completedCourses.map((c) => React.createElement(CourseCard, { key: c.course_id || c._id, course: c, onClick: () => setSelectedCourse(c), showDate: true }))
         )
       ) : null
     ),
