@@ -268,22 +268,8 @@ const { useGame } = GLHEngine;
       // Helper button removed — CTA now lives in Catalog section
 
       // Chat button
-      !open ? React.createElement("div", { "data-tour": "learning-support", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
-        // Speech bubble
-        React.createElement("div", {
-          style: {
-            background: "var(--rpg-panel-2, #1c2433)",
-            border: "1px solid var(--rpg-border-strong)",
-            borderRadius: "12px 12px 4px 12px",
-            padding: "10px 14px",
-            fontSize: 13,
-            color: "#fff",
-            maxWidth: 220,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
-            lineHeight: 1.4,
-            whiteSpace: "nowrap",
-          }
-        }, "Có cần em hỗ trợ gì không ạ? 😊"),
+      !open ? React.createElement("div", { "data-tour": "learning-support", title: "Bot Hộ Giá", style: { zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
+        /* Speech bubble removed */
         // Chat bubble button with avatar
         React.createElement("button", {
           onClick: () => setOpen(true),

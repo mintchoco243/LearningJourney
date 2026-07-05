@@ -779,6 +779,11 @@ img { max-width: 100%; }
   color: #111827;
 }
 [data-theme="light"] .u-input::placeholder { color: #9CA3AF; }
+.u-input::placeholder {
+  color: color-mix(in srgb, var(--ui-muted) 72%, transparent);
+  font-size: 12px;
+  font-style: italic;
+}
 
 [data-theme="light"] .glh-filter-sel {
   background: #fff;
@@ -1076,14 +1081,33 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
 
 /* Library floating action button */
 .library-fab {
-  position: fixed; bottom: 96px; right: 24px; z-index: 90;
-  display: flex; align-items: center; gap: 8px;
-  padding: 12px 18px; border-radius: 999px;
+  position: fixed; bottom: 148px; right: 24px; z-index: 90;
+  width: 56px; height: 56px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
   background: var(--garena-red); color: #fff;
   font-size: 13px; font-weight: 700; cursor: pointer;
   border: none; box-shadow: 0 4px 16px rgba(228,30,38,0.4);
   transition: transform 150ms, box-shadow 150ms;
 }
 .library-fab:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(228,30,38,0.5); }
-@media (max-width: 600px) { .library-fab__label { display: none; } }
+.library-fab__label {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: max-content;
+  max-width: 220px;
+  padding: 10px 14px;
+  border-radius: 12px 12px 4px 12px;
+  background: var(--ui-surface, var(--rpg-panel-2, #1c2433));
+  border: 1px solid var(--ui-box-border, var(--rpg-border-strong));
+  color: var(--ui-heading, #fff);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  line-height: 1.4;
+  pointer-events: none;
+}
+@media (max-width: 600px) {
+  .library-fab { right: 18px; bottom: 140px; }
+  .library-fab__label { max-width: 180px; white-space: normal; }
+}
 

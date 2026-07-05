@@ -137,7 +137,6 @@ const { Avatar } = GLHAvatar;
     const avatarOpts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
     const rankObj = D.RANKS.find((r) => r.id === qr.rank_id);
     const rankAnswer = user.db_rank || (rankObj ? rankObj.name : "Chưa cập nhật");
-    const currentXp = Number(user.xp || 0);
     const displayName = user.full_name ? user.full_name.split(" ").pop() : (user.email ? user.email.split("@")[0] : "Bạn");
     const fullName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
     const emptyText = "Chưa cập nhật";
@@ -163,12 +162,11 @@ const { Avatar } = GLHAvatar;
       { icon: "bar-chart-2", label: "Rank", value: rankAnswer },
       { icon: "briefcase", label: "Role", value: user.db_role || emptyText },
       { icon: "building-2", label: "Team", value: user.db_team || emptyText },
-      { icon: "clock", label: "Th?i gian h?c", value: weeklyHours ? (availabilityLabel[weeklyHours] || weeklyHours) : emptyText },
-      { icon: "book-open", label: "H?nh th?c h?c", value: learningStyles.length ? learningStyles.join(", ") : emptyText },
-      { icon: "user-check", label: "Trainer y?u th?ch", value: trainerPrefs.length ? trainerPrefs.join(", ") : emptyText },
+      { icon: "clock", label: "Thời gian học", value: weeklyHours ? (availabilityLabel[weeklyHours] || weeklyHours) : emptyText },
+      { icon: "book-open", label: "Hình thức học", value: learningStyles.length ? learningStyles.join(", ") : emptyText },
+      { icon: "user-check", label: "Trainer yêu thích", value: trainerPrefs.length ? trainerPrefs.join(", ") : emptyText },
     ];
     const statItems = [
-      { label: "XP hiện có", value: currentXp },
       { label: "Giờ học", value: Number(user.hours_total || 0) + "h" },
       { label: "Buổi đã học", value: Number(user.completed_sessions_count || 0) },
     ];
@@ -199,7 +197,7 @@ const { Avatar } = GLHAvatar;
           )
         ),
 
-        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".16s", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 14 } },
+        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".16s", display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 14 } },
           statItems.map((stat, i) =>
             React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "12px 14px", textAlign: "center", minWidth: 0 } },
               React.createElement("div", { style: { fontSize: 22, fontWeight: 800, color: "var(--amber)", fontFamily: "var(--glh-display)", lineHeight: 1.1 } }, stat.value),
