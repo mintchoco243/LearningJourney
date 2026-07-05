@@ -90,7 +90,7 @@ export async function getUpcomingCourses() {
     if (res.ok) {
       const { sessions } = await res.json();
       const mapped = pickUpcoming((sessions || []).map(enrichSessionWithStaticCourse));
-      if (mapped.length) return mapped;
+      return mapped;
     }
   } catch {
     // fall through to static fallback
@@ -104,7 +104,7 @@ export async function getRecommendedCourses() {
     if (res.ok) {
       const { courses } = await res.json();
       const mapped = (courses || []).map((course) => mapCourseToCard(course));
-      if (mapped.length) return mapped;
+      return mapped;
     }
   } catch {
     // fall through to static fallback
@@ -122,7 +122,7 @@ export async function getCalendarEvents() {
         .map(enrichSessionWithStaticCourse)
         .map((session) => mapSessionToCourse(session))
         .filter((c) => c.start_date);
-      if (mapped.length) return mapped;
+      return mapped;
     }
   } catch {
     // fall through to static fallback

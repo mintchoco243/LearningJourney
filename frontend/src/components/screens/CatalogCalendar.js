@@ -50,7 +50,7 @@ function ctaColor(cta) {
       fetch("/api/courses?limit=100", { credentials: "include" })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
-          const sourceCourses = data?.courses?.length
+          const sourceCourses = Array.isArray(data?.courses)
             ? data.courses.map((course) => mapCourseToCard(course))
             : D.COURSES;
           setCourses(sourceCourses);

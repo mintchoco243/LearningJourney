@@ -253,7 +253,7 @@ export function LdRequestPopup(props) {
 export function ChatBot(props) {
   const [open, setOpen] = React.useState(false);
   const [messages, setMessages] = React.useState([
-    { role: "bot", text: "Xin chào! Hộ giá có thể giúp bạn tìm khóa học, giải thích rank, hoặc tra cứu chính sách L&D. Bạn cần hỗ trợ gì?" }
+    { role: "bot", text: "Xin chào! Hộ giá có thể giúp bạn tìm khóa học, giải thích rank, hoặc tra cứu chính sách L&D. Bạn cần hỗ trợ gì?", hasQuickReplies: true }
   ]);
   const [input, setInput] = React.useState("");
   const chatRef = React.useRef(null);
@@ -264,10 +264,11 @@ export function ChatBot(props) {
     }
   }, [messages]);
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = (textOrEvent) => {
+    const messageText = typeof textOrEvent === "string" ? textOrEvent : input;
+    if (!messageText.trim()) return;
 
-    setMessages((prev) => [...prev, { role: "user", text: input }]);
+    setMessages((prev) => [...prev, { role: "user", text: messageText }]);
     setInput("");
 
     // Simulate bot response
@@ -303,7 +304,7 @@ export function ChatBot(props) {
           lineHeight: 1.4,
           whiteSpace: "nowrap",
         }
-      }, "Có cần Hộ giá hỗ trợ gì không ạ?"),
+      }, "Cần Hộ giá gợi ý không ạ?"),
       // Chat bubble button with avatar
       React.createElement("button", {
         onClick: () => setOpen(true),
@@ -400,17 +401,45 @@ export function ChatBot(props) {
           },
             React.createElement("div", {
               style: {
-                maxWidth: "70%",
-                padding: "10px 14px",
-                borderRadius: 8,
-                background: msg.role === "bot" ? "var(--ui-box-bg, var(--rpg-border))" : "var(--glh-accent)",
-                color: msg.role === "bot" ? "var(--ui-text, #fff)" : "#fff",
-                fontSize: 13,
-                lineHeight: 1.5,
-                wordBreak: "break-word",
+                maxWidth: "85%",
               }
             },
-              msg.text
+              React.createElement("div", {
+                style: {
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: msg.role === "bot" ? "var(--ui-box-bg, var(--rpg-border))" : "var(--glh-accent)",
+                  color: msg.role === "bot" ? "var(--ui-text, #fff)" : "#fff",
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  wordBreak: "break-word",
+                  marginBottom: msg.hasQuickReplies ? 8 : 0,
+                }
+              },
+                msg.text
+              ),
+              msg.hasQuickReplies ? React.createElement("div", {
+                style: { display: "flex", flexDirection: "column", gap: 6 }
+              },
+                React.createElement("button", {
+                  onClick: () => handleSend("📚 Gợi ý khóa học"),
+                  style: { padding: "8px 12px", background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 16, color: "var(--ui-heading, #fff)", cursor: "pointer", fontSize: 13, textAlign: "left", transition: "border-color 0.2s" },
+                  onMouseEnter: (e) => e.currentTarget.style.borderColor = "var(--glh-accent)",
+                  onMouseLeave: (e) => e.currentTarget.style.borderColor = "var(--ui-box-border, var(--rpg-border))"
+                }, "📚 Gợi ý khóa học"),
+                React.createElement("button", {
+                  onClick: () => { setOpen(false); props.onOpenLdRequest && props.onOpenLdRequest(); },
+                  style: { padding: "8px 12px", background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 16, color: "var(--ui-heading, #fff)", cursor: "pointer", fontSize: 13, textAlign: "left", transition: "border-color 0.2s" },
+                  onMouseEnter: (e) => e.currentTarget.style.borderColor = "var(--glh-accent)",
+                  onMouseLeave: (e) => e.currentTarget.style.borderColor = "var(--ui-box-border, var(--rpg-border))"
+                }, "📝 Gửi yêu cầu đào tạo"),
+                React.createElement("button", {
+                  onClick: () => handleSend("📜 Hỏi đáp Chính sách L&D"),
+                  style: { padding: "8px 12px", background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 16, color: "var(--ui-heading, #fff)", cursor: "pointer", fontSize: 13, textAlign: "left", transition: "border-color 0.2s" },
+                  onMouseEnter: (e) => e.currentTarget.style.borderColor = "var(--glh-accent)",
+                  onMouseLeave: (e) => e.currentTarget.style.borderColor = "var(--ui-box-border, var(--rpg-border))"
+                }, "📜 Hỏi đáp Chính sách L&D")
+              ) : null
             )
           )
         )

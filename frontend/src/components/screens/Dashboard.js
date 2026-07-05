@@ -274,14 +274,6 @@ export function Dashboard(props) {
         React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
-    // ── Lịch sắp tới ─────────────────────────────────────────────────────────
-    upcoming.length > 0 && React.createElement(React.Fragment, null,
-      React.createElement(SectionRow, {
-        title: "Lịch sắp tới",
-        action: { label: "Xem tất cả →", onClick: () => props.onNav("library", "calendar-section") },
-      }),
-      React.createElement(UpcomingList, { courses: upcoming, onOpen: props.onOpenCourse })),
-
     // ── Gợi ý cho rank của bạn ───────────────────────────────────────────────
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
@@ -296,6 +288,14 @@ export function Dashboard(props) {
             React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có khóa gợi ý cho rank này."),
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))
         : React.createElement("div", { className: "rec-grid" },
-            rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true }))))
+            rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+
+    // ── Lịch sắp tới ─────────────────────────────────────────────────────────
+    upcoming.length > 0 && React.createElement(React.Fragment, null,
+      React.createElement(SectionRow, {
+        title: "Lịch sắp tới",
+        action: { label: "Xem tất cả →", onClick: () => props.onNav("library", "calendar-section") },
+      }),
+      React.createElement(UpcomingList, { courses: upcoming, onOpen: props.onOpenCourse }))
   );
 }
