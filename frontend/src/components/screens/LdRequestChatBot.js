@@ -9,9 +9,17 @@ const D = GLH_DATA;
 const { Icon } = GLHUI;
 const { useGame } = GLHEngine;
 
-
-  
-  
+const Field = ({ icon, label, required, children }) =>
+  React.createElement("div", { style: { marginBottom: 22 } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
+      React.createElement("div", { style: { width: 28, height: 28, borderRadius: 6, background: "rgba(228,30,38,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
+        React.createElement(Icon, { name: icon, size: 14, color: "var(--glh-accent)" })
+      ),
+      React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, label),
+      required ? React.createElement("span", { style: { fontSize: 11, color: "var(--glh-accent)" } }, "*") : null
+    ),
+    children
+  );
 
   /* ---------- L&D Request Popup ---------- */
   export function LdRequestPopup(props) {
@@ -77,18 +85,6 @@ const { useGame } = GLHEngine;
       setSubmitted(true);
       setTimeout(() => props.onClose(), 2000);
     };
-
-    const Field = ({ icon, label, required, children }) =>
-      React.createElement("div", { style: { marginBottom: 22 } },
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
-          React.createElement("div", { style: { width: 28, height: 28, borderRadius: 6, background: "rgba(228,30,38,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
-            React.createElement(Icon, { name: icon, size: 14, color: "var(--glh-accent)" })
-          ),
-          React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, label),
-          required ? React.createElement("span", { style: { fontSize: 11, color: "var(--glh-accent)" } }, "*") : null
-        ),
-        children
-      );
 
     if (submitted) {
       return React.createElement("div", { className: "modal-bg" },

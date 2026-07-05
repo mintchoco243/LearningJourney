@@ -586,6 +586,12 @@ body {
   color: var(--ui-text);
   -webkit-font-smoothing: antialiased;
 }
+h1, h2, h3, h4, h5, h6, p, span, li, label, td, th, figcaption {
+  cursor: default;
+}
+button *, a *, [role="button"] *, label * {
+  cursor: inherit;
+}
 #root { min-height: 100vh; }
 button { font-family: inherit; cursor: pointer; }
 img { max-width: 100%; }

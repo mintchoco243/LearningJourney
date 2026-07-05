@@ -106,8 +106,8 @@ function ctaColor(cta) {
         !noDefault && React.createElement("option", { value: "all" }, placeholder),
         options.map(o => React.createElement("option", { key: o.id, value: o.id }, o.label)));
 
-    const chip = (label, active, onClick) =>
-      React.createElement("button", { className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
+    const chip = (label, active, onClick, key) =>
+      React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
 
 
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
@@ -135,7 +135,7 @@ function ctaColor(cta) {
         React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
         chip("Tất cả", cmFilter === "all", () => setCmFilter("all")),
         [{ id: "strategist", label: "Marketing / Esports" }, { id: "builder", label: "Kỹ thuật / Dữ liệu" }, { id: "operator", label: "Vận hành / Tài chính" }, { id: "connector", label: "HR / L&D" }, { id: "explorer", label: "Sáng tạo / Design" }]
-          .map(r => chip(r.label, cmFilter === r.id, () => setCmFilter(cmFilter === r.id ? "all" : r.id)))),
+          .map(r => chip(r.label, cmFilter === r.id, () => setCmFilter(cmFilter === r.id ? "all" : r.id), r.id))),
 
       // Result count
       React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", marginBottom: 16 } },
@@ -262,13 +262,13 @@ function ctaColor(cta) {
       skillFilter === "all" || (e.skill_tags || []).includes(skillFilter)
     );
 
-    const calChip = (label, active, onClick) =>
-      React.createElement("button", { className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
+    const calChip = (label, active, onClick, key) =>
+      React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
 
     const filterSection = React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 } },
       React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Kỹ năng"),
       calChip("Tất cả", skillFilter === "all", () => setSkillFilter("all")),
-      calSkills.map(s => calChip(SKILL_LABEL[s] || s, skillFilter === s, () => setSkillFilter(skillFilter === s ? "all" : s))));
+      calSkills.map(s => calChip(SKILL_LABEL[s] || s, skillFilter === s, () => setSkillFilter(skillFilter === s ? "all" : s), s)));
     const evByDay = {};
     events.forEach((e) => { const d = new Date(e.start_date); const k = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); (evByDay[k] = evByDay[k] || []).push(e); });
 
