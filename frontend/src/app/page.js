@@ -84,27 +84,27 @@ const D = GLH_DATA;
             }, item.a))))
     );
   }
-  /* ---------- App bar (utility) ---------- */
+  /* ---------- App bar (Sidebar) ---------- */
   function AppBar(props) {
     const { user } = useGame();
-    const cls = D.CLASSES[user.quiz_result.class_id];
+    const cls = D.CLASSES[user.quiz_result.class_id] || D.CLASSES["ENG"];
     const rank = rankForUser(user);
     const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
-    const pageTitles = {
-      home: "Garena Learning Hub",
-      library: "Thư viện đào tạo",
-      policy: "Chính sách đào tạo",
-      store: "Kho đổi quà",
-      qa: "FAQ",
-      profile: "Thông tin cá nhân",
+    
+    const [sidebarOpen, setSidebarOpen] = React.useState(false);
+    
+    // Close sidebar on navigation (for mobile)
+    const handleNav = (id) => {
+      props.onNav(id);
+      setSidebarOpen(false);
     };
-    const pageTitle = pageTitles[props.tab] || pageTitles.home;
+
     const tabs = [
-      ["home",    null],                    // icon only
-      ["library", "Thư viện đào tạo"],
-      ["policy",  "Chính sách đào tạo"],
-      ["store",   "Kho đổi quà"],           // disabled
-      ["qa",      "FAQ"],
+      ["home",    "Trang chủ", "home"],
+      ["library", "Thư viện đào tạo", "book-open"],
+      ["policy",  "Chính sách đào tạo", "layers"],
+      ["store",   "Kho đổi quà", "star"],
+      ["qa",      "FAQ", "help-circle"],
     ];
 
     const [isDark, setIsDark] = React.useState(() => {
@@ -123,66 +123,150 @@ const D = GLH_DATA;
       document.documentElement.setAttribute("data-theme", saved);
     }, []);
 
-    return React.createElement("header", { className: "appbar" },
-      React.createElement("div", { className: "appbar__in" },
-        React.createElement("nav", { className: "appbar__nav" },
-          tabs.map(([id, label]) => {
+    return React.createElement(React.Fragment, null,
+      // Desktop header (only visible >= 1160px)
+      React.createElement("header", { className: "appbar desktop-only" },
+        React.createElement("div", { className: "appbar__in" },
+          React.createElement("nav", { className: "appbar__nav" },
+            tabs.map(([id, label, icon]) => {
+              const isStore = id === "store";
+              const isHome  = id === "home";
+              return React.createElement("button", {
+                key: id,
+                className: "appbar__link" + (props.tab === id ? " is-active" : ""),
+                "data-tour": "nav-" + id,
+                onClick: () => handleNav(id),
+                style: isStore ? { opacity: 0.45, display: "flex", alignItems: "center", gap: 5 }
+                     : isHome  ? { display: "flex", alignItems: "center" }
+                     : {},
+              },
+                isHome  ? React.createElement(React.Fragment, null,
+                    React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, display: "block" } }),
+                    React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", marginLeft: 8 } }, "Garena Learning Hub"))
+              : isStore ? React.createElement(React.Fragment, null, label, React.createElement(Icon, { name: "lock", size: 11, color: "currentColor", style: { marginTop: 1 } }))
+              : label
+              );
+            })),
+          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" } },
+            // Tutorial button
+            React.createElement("button", {
+              onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
+              title: "Hướng dẫn sử dụng",
+              style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+            }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--rpg-muted)" })),
+            // Rating button
+            React.createElement("button", {
+              onClick: () => props.onOpenRating && props.onOpenRating(),
+              title: "Đánh giá site",
+              style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+            }, React.createElement(Icon, { name: "star", size: 16, color: "var(--amber)" })),
+            // Theme toggle
+            React.createElement("button", {
+              onClick: toggleTheme,
+              title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
+              style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
+            }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--rpg-muted)" })),
+            // Logout button
+            React.createElement("button", {
+              title: "Đăng xuất",
+              onClick: () => {
+                if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
+                fetch("/auth/logout", { method: "POST", credentials: "include" })
+                  .finally(() => { props.onLogout && props.onLogout(); });
+              },
+              style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+            }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" })),
+            React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => handleNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
+              React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
+                React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
+              React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
+                React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
+                React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")))
+          )
+        )
+      ),
+
+      // Mobile header (only visible < 1160px)
+      React.createElement("header", { className: "mobile-header mobile-only" },
+        React.createElement("button", { className: "mobile-header__menu", onClick: () => setSidebarOpen(true) },
+          React.createElement(Icon, { name: "menu", size: 24, color: "var(--rpg-muted)" })
+        ),
+        React.createElement("div", { className: "mobile-header__logo" },
+          React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24 } }),
+          React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, marginLeft: 8 } }, "Learning Hub")
+        )
+      ),
+
+      // Sidebar Backdrop for mobile
+      sidebarOpen && React.createElement("div", { 
+        className: "sidebar-backdrop mobile-only",
+        onClick: () => setSidebarOpen(false) 
+      }),
+
+      // Sidebar
+      React.createElement("aside", { className: "app-sidebar mobile-only" + (sidebarOpen ? " is-open" : "") },
+        React.createElement("div", { className: "app-sidebar__top" },
+          React.createElement("div", null),
+          React.createElement("button", { className: "sidebar-close", onClick: () => setSidebarOpen(false) },
+            React.createElement(Icon, { name: "x", size: 24, color: "var(--rpg-muted)" })
+          )
+        ),
+        
+        React.createElement("nav", { className: "app-sidebar__nav" },
+          tabs.map(([id, label, icon]) => {
             const isStore = id === "store";
             const isHome  = id === "home";
+            const isActive = props.tab === id;
             return React.createElement("button", {
               key: id,
-              className: "appbar__link" + (props.tab === id ? " is-active" : ""),
-              "data-tour": "nav-" + id,
-              onClick: () => props.onNav(id),
-              style: isStore ? { opacity: 0.45, display: "flex", alignItems: "center", gap: 5 }
-                   : isHome  ? { display: "flex", alignItems: "center" }
-                   : {},
+              className: "app-sidebar__link" + (isActive ? " is-active" : ""),
+              onClick: () => handleNav(id),
+              style: isStore ? { opacity: 0.6 } : {}
             },
-              isHome  ? React.createElement(React.Fragment, null,
-                  React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, display: "block" } }),
-                  React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" } }, "Garena Learning Hub"))
-            : isStore ? React.createElement(React.Fragment, null, label, React.createElement(Icon, { name: "lock", size: 11, color: "currentColor", style: { marginTop: 1 } }))
-            : label
+              isHome ? React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, width: 24, objectFit: "contain" } }) : React.createElement(Icon, { name: icon, size: 18, color: isActive ? "#fff" : "var(--rpg-muted)" }),
+              isHome ? React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 14 } }, "Garena Learning Hub") : React.createElement("span", null, label),
+              isStore && React.createElement(Icon, { name: "lock", size: 12, color: "var(--rpg-muted)", style: { marginLeft: "auto" } })
             );
-          })),
-        React.createElement("div", { className: "appbar__title", title: pageTitle }, pageTitle),
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" } },
-          // Tutorial button
-          React.createElement("button", {
-            onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
-            title: "Hướng dẫn sử dụng",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--rpg-muted)" })),
-          // Rating button
-          React.createElement("button", {
-            onClick: () => props.onOpenRating && props.onOpenRating(),
-            title: "Đánh giá site",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "star", size: 16, color: "var(--amber)" })),
-          // Theme toggle
-          React.createElement("button", {
-            onClick: toggleTheme,
-            title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
-          }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--rpg-muted)" })),
-          // Logout button
-          React.createElement("button", {
-            title: "Đăng xuất",
-            onClick: () => {
-              if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
-              fetch("/auth/logout", { method: "POST", credentials: "include" })
-                .finally(() => { props.onLogout && props.onLogout(); });
-            },
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" })),
-          React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => props.onNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
-            React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
-              React.createElement(Avatar, { opts: opts, size: 40, crisp: props.crisp })),
-            React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
+          })
+        ),
+
+        React.createElement("div", { className: "app-sidebar__bottom" },
+          React.createElement("div", { className: "app-sidebar__tools" },
+            React.createElement("button", {
+              className: "tool-btn", onClick: () => props.onOpenTutorial && props.onOpenTutorial(), title: "Hướng dẫn"
+            }, React.createElement(Icon, { name: "help-circle", size: 18, color: "var(--rpg-muted)" })),
+            React.createElement("button", {
+              className: "tool-btn", onClick: () => props.onOpenRating && props.onOpenRating(), title: "Đánh giá"
+            }, React.createElement(Icon, { name: "star", size: 18, color: "var(--amber)" })),
+            React.createElement("button", {
+              className: "tool-btn", onClick: toggleTheme, title: "Đổi Theme"
+            }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 18, color: "var(--rpg-muted)" }))
+          ),
+          
+          React.createElement("div", { className: "app-sidebar__profile", onClick: () => handleNav("profile") },
+            React.createElement("div", { className: "avatar-box" },
+              React.createElement(Avatar, { opts: opts, size: 36, crisp: props.crisp })
+            ),
+            React.createElement("div", { className: "profile-info" },
               React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
-              React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")))
-        )));
+              React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")
+            ),
+            React.createElement("button", {
+              className: "logout-btn",
+              title: "Đăng xuất",
+              onClick: (e) => {
+                e.stopPropagation();
+                if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
+                fetch("/auth/logout", { method: "POST", credentials: "include" })
+                  .finally(() => { props.onLogout && props.onLogout(); });
+              }
+            }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--rpg-muted)" }))
+          )
+        )
+      )
+    );
   }
+
 
   /* ---------- Tweaks ---------- */
   const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -318,23 +402,23 @@ const D = GLH_DATA;
     } else if (phase === "reveal") {
       body = React.createElement(Reveal, { crisp, onNext: () => goApp() });
     } else if (phase === "profile") {
-      body = React.createElement("div", { className: "glh-light" },
+      body = React.createElement("div", { className: "glh-layout glh-light" },
         React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement("main", null,
+        React.createElement("main", { className: "app-main" },
           React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); }, onReset: () => { setPhase("onboarding"); window.scrollTo(0, 0); } })));
     } else if (phase === "store") {
-      body = React.createElement("div", { className: "glh-light" },
+      body = React.createElement("div", { className: "glh-layout glh-light" },
         React.createElement(AppBar, { tab: "store", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement(Store, {}));
+        React.createElement("main", { className: "app-main" }, React.createElement(Store, {})));
     } else if (phase === "policy") {
-      body = React.createElement("div", { className: "glh-light" },
+      body = React.createElement("div", { className: "glh-layout glh-light" },
         React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement("main", null,
+        React.createElement("main", { className: "app-main" },
           React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } })));
     } else if (phase === "qa") {
-      body = React.createElement("div", { className: "glh-light" },
+      body = React.createElement("div", { className: "glh-layout glh-light" },
         React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-        React.createElement(FAQSection, null));
+        React.createElement("main", { className: "app-main" }, React.createElement(FAQSection, null)));
     } else {
       // app - tab-based navigation
       const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
@@ -361,7 +445,7 @@ const D = GLH_DATA;
             React.createElement(Icon, { name: "send", size: 18, color: "#fff" }),
             React.createElement("span", { className: "library-fab__label" }, "Gửi yêu cầu")));
       }
-      body = React.createElement("div", { className: "glh-light" }, appBar, React.createElement("main", null, tabContent));
+      body = React.createElement("div", { className: "glh-layout glh-light" }, appBar, React.createElement("main", { className: "app-main" }, tabContent));
     }
 
     return React.createElement(React.Fragment, null,

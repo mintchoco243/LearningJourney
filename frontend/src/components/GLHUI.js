@@ -65,6 +65,7 @@ import React from "react";
     "party-popper": "M5.8 11.3L2 22l10.7-3.79M4 3h.01M22 8h.01M15 2l-1.5 3L11 6l3 1.5L15 11l1.5-3L20 6.5l-3-1-2-3.5zM20 17l-1 2-2-1 1-2 2 1zM9 8l-1 2-2-1 1-2 2 1z",
     info: "M12 22a10 10 0 100-20 10 10 0 000 20zM12 8h.01M11 12h1v4h1",
     "circle-help": "M12 22a10 10 0 100-20 10 10 0 000 20zM9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01",
+    "menu": "M3 12h18M3 6h18M3 18h18"
   };
 
   export function Icon(props) {
