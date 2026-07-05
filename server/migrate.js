@@ -12,6 +12,121 @@ const files = (await fs.readdir(dir))
   .filter((file) => (isMysqlUrl() ? file.includes("mysql") : !file.includes("mysql")))
   .sort();
 
+// ── Migration history tracking ───────────────────────────────────────
+// Ensures each migration file runs exactly once across deploys.
+
+async function ensureHistoryTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS migration_history (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      filename VARCHAR(255) UNIQUE NOT NULL,
+      applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+}
+
+async function getAppliedMigrations() {
+  const result = await pool.query(
+    "SELECT filename FROM migration_history ORDER BY filename",
+  );
+  return new Set(result.rows.map((r) => r.filename));
+}
+
+async function recordMigration(filename) {
+  await pool.query(
+    "INSERT IGNORE INTO migration_history (filename) VALUES ($1)",
+    [filename],
+  );
+}
+
+/**
+ * On the very first run (history table just created & empty), detect which
+ * migrations have ALREADY been applied to the DB so we don't re-run them.
+ * This handles the upgrade path for existing deployments.
+ */
+async function backfillHistory() {
+  const applied = await getAppliedMigrations();
+  if (applied.size > 0) return; // already has records, nothing to backfill
+
+  console.log("First run with migration_history — detecting already-applied migrations...");
+
+  for (const file of files) {
+    const alreadyApplied = await detectAlreadyApplied(file);
+    if (alreadyApplied) {
+      await recordMigration(file);
+      console.log(`  ✓ Backfilled ${file} (already applied)`);
+    }
+  }
+}
+
+/**
+ * Heuristic detection: check DB state to see if a migration's effects
+ * are already present, so we can safely mark it as done.
+ */
+async function detectAlreadyApplied(file) {
+  try {
+    // 001_init — users table exists
+    if (file.startsWith("001_init")) {
+      return await tableExists("users");
+    }
+    // 002_data_prep — staging tables exist
+    if (file.startsWith("002_data_prep")) {
+      return await tableExists("data_batches");
+    }
+    // 003_promote_columns — check staging_courses has relevant columns
+    if (file.startsWith("003_promote")) {
+      return await tableExists("staging_courses");
+    }
+    // 004_staging_courses_trainer_type
+    if (file.startsWith("004_")) {
+      return (await tableExists("staging_courses")) && (await columnExists("staging_courses", "trainer_type"));
+    }
+    // 005_course_status
+    if (file.startsWith("005_")) {
+      return await columnExists("courses", "status");
+    }
+    // 006_add_team_to_users
+    if (file.startsWith("006_")) {
+      return await columnExists("users", "team");
+    }
+    // 007_staging_users
+    if (file.startsWith("007_")) {
+      return await tableExists("staging_users");
+    }
+    // 008_merge_courses_sessions — courses has course_code + session_date, no course_sessions table
+    if (file.startsWith("008_merge")) {
+      return (
+        (await columnExists("courses", "course_code")) &&
+        (await columnExists("courses", "session_date")) &&
+        !(await tableExists("course_sessions"))
+      );
+    }
+    // 009_staging_catalog
+    if (file.startsWith("009_")) {
+      return await tableExists("staging_catalog");
+    }
+    // 010_course_row_identity — enrollments.course_id is CHAR(36), not course_code
+    if (file.startsWith("010_")) {
+      return (
+        (await columnExists("enrollments", "course_id")) &&
+        !(await columnExists("enrollments", "course_code"))
+      );
+    }
+    // 011_course_rating
+    if (file.startsWith("011_")) {
+      return await columnExists("courses", "rating");
+    }
+    // 012_site_feedback
+    if (file.startsWith("012_")) {
+      return await tableExists("site_feedback");
+    }
+  } catch {
+    // If detection fails (e.g. table doesn't exist yet), assume not applied
+    return false;
+  }
+  return false;
+}
+
 function quoteIdent(name) {
   if (!/^[A-Za-z0-9_]+$/.test(name)) {
     throw new Error(`Unsafe SQL identifier: ${name}`);
@@ -290,26 +405,45 @@ async function shouldSkip(file) {
   return false;
 }
 
+// ── Main execution ───────────────────────────────────────────────────
+
+await ensureHistoryTable();
+await backfillHistory();
+
+const applied = await getAppliedMigrations();
+
 for (const file of files) {
-  if (await shouldSkip(file)) {
+  // Primary guard: skip if already recorded in migration_history
+  if (applied.has(file)) {
     console.log(`Skipping ${file} (already applied)`);
     continue;
   }
+
+  // Secondary safety net: structural check for destructive migrations
+  if (await shouldSkip(file)) {
+    console.log(`Skipping ${file} (already applied — structural check)`);
+    await recordMigration(file);
+    continue;
+  }
+
   const sql = await fs.readFile(path.join(dir, file), "utf8");
   process.stdout.write(`Running ${file}... `);
   if (isMysqlUrl() && file.startsWith("008_merge_courses_sessions")) {
     await runMergeCoursesSessionsMigration(file, sql);
     process.stdout.write("done\n");
+    await recordMigration(file);
     continue;
   }
   if (isMysqlUrl() && file.startsWith("010_course_row_identity")) {
     await runCourseRowIdentityMigration(file);
     process.stdout.write("done\n");
+    await recordMigration(file);
     continue;
   }
   if (isMysqlUrl() && file.startsWith("011_course_rating")) {
     await runCourseRatingMigration(file);
     process.stdout.write("done\n");
+    await recordMigration(file);
     continue;
   }
   const statements = splitStatements(sql);
@@ -317,6 +451,9 @@ for (const file of files) {
     await executeStatement(file, statement);
   }
   process.stdout.write("done\n");
+  await recordMigration(file);
 }
 
 await pool.end();
+console.log("Migrations complete.");
+
