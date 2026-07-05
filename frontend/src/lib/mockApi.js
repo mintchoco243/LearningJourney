@@ -6,7 +6,7 @@
 // static content glhData serves to Catalog/Calendar — so the Dashboard stays
 // consistent with the rest of the app instead of showing empty sections.
 
-import { pickUpcoming, pickRecommended, mapSessionToCourse } from "./courseMap.mjs";
+import { pickUpcoming, mapCourseToCard, mapSessionToCourse } from "./courseMap.mjs";
 import { GLH_DATA } from "@/data/glhData";
 
 const STATIC_CALENDAR_COURSE = {
@@ -103,14 +103,14 @@ export async function getRecommendedCourses() {
     const res = await fetch("/api/courses?limit=100", { credentials: "include" });
     if (res.ok) {
       const { courses } = await res.json();
-      const mapped = pickRecommended(courses || []);
+      const mapped = (courses || []).map((course) => mapCourseToCard(course));
       if (mapped.length) return mapped;
     }
   } catch {
     // fall through to static fallback
   }
   // glhData.COURSES is already in card shape (course_id/format/duration_minutes/...).
-  return (GLH_DATA.COURSES || []).slice(0, 6);
+  return GLH_DATA.COURSES || [];
 }
 
 export async function getCalendarEvents() {

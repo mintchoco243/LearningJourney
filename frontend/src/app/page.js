@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { GLHEngine } from '@/context/GameContext';
@@ -371,23 +371,10 @@ const D = GLH_DATA;
       ldRequest ? React.createElement(LdRequestPopup, { onClose: () => setLdRequest(false) }) : null,
       showRating ? React.createElement(RatingModal, { onClose: () => setShowRating(false) }) : null,
       showTutorial && phase === "app" ? React.createElement(Tutorial, { onClose: () => setShowTutorial(false) }) : null,
-      phase === "app" ? React.createElement(ChatBot, { hideOnGameWorld: true }) : null,
-      // Floating rating button
-      phase === "app" ? React.createElement("button", {
-        onClick: () => setShowRating(true),
-        title: "Đánh giá site",
-        style: {
-          position: "fixed", bottom: 88, right: 24, zIndex: 98,
-          padding: "8px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-          background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)",
-          color: "var(--rpg-muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          transition: "all 200ms",
-        },
-        onMouseEnter: (e) => { e.currentTarget.style.borderColor = "var(--glh-accent)"; e.currentTarget.style.color = "var(--glh-accent)"; },
-        onMouseLeave: (e) => { e.currentTarget.style.borderColor = "var(--rpg-border)"; e.currentTarget.style.color = "var(--rpg-muted)"; },
-      },
-        React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " Đánh giá"
-      ) : null,
+      !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(ChatBot, { 
+        hideOnGameWorld: true,
+        onOpenLdRequest: () => setLdRequest(true)
+      }) : null,
       React.createElement(XpToast, null),
       React.createElement(TweaksUI, { t, setTweak }));
   }

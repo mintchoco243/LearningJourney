@@ -14,3 +14,4 @@ courses-unified-template.csv
 !sample-data/
 !sample-data/data-prep/
 !sample-data/data-prep/*.csv
+frontend/src/components/screens/LdRequestChatBot.js

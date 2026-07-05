@@ -1,25 +1,17 @@
 const fs = require('fs');
 let content = fs.readFileSync('frontend/src/app/page.js', 'utf8');
 
-const target = `      phase === "app" ? React.createElement(ChatBot, { hideOnGameWorld: true }) : null,
-      // Floating rating button
-      phase === "app" ? React.createElement("button", {
-        onClick: () => setShowRating(true),
-        title: "Đánh giá site",
-        style: {
-          position: "fixed", bottom: 88, right: 24, zIndex: 98,
-          padding: "8px 14px", borderRadius: 6, fontSize: 12, fontWeight: 700,
-          background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)",
-          color: "var(--rpg-muted)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-          transition: "all 200ms",
-        },
-        onMouseEnter: (e) => { e.currentTarget.style.borderColor = "var(--glh-accent)"; e.currentTarget.style.color = "var(--glh-accent)"; },
-        onMouseLeave: (e) => { e.currentTarget.style.borderColor = "var(--rpg-border)"; e.currentTarget.style.color = "var(--rpg-muted)"; },
-      },
-        React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " Đánh giá"
+const target1 = `      phase === "app" ? React.createElement(ChatBot, { hideOnGameWorld: true }) : null,`;
+const target2 = `        React.createElement(Icon, { name: "star", size: 14, color: "var(--amber)" }), " Đánh giá"
       ) : null,`;
 
-const repl = `      !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement("div", {
+let i1 = content.indexOf(target1);
+let i2 = content.indexOf(target2);
+
+if (i1 > -1 && i2 > -1) {
+  let toReplace = content.substring(i1, i2 + target2.length);
+  
+  const repl = `      !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement("div", {
         style: {
           position: "fixed", bottom: 24, right: 24, zIndex: 98,
           display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12
@@ -40,10 +32,9 @@ const repl = `      !["login", "onboarding", "character", "quiz"].includes(phase
         React.createElement(ChatBot, { hideOnGameWorld: true })
       ) : null,`;
 
-if (content.includes(target)) {
-  content = content.replace(target, repl);
+  content = content.replace(toReplace, repl);
   fs.writeFileSync('frontend/src/app/page.js', content);
   console.log('Success');
 } else {
-  console.log('Target not found in page.js');
+  console.log('Not found', i1, i2);
 }
