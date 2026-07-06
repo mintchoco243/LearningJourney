@@ -7,6 +7,7 @@ import { GLHAvatar } from '../GLHAvatar';
 import { GLHParts } from '../GLHParts';
 import { GLH_DATA } from '@/data/glhData';
 import { getRecommendedCourses, getStaticCalendarCourses } from '@/lib/mockApi';
+import { mapCourseToCard } from '@/lib/courseMap.mjs';
 import { rankCompassCourses, isCompletedCourse, Stat } from './Dashboard';
 
 const D = GLH_DATA;
@@ -37,8 +38,11 @@ export function Profile(props) {
   const rank = rankForUser(user);
   const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
 
-  const completedCourses = (user.completed_courses || [])
-    .map((id) => D.COURSES.find((c) => c.course_id === id))
+  const completedCoursesFromApi = (user.completed_course_details || [])
+    .map((course) => course?._id || course?.course_row_id ? course : mapCourseToCard(course))
+    .filter(Boolean);
+  const completedCourses = (completedCoursesFromApi.length ? completedCoursesFromApi : (user.completed_courses || [])
+    .map((id) => D.COURSES.find((c) => c.course_id === id || c._id === id)))
     .filter(Boolean);
 
   const allUpcoming = getStaticCalendarCourses();

@@ -25,6 +25,7 @@ const D = GLH_DATA;
     hours_total: 0,
     completed_sessions_count: 0,
     completed_courses: [],
+    completed_course_details: [],
     registered_events: [],
     unlocked_skills: [], // skill ids unlocked beyond quiz baseline
     badges: [],
@@ -161,6 +162,9 @@ const D = GLH_DATA;
         const completedCourses = hasEnrollmentSnapshot
           ? Array.from(new Set(enrollments.map((item) => item.course_id).filter(Boolean)))
           : user.completed_courses;
+        const completedCourseDetails = hasEnrollmentSnapshot
+          ? enrollments.filter((item) => item.course_id || item.id)
+          : user.completed_course_details;
         const hasReservationSnapshot = Array.isArray(reservations);
         const registeredEvents = hasReservationSnapshot
           ? Array.from(new Set(reservations.map((item) => item.session_id).filter(Boolean)))
@@ -181,6 +185,7 @@ const D = GLH_DATA;
           hours_total: hasEnrollmentSnapshot ? enrollmentHours : (profile.hours_total ?? user.hours_total),
           completed_sessions_count: hasEnrollmentSnapshot ? enrollments.length : (user.completed_sessions_count || 0),
           completed_courses: completedCourses,
+          completed_course_details: completedCourseDetails,
           registered_events: registeredEvents,
           onboarded: true,
         }));
@@ -219,6 +224,12 @@ const D = GLH_DATA;
               hours_total: data?.hours_total ?? data?.new_total_hours ?? user.hours_total,
               completed_sessions_count: user.completed_sessions_count || user.completed_courses?.length || 0,
               completed_courses: Array.from(new Set([...(user.completed_courses || []), apiCourseId])),
+              completed_course_details: Array.from(
+                new Map([...(user.completed_course_details || []), course].map((item) => {
+                  const key = item?._id || item?.id || item?.course_row_id || item?.course_id;
+                  return [key, item];
+                })).values()
+              ),
             }));
             return true;
           }
@@ -230,6 +241,12 @@ const D = GLH_DATA;
           hours_total: data?.new_total_hours ?? ((Number(user.hours_total) || 0) + (Number(course.duration_minutes || 0) / 60)),
           completed_sessions_count: (user.completed_sessions_count || 0) + 1,
           completed_courses: Array.from(new Set([...(user.completed_courses || []), apiCourseId])),
+          completed_course_details: Array.from(
+            new Map([...(user.completed_course_details || []), course].map((item) => {
+              const key = item?._id || item?.id || item?.course_row_id || item?.course_id;
+              return [key, item];
+            })).values()
+          ),
         }));
         return true;
       },

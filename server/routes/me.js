@@ -6,7 +6,14 @@ export const meRouter = express.Router();
 meRouter.get("/", async (req, res) => {
   const profile = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   const enrollments = await query(
-    `SELECT e.*, c.course_code, c.title, c.trainer, c.format
+    `SELECT e.id AS enrollment_id, e.user_id, e.course_id, e.completed_at,
+            e.source, e.xp_earned, e.hours_earned,
+            c.id, c.course_code, c.title, c.description, c.trainer,
+            c.trainer_type, c.format, c.duration_hours, c.xp_reward, c.rating,
+            c.skill_tags, c.rank_targets, c.role_targets, c.type,
+            c.registration_url, c.status, c.material_url, c.session_date,
+            c.session_time, c.location, c.min_participants, c.max_participants,
+            c.current_count
      FROM enrollments e
      JOIN courses c ON c.id = e.course_id
      WHERE e.user_id = $1
