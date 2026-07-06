@@ -317,6 +317,7 @@ const D = GLH_DATA;
     const rowId = c._id || c.id || c.course_row_id;
     const courseActionId = rowId || c.course_id;
     const completedNow = completedCourseId === courseActionId;
+    const uncompletedNow = uncompletedCourseId === courseActionId;
     const done = !uncompletedNow && (completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
