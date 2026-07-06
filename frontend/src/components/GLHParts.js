@@ -348,7 +348,7 @@ const D = GLH_DATA;
         : user.registered_events,
     });
     const cta = getCourseCta(modalCourse, effectiveUser);
-    const canOpenMaterial = Boolean(modalCourse.material_url) && modalCourse.course_status === "ended" && modalCourse.format !== "elearning";
+    const canOpenMaterial = Boolean(modalCourse.material_url) && (modalCourse.course_status === "ended" || done);
     const completionButtonStyle = { minWidth: 180 };
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
@@ -431,7 +431,7 @@ const D = GLH_DATA;
       if (dialog.type === "register_url") window.open(modalCourse.url, "_blank", "noreferrer");
     };
     const handlePrimary = async () => {
-      if (cta.action === "material" && canOpenMaterial) {
+      if (cta.action === "material" && modalCourse.material_url) {
         openMaterial();
         return;
       }
