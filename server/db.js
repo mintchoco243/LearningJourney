@@ -245,14 +245,20 @@ function extractPolicySection(html, startText, endText) {
   const startIdx = html.indexOf(startText);
   if (startIdx === -1) return null;
 
-  let start = startIdx;
-  while (start > 0 && html[start] !== "<") start--;
+  const blockTags = ["h1", "h2", "h3", "h4", "p", "table", "ul", "ol", "div"];
+  const start = Math.max(
+    ...blockTags.map((tag) => html.lastIndexOf(`<${tag}`, startIdx)),
+  );
 
   let end = html.length;
   if (endText) {
     end = html.indexOf(endText, startIdx);
     if (end === -1) end = html.length;
-    else while (end > startIdx && html[end] !== "<") end--;
+    else {
+      end = Math.max(
+        ...blockTags.map((tag) => html.lastIndexOf(`<${tag}`, end)),
+      );
+    }
   }
 
   return html.substring(start, end).trim();
