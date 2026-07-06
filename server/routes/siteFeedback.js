@@ -45,8 +45,7 @@ siteFeedbackRouter.post("/", async (req, res, next) => {
       `INSERT INTO site_feedback (
          user_id, is_anonymous, user_name, user_team, user_role,
          overall_rating, aspect_ratings, aspect_feedback, additional_feedback
-       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-       RETURNING id, created_at`,
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
         isAnonymous ? null : req.user.id,
         isAnonymous,

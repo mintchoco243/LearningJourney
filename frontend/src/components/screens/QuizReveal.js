@@ -6,6 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { Step4LearningStyle, Step5Availability, Step6TrainerPreference } from './OnboardingSteps';
+import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
@@ -28,6 +29,13 @@ const { Avatar } = GLHAvatar;
     const TOTAL_STEPS = 3;
     const goTo = (n) => { setIdx(n); setAnim((a) => a + 1); };
 
+    React.useEffect(() => {
+      trackEvent("quiz_step_view", {
+        step_index: idx + 1,
+        step_name: idx === 0 ? "learning_style" : idx === 1 ? "availability" : "trainer_preference"
+      });
+    }, [idx]);
+
     const finishExtended = () => {
       const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
       const result = {
@@ -38,6 +46,7 @@ const { Avatar } = GLHAvatar;
         completed_at: new Date().toISOString(),
         quiz_extended: { learning_style: step4, availability: step5, trainers: step6 },
       };
+      trackEvent("quiz_complete", { rank_id: user.db_rank || "rank_01", learning_styles_count: step4.length, availability: step5 });
       actions.completeQuiz(result);
       fetch("/api/me/onboarding", {
         method: "POST",
@@ -236,7 +245,7 @@ const { Avatar } = GLHAvatar;
         ),
 
         React.createElement("div", { className: "rv-rise", style: { animationDelay: ".7s", textAlign: "center" } },
-          React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: props.onNext, style: { width: "100%" } },
+          React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: () => { trackEvent("onboarding_complete", { class_id: user.quiz_result?.class_id || "explorer" }); props.onNext(); }, style: { width: "100%" } },
             "Vào trang học tập", React.createElement(Icon, { name: "arrow-right", size: 18, color: "#fff" })
           )
         )

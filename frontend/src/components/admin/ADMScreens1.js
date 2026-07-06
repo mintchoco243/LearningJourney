@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { GLHUI } from '../GLHUI';
@@ -100,7 +100,7 @@ const COURSE_STATUSES = [
   }
 
   /* ===================== DASHBOARD ===================== */
-  export function Dashboard() {
+  export function Dashboard({ onNavigate }) {
     const [stats, setStats] = React.useState(D.ADMIN_STATS);
     const [pendingReqs, setPendingReqs] = React.useState(D.ADMIN_REQUESTS.filter(r => r.status === "pending"));
     const [analytics, setAnalytics] = React.useState(null);
@@ -228,8 +228,41 @@ const COURSE_STATUSES = [
                   )}
                 </div>
               ) : (
-                <div className="adm-empty" style={{ margin: 0 }}>
-                  {analytics?.message || "GA Data API is not configured yet. Analytics tracking can still be enabled with NEXT_PUBLIC_GA_MEASUREMENT_ID."}
+                <div className="adm-empty" style={{ margin: 0, display: "grid", gap: 14, justifyItems: "center", textAlign: "center", padding: "24px 16px" }}>
+                  {analytics?.empty_reason === "GA_DATA_API_FAILED" && String(analytics?.message || "").includes("403") ? (
+                    <div style={{ background: "rgba(255, 158, 0, 0.1)", border: "1px solid var(--amber)", borderRadius: 8, padding: "16px", maxWidth: 580, textAlign: "left", color: "#fff", fontSize: 13, lineHeight: 1.5 }}>
+                      <div style={{ fontWeight: 700, color: "var(--amber)", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span>⚠️ Google Analytics Data API chưa được bật</span>
+                      </div>
+                      <div>
+                        Project Google Cloud của bạn chưa bật API hoặc vừa mới bật nên chưa có hiệu lực. Vui lòng nhấn vào liên kết bên dưới để bật <b>Google Analytics Data API</b>, sau đó đợi 2-3 phút rồi làm mới trang:
+                      </div>
+                      <div style={{ marginTop: 10 }}>
+                        <a
+                          href="https://console.developers.google.com/apis/api/analyticsdata.googleapis.com/overview"
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: "var(--glh-accent)", textDecoration: "underline", fontWeight: 600 }}
+                        >
+                          👉 Mở Google Cloud Console để bật API ngay
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ maxWidth: 500, fontSize: 13, color: "var(--rpg-muted)", lineHeight: 1.5 }}>
+                      {analytics?.message || "Chưa cấu hình Google Analytics Data API cho hệ thống. Hãy cấu hình Property ID và Key JSON để xem báo cáo trực tiếp tại đây."}
+                    </div>
+                  )}
+                  {onNavigate && (
+                    <button
+                      type="button"
+                      className="adm-btn adm-btn--primary"
+                      onClick={() => onNavigate("bot_settings")}
+                      style={{ fontSize: 12, padding: "8px 18px" }}
+                    >
+                      ⚙️ Cấu hình Analytics ngay
+                    </button>
+                  )}
                 </div>
               )}
             </SectionCard>

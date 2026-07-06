@@ -106,23 +106,7 @@ export const ADMIN_STATS = {
 
   export const ADMIN_TESTIMONIALS = [
     {
-      id: "T-MOCK-001",
-      course_id: "00000000-0000-4000-8000-000000000102",
-      course_code: "MOCK-REVIEW",
-      course_title: "Mock: Test hoàn tác & gửi đánh giá",
-      user_name: "Mock User",
-      user_team: "Marketing",
-      user_role: "Marketing",
-      rating: 5,
-      aspect_ratings: { overall: 5, content: 5, trainer: 5, organization_support: 4 },
-      applied_learning: "Mình học được cách đặt agenda ngắn, gắn từng phần với action owner rõ ràng để meeting không bị trôi.",
-      improvement_feedback: "Có thể thêm checklist sau khóa để học viên tự áp dụng trong 7 ngày đầu.",
-      content: "Có thể thêm checklist sau khóa để học viên tự áp dụng trong 7 ngày đầu.",
-      is_featured: true,
-      created_at: "2026-07-06",
-    },
-    {
-      id: "T-MOCK-002",
+      id: "T-002",
       course_id: "LC-003",
       course_code: "LC-003",
       course_title: "Giao tiếp hiệu quả",
@@ -138,7 +122,7 @@ export const ADMIN_STATS = {
       created_at: "2026-07-05",
     },
     {
-      id: "T-MOCK-003",
+      id: "T-003",
       course_id: "LC-006",
       course_code: "LC-006",
       course_title: "Leadership Foundation",
@@ -154,7 +138,7 @@ export const ADMIN_STATS = {
       created_at: "2026-07-04",
     },
     {
-      id: "T-MOCK-004",
+      id: "T-004",
       course_id: "LC-011",
       course_code: "LC-011",
       course_title: "Quản lý dự án Agile",
@@ -170,7 +154,7 @@ export const ADMIN_STATS = {
       created_at: "2026-07-03",
     },
     {
-      id: "T-MOCK-005",
+      id: "T-005",
       course_id: "LC-004",
       course_code: "LC-004",
       course_title: "Tư duy sản phẩm",
@@ -186,7 +170,7 @@ export const ADMIN_STATS = {
       created_at: "2026-07-02",
     },
     {
-      id: "T-MOCK-006",
+      id: "T-006",
       course_id: "LC-008",
       course_code: "LC-008",
       course_title: "Excel & Power BI nâng cao",

@@ -133,24 +133,6 @@ const D = GLH_DATA;
       setError("");
       try {
         const courseId = course._id || course.id || course.course_row_id || course.course_id || course.course_code;
-        const isMockCourse = [course.course_code, course.code, courseId]
-          .some((value) => String(value || "").startsWith("MOCK-"));
-        if (isMockCourse) {
-          onSubmitted({
-            id: "mock-testimonial-" + Date.now(),
-            course_id: courseId,
-            rating: ratings.overall,
-            content: improvementFeedback.trim() || appliedLearning.trim() || "",
-            aspect_ratings: ratings,
-            applied_learning: appliedLearning.trim(),
-            improvement_feedback: improvementFeedback.trim(),
-            full_name: "Mock User",
-            created_at: new Date().toISOString(),
-          });
-          setConfirming(false);
-          setSubmitted(true);
-          return;
-        }
         const res = await fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
           method: "POST",
           credentials: "include",
@@ -253,7 +235,7 @@ const D = GLH_DATA;
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
-    const done = c.mock_completed || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id));
+    const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
     const cta = getCourseCta(c, user);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const desc = c.description_short || c.description;
@@ -335,8 +317,7 @@ const D = GLH_DATA;
     const rowId = c._id || c.id || c.course_row_id;
     const courseActionId = rowId || c.course_id;
     const completedNow = completedCourseId === courseActionId;
-    const uncompletedNow = uncompletedCourseId === courseActionId;
-    const done = !uncompletedNow && (completedNow || c.mock_completed || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
+    const done = !uncompletedNow && (completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
@@ -353,7 +334,7 @@ const D = GLH_DATA;
     });
     const reservedNow = reservedSessionId === modalCourse.session_id;
     const effectiveUser = Object.assign({}, user, {
-      completed_courses: completedNow || (c.mock_completed && !uncompletedNow)
+      completed_courses: completedNow
         ? Array.from(new Set([...(user.completed_courses || []), rowId || c.course_id]))
         : uncompletedNow
           ? (user.completed_courses || []).filter((id) => id !== courseActionId)

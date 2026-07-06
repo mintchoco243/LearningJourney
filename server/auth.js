@@ -3,7 +3,6 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
 import { query } from "./db.js";
-import { isMysqlUrl } from "./db-mysql.js";
 
 const googleClient = new OAuth2Client(
   config.google.clientId,
@@ -68,30 +67,16 @@ export async function upsertUser(profile) {
   }
 
   const email = profile.email.toLowerCase();
-  if (isMysqlUrl()) {
-    await query(
-      `INSERT INTO users (email, full_name, avatar_url)
-       VALUES ($1, $2, $3)
-       ON DUPLICATE KEY UPDATE
-         full_name = VALUES(full_name),
-         avatar_url = VALUES(avatar_url),
-         updated_at = NOW()`,
-      [email, profile.fullName, profile.avatarUrl]
-    );
-    const result = await query("SELECT * FROM users WHERE email = $1", [email]);
-    return result.rows[0];
-  }
-
-  const result = await query(
+  await query(
     `INSERT INTO users (email, full_name, avatar_url)
      VALUES ($1, $2, $3)
-     ON CONFLICT (email)
-     DO UPDATE SET full_name = EXCLUDED.full_name,
-                   avatar_url = EXCLUDED.avatar_url,
-                   updated_at = NOW()
-     RETURNING *`,
+     ON DUPLICATE KEY UPDATE
+       full_name = VALUES(full_name),
+       avatar_url = VALUES(avatar_url),
+       updated_at = NOW()`,
     [email, profile.fullName, profile.avatarUrl]
   );
+  const result = await query("SELECT * FROM users WHERE email = $1", [email]);
   return result.rows[0];
 }
 

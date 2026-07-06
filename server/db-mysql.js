@@ -3,10 +3,6 @@ import { config } from "./config.js";
 
 let pool;
 
-export function isMysqlUrl(url = config.databaseUrl || "") {
-  return url.startsWith("mysql://") || url.startsWith("mysql2://");
-}
-
 export function mysqlPool() {
   if (!pool) {
     pool = mysql.createPool({
@@ -20,10 +16,9 @@ export function mysqlPool() {
 }
 
 /**
- * Translate PostgreSQL-style SQL to MySQL-compatible SQL.
- * Handles: $N → ? with correct param reordering, type casts,
- * ILIKE, ON CONFLICT DO NOTHING, RETURNING, interval literals,
- * array operators, and COALESCE defaults.
+ * Prepare SQL query for MySQL execution.
+ * Handles: $N → ? with correct param reordering, backtick quoting for reserved
+ * keywords ('rank', 'role'), and inlining LIMIT/OFFSET parameters.
  */
 export function prepareMysqlQuery(sql, params = []) {
   let s = sql;
@@ -32,40 +27,6 @@ export function prepareMysqlQuery(sql, params = []) {
   s = s.replace(/'[^']*'|"[^"]*"|`[^`]*`|\b(rank|role)\b/gi, (match, p1) => {
     return p1 ? `\`${p1}\`` : match;
   });
-
-  // ON CONFLICT (...) DO NOTHING → INSERT IGNORE
-  if (/ON\s+CONFLICT\b[^;]*?\bDO\s+NOTHING\b/i.test(s)) {
-    s = s.replace(/\s+ON\s+CONFLICT\b[^;]*?\bDO\s+NOTHING\b/gi, "");
-    s = s.replace(/\bINSERT\b/i, "INSERT IGNORE");
-  }
-
-  // Strip RETURNING clause (MySQL does not support it)
-  s = s.replace(/\s+RETURNING\s+.+$/im, "");
-
-  // Remove PostgreSQL type casts (::int, ::date, ::numeric, etc.)
-  s = s.replace(/::(?:int|integer|numeric|date|text|timestamptz)\b/gi, "");
-
-  // ILIKE → LIKE (MySQL LIKE is case-insensitive with default collation)
-  s = s.replace(/\bILIKE\b/gi, "LIKE");
-
-  // PostgreSQL interval literals → MySQL interval syntax
-  // e.g. INTERVAL '7 days' → INTERVAL 7 DAY
-  s = s.replace(
-    /INTERVAL\s+'(\d+)\s+(month|day|hour|minute|second)s?'/gi,
-    "INTERVAL $1 $2",
-  );
-
-  // $N = ANY(column) → JSON_CONTAINS(column, JSON_QUOTE($N))
-  s = s.replace(
-    /\$(\d+)\s*=\s*ANY\(([^)]+)\)/gi,
-    "JSON_CONTAINS($2, JSON_QUOTE($$1))",
-  );
-
-  // COALESCE($N, '{}') → COALESCE($N, JSON_ARRAY()) for array defaults
-  s = s.replace(
-    /COALESCE\((\$\d+),\s*'\{\}'\)/gi,
-    "COALESCE($1, JSON_ARRAY())",
-  );
 
   // MySQL2 prepared statements don't support ? for LIMIT/OFFSET (ER_WRONG_ARGUMENTS).
   // Inline LIMIT/OFFSET values directly before the general $N → ? substitution.

@@ -2,14 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pool } from "./db.js";
-import { isMysqlUrl } from "./db-mysql.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dir = path.join(__dirname, "migrations");
 
 const files = (await fs.readdir(dir))
   .filter((file) => file.endsWith(".sql"))
-  .filter((file) => (isMysqlUrl() ? file.includes("mysql") : !file.includes("mysql")))
   .sort();
 
 // ── Migration history tracking ───────────────────────────────────────
@@ -128,6 +126,17 @@ async function detectAlreadyApplied(file) {
         (await columnExists("testimonials", "improvement_feedback"))
       );
     }
+    // 014_admin_area_fields
+    if (file.startsWith("014_")) {
+      return (
+        (await columnExists("users", "is_active")) &&
+        (await columnExists("site_feedback", "status"))
+      );
+    }
+    // 015_app_settings
+    if (file.startsWith("015_")) {
+      return await tableExists("app_settings");
+    }
   } catch {
     // If detection fails (e.g. table doesn't exist yet), assume not applied
     return false;
@@ -144,6 +153,7 @@ function quoteIdent(name) {
 
 function splitStatements(sql) {
   return sql
+    .replace(/\r\n/g, "\n")
     .split(/;\s*(?:\r?\n|$)/)
     .map((statement) => statement.trim())
     .filter(Boolean);
@@ -452,25 +462,25 @@ for (const file of files) {
 
   const sql = await fs.readFile(path.join(dir, file), "utf8");
   process.stdout.write(`Running ${file}... `);
-  if (isMysqlUrl() && file.startsWith("008_merge_courses_sessions")) {
+  if (file.startsWith("008_merge_courses_sessions")) {
     await runMergeCoursesSessionsMigration(file, sql);
     process.stdout.write("done\n");
     await recordMigration(file);
     continue;
   }
-  if (isMysqlUrl() && file.startsWith("010_course_row_identity")) {
+  if (file.startsWith("010_course_row_identity")) {
     await runCourseRowIdentityMigration(file);
     process.stdout.write("done\n");
     await recordMigration(file);
     continue;
   }
-  if (isMysqlUrl() && file.startsWith("011_course_rating")) {
+  if (file.startsWith("011_course_rating")) {
     await runCourseRatingMigration(file);
     process.stdout.write("done\n");
     await recordMigration(file);
     continue;
   }
-  if (isMysqlUrl() && file.startsWith("013_testimonial_survey")) {
+  if (file.startsWith("013_testimonial_survey")) {
     await runTestimonialSurveyMigration(file);
     process.stdout.write("done\n");
     await recordMigration(file);

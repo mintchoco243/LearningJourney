@@ -5,6 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
+import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
@@ -33,7 +34,7 @@ const { Avatar } = GLHAvatar;
           "Tạo nhân vật của riêng bạn, khám phá class qua một bài trắc nghiệm ngắn, và mở dần bản đồ kỹ năng khi bạn học. Mỗi khóa học là một bước lên level."),
         React.createElement("button", {
           className: "glh-btn glh-btn--primary glh-btn--lg",
-          onClick: () => props.onStart(returning),
+          onClick: () => { trackEvent("onboarding_start", { returning }); props.onStart(returning); },
         },
           returning ? "Tiếp tục hành trình" : "Bắt đầu hành trình",
           React.createElement(Icon, { name: "arrow-right", size: 20, color: "#fff" })),
@@ -67,7 +68,11 @@ const { Avatar } = GLHAvatar;
         skin: pick(D.CHAR_OPTIONS.skin),
       });
     };
-    const cont = () => { actions.setCharacter(c); props.onNext(); };
+    const cont = () => {
+      trackEvent("character_creation_complete", { hair: c.hair, outfit: c.outfit, skin: c.skin });
+      actions.setCharacter(c);
+      props.onNext();
+    };
 
     return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad fade-screen", style: { position: "relative" } },
       React.createElement(Starfield),

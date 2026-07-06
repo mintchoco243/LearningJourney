@@ -57,9 +57,8 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
         throw error;
       }
       const insertResult = await client.query(
-        `INSERT INTO reservations (user_id, session_id)
-         VALUES ($1, $2)
-         ON CONFLICT (user_id, session_id) DO NOTHING`,
+        `INSERT IGNORE INTO reservations (user_id, session_id)
+         VALUES ($1, $2)`,
         [req.user.id, req.params.id]
       );
       if (!insertResult.rowCount) {

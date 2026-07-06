@@ -108,13 +108,7 @@
   ];
 
   /* ---------- Courses ---------- */
-  export const MOCK_COURSES = [
-    { course_id: "00000000-0000-4000-8000-000000000101", course_code: "MOCK-COMPLETE", _id: "00000000-0000-4000-8000-000000000101", course_row_id: "00000000-0000-4000-8000-000000000101", title: "Mock: Test xác nhận hoàn thành", description: "Khóa mock DB thật để test popup xác nhận Mark as completed trên trang home.", class_ids:["strategist"], rank_ids:["rank_02"], skill_tags:["product"], type:"external", course_status:"ended", format:"online", duration_minutes:30, xp_reward:20, trainer:"Mock L&D", audience:"Test popup", url:"#", rating:4.8 },
-    { course_id: "00000000-0000-4000-8000-000000000102", course_code: "MOCK-REVIEW", _id: "00000000-0000-4000-8000-000000000102", course_row_id: "00000000-0000-4000-8000-000000000102", title: "Mock: Test hoàn tác & gửi đánh giá", description: "Khóa mock DB thật để test hoàn thành, hoàn tác và gửi đánh giá lên admin.", class_ids:["strategist"], rank_ids:["rank_02"], skill_tags:["communication"], type:"external", course_status:"ended", format:"online", duration_minutes:30, xp_reward:20, trainer:"Mock L&D", audience:"Test popup", url:"#", rating:4.7 },
-    { course_id: "00000000-0000-4000-8000-000000000103", course_code: "MOCK-REGISTER", _id: "00000000-0000-4000-8000-000000000103", course_row_id: "00000000-0000-4000-8000-000000000103", session_id:"00000000-0000-4000-8000-000000000103", title: "Mock: Test xác nhận đăng ký", description: "Khóa mock DB thật để test popup xác nhận Đăng ký và lưu reservation lên admin.", class_ids:["strategist"], rank_ids:["rank_02"], skill_tags:["data"], type:"interest", course_status:"upcoming_open", session_status:"open", format:"online", duration_minutes:60, xp_reward:30, trainer:"Mock Trainer", audience:"Test popup", url:"#", start_date:"2026-07-20", start_time:"10:00", end_time:"11:00", location:"Google Meet", min_participants: 10, current_count: 0, rating:4.6 },
-  ];
   export const COURSES = [
-    ...MOCK_COURSES,
     { course_id: "LC-001", title: "Onboarding tại Garena", description: "Văn hóa, cấu trúc tổ chức và cách mọi thứ vận hành ở Garena. Bước khởi đầu cho mọi nhân viên mới.", class_ids: ["strategist","builder","connector","operator","explorer"], rank_ids:["rank_01"], skill_tags:["foundations"], format:"elearning", duration_minutes:45, xp_reward:30, trainer:"L&D Team", audience:"Toàn bộ nhân viên mới", url:"#" },
     { course_id: "LC-002", title: "Tư Duy Dữ Liệu Cho Người Mới", description: "Đọc hiểu số liệu, đặt câu hỏi đúng và tránh các bẫy diễn giải phổ biến.", class_ids:["strategist","operator"], rank_ids:["rank_01","rank_02"], skill_tags:["data"], format:"online", duration_minutes:90, xp_reward:50, trainer:"Data Team", audience:"Junior các phòng ban", url:"#" },
     { course_id: "LC-003", title: "Giao Tiếp Trong Công Việc", description: "Trình bày rõ ràng, viết súc tích và đưa phản hồi hiệu quả với đồng đội.", class_ids:["connector","explorer"], rank_ids:["rank_01","rank_02"], skill_tags:["communication"], format:"offline", duration_minutes:120, xp_reward:50, trainer:"Lan Nguyễn", audience:"Mọi cấp độ", url:"#" },
@@ -258,7 +252,7 @@
 
   export const GLH_DATA = {
     CLASSES, PERSONALITIES, RANKS, SKILLS, SKILL_EDGES,
-    COURSES, MOCK_COURSES, CALENDAR, QUIZ, XP, CHAR_OPTIONS,
+    COURSES, CALENDAR, QUIZ, XP, CHAR_OPTIONS,
     SKILL_META, COURSE_META,
   };
 

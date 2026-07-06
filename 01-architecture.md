@@ -8,7 +8,7 @@
 |-------|-----------|---------|
 | **Frontend** | HTML / CSS / Vanilla JS | Tách thành 3 file: `index.html`, `style.css`, `app.js` |
 | **Backend** | Node.js 20 + Express | REST API, xử lý auth, business logic |
-| **Database** | PostgreSQL | Relational |
+| **Database** | MySQL | Relational |
 | **Auth** | Google OAuth 2.0 | Chỉ accept `@garena.vn` |
 | **Email** | SMTP nội bộ Garena | Trigger theo event tự động |
 | **Chat Bot** | Alpha Intelligence API (nội bộ) | Endpoint TBD — xem `06_admin_and_ops` OQ7 |
@@ -27,7 +27,7 @@ garena-learning-hub/
 │
 ├── server/
 │   ├── index.js                  # Entry point Express
-│   ├── db.js                     # PostgreSQL connection pool
+│   ├── db.js                     # MySQL connection pool
 │   ├── auth.js                   # Google OAuth setup, JWT helpers
 │   ├── middleware/
 │   │   ├── requireAuth.js        # Validate JWT, attach req.user
@@ -113,7 +113,7 @@ PORT=process.env.PORT || 3000
 NODE_ENV=development
 
 # Database
-DATABASE_URL=postgresql://user:password@localhost:5432/garena_learning_hub
+DATABASE_URL=mysql://user:password@localhost:3306/garena_learning_hub
 
 # Google OAuth
 GOOGLE_CLIENT_ID=<từ anh Kiên>

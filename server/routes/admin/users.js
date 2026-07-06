@@ -1,6 +1,5 @@
 import express from "express";
 import { query, withTransaction } from "../../db.js";
-import { isMysqlUrl } from "../../db-mysql.js";
 
 export const adminUsersRouter = express.Router();
 
@@ -343,7 +342,7 @@ adminUsersRouter.put("/:id/records", async (req, res, next) => {
     await withTransaction(async (client) => {
       if (status !== "completed") {
         await client.query("DELETE FROM enrollments WHERE user_id = $1 AND course_id = $2", [id, courseId]);
-      } else if (isMysqlUrl()) {
+      } else {
         await client.query(
           `INSERT INTO enrollments (user_id, course_id, completed_at, source, xp_earned, hours_earned)
            VALUES ($1, $2, COALESCE($3, NOW()), $4, $5, $6)
@@ -352,24 +351,6 @@ adminUsersRouter.put("/:id/records", async (req, res, next) => {
              source = VALUES(source),
              xp_earned = VALUES(xp_earned),
              hours_earned = VALUES(hours_earned)`,
-          [
-            id,
-            courseId,
-            req.body?.completed_at || null,
-            req.body?.source || "admin_edit",
-            Number(req.body?.xp_earned ?? course.xp_reward ?? 0),
-            Number(req.body?.hours_earned ?? course.duration_hours ?? 0),
-          ],
-        );
-      } else {
-        await client.query(
-          `INSERT INTO enrollments (user_id, course_id, completed_at, source, xp_earned, hours_earned)
-           VALUES ($1, $2, COALESCE($3, NOW()), $4, $5, $6)
-           ON CONFLICT (user_id, course_id)
-           DO UPDATE SET completed_at = EXCLUDED.completed_at,
-                         source = EXCLUDED.source,
-                         xp_earned = EXCLUDED.xp_earned,
-                         hours_earned = EXCLUDED.hours_earned`,
           [
             id,
             courseId,

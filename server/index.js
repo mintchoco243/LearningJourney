@@ -26,6 +26,8 @@ import { adminSiteFeedbackRouter } from "./routes/admin/siteFeedback.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
 import { adminTestimonialsRouter } from "./routes/admin/testimonials.js";
 import { adminAnalyticsRouter } from "./routes/admin/analytics.js";
+import { adminSettingsRouter } from "./routes/admin/settings.js";
+import { botRouter } from "./routes/bot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -51,6 +53,18 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, service: "garena-learning-hub", env: config.nodeEnv });
 });
 
+app.get("/api/config/public", async (req, res) => {
+  let gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
+  try {
+    const { query } = await import("./db.js");
+    const result = await query("SELECT setting_value FROM app_settings WHERE setting_key = $1", ["ga_measurement_id"]);
+    if (result && result.rows && result.rows[0]?.setting_value) {
+      gaMeasurementId = result.rows[0].setting_value;
+    }
+  } catch (_) {}
+  res.json({ ga_measurement_id: gaMeasurementId });
+});
+
 app.use("/auth", authRouter);
 app.use("/api/me", requireAuth, meRouter);
 app.use("/api/courses", requireAuth, coursesRouter);
@@ -58,6 +72,7 @@ app.use("/api/sessions", requireAuth, sessionsRouter);
 app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
 app.use("/api/policies", requireAuth, policiesRouter);
 app.use("/api/site-feedback", requireAuth, siteFeedbackRouter);
+app.use("/api/bot", requireAuth, botRouter);
 app.get("/admin/api/me", requireAuth, requireAdmin, (req, res) => {
   res.json({
     user: {
@@ -79,6 +94,7 @@ app.use("/admin/api/site-feedback", requireAuth, requireAdmin, adminSiteFeedback
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsRouter);
 app.use("/admin/api/analytics", requireAuth, requireAdmin, adminAnalyticsRouter);
+app.use("/admin/api/settings", requireAuth, requireAdmin, adminSettingsRouter);
 
 // Next.js (App Router, includes /admin) handles every remaining route.
 if (config.apiOnly) {

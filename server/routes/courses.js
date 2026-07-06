@@ -119,10 +119,8 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       if (!course.rowCount) return null;
       const c = course.rows[0];
       const enrollment = await client.query(
-        `INSERT INTO enrollments (user_id, course_id, source, xp_earned, hours_earned)
-         VALUES ($1, $2, 'self_marked', $3, $4)
-         ON CONFLICT (user_id, course_id) DO NOTHING
-         RETURNING *`,
+        `INSERT IGNORE INTO enrollments (user_id, course_id, source, xp_earned, hours_earned)
+         VALUES ($1, $2, 'self_marked', $3, $4)`,
         [req.user.id, c.id, c.xp_reward, c.duration_hours]
       );
       if (!enrollment.rowCount) {

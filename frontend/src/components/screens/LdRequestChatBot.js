@@ -256,28 +256,56 @@ export function ChatBot(props) {
     { role: "bot", text: "Xin chào! Hộ giá có thể giúp bạn tìm khóa học, giải thích rank, hoặc tra cứu chính sách L&D. Bạn cần hỗ trợ gì?", hasQuickReplies: true }
   ]);
   const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
   const chatRef = React.useRef(null);
 
   React.useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, loading]);
 
-  const handleSend = (textOrEvent) => {
+  const handleSend = async (textOrEvent) => {
     const messageText = typeof textOrEvent === "string" ? textOrEvent : input;
-    if (!messageText.trim()) return;
+    if (!messageText.trim() || loading) return;
 
-    setMessages((prev) => [...prev, { role: "user", text: messageText }]);
+    const newMsg = { role: "user", text: messageText };
+    setMessages((prev) => [...prev, newMsg]);
     setInput("");
+    setLoading(true);
 
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      const history = [...messages, newMsg]
+        .filter(m => !m.hasQuickReplies && (m.role === "user" || m.role === "bot"))
+        .map(m => ({
+          role: m.role === "bot" ? "assistant" : "user",
+          content: m.text
+        }));
+
+      const res = await fetch("/api/bot/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: history })
+      });
+
+      if (!res.ok) throw new Error("API_ERROR");
+      const data = await res.json();
+
       setMessages((prev) => [...prev, {
         role: "bot",
-        text: "Tính năng chat sẽ sớm ra mắt. Trong lúc đó, bạn có thể xem Chính sách L&D hoặc gửi yêu cầu học tập."
+        text: data.reply || "Xin lỗi, mình chưa có phản hồi cho câu hỏi này.",
+        citations: data.citations || [],
+        images: data.images || []
       }]);
-    }, 600);
+    } catch (err) {
+      setMessages((prev) => [...prev, {
+        role: "bot",
+        text: "⚠️ Không thể kết nối tới AI Trợ lý. Bạn vui lòng kiểm tra lại cấu hình hoặc thử lại sau nhé!"
+      }]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Hide on Game World screens
@@ -286,11 +314,8 @@ export function ChatBot(props) {
   }
 
   return React.createElement(React.Fragment, null,
-    // Helper button removed — CTA now lives in Catalog section
-
     // Chat button
     !open ? React.createElement("div", { "data-tour": "learning-support", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
-      // Speech bubble
       React.createElement("div", {
         style: {
           background: "var(--ui-surface, var(--rpg-panel-2, #1c2433))",
@@ -305,23 +330,20 @@ export function ChatBot(props) {
           whiteSpace: "nowrap",
         }
       }, "Cần Hộ giá gợi ý không ạ?"),
-      // Chat bubble button with avatar
       React.createElement("button", {
         onClick: () => setOpen(true),
         style: {
-          width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg, var(--glh-accent) 0%, #8b0000 100%)",
-          border: "2px solid rgba(255,255,255,0.2)",
+          width: 86, height: 86,
+          background: "none",
+          border: "none",
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 16px rgba(228,30,38,0.4)",
-          transition: "transform 200ms, box-shadow 200ms",
-          fontSize: 26,
+          transition: "transform 200ms ease",
           padding: 0,
         },
-        onMouseEnter: (e) => { e.currentTarget.style.transform = "scale(1.08)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(228,30,38,0.5)"; },
-        onMouseLeave: (e) => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 4px 16px rgba(228,30,38,0.4)"; },
-      }, "🤖")
+        onMouseEnter: (e) => { e.currentTarget.style.transform = "scale(1.1)"; },
+        onMouseLeave: (e) => { e.currentTarget.style.transform = "scale(1)"; },
+      }, React.createElement("img", { src: "/assets/avatar%20bot.png", alt: "Hộ giá bot", style: { width: "100%", height: "100%", objectFit: "contain", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.35))" } }))
     ) : null,
 
     // Chat window
@@ -357,17 +379,14 @@ export function ChatBot(props) {
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, flex: 1 } },
           React.createElement("div", {
             style: {
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, var(--glh-accent) 0%, rgba(255,158,0,0.6) 100%)",
+              width: 40,
+              height: 40,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 16,
               flexShrink: 0,
             }
-          }, "🤖"),
+          }, React.createElement("img", { src: "/assets/avatar%20bot.png", alt: "Hộ giá bot", style: { width: "100%", height: "100%", objectFit: "contain" } })),
           React.createElement("div", null,
             React.createElement("h3", { style: { margin: 0, fontSize: 13, fontWeight: 700, color: "var(--ui-heading, #fff)" } }, "Hộ giá"),
             React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted, var(--rpg-muted))" } }, "Online")
@@ -416,7 +435,18 @@ export function ChatBot(props) {
                   marginBottom: msg.hasQuickReplies ? 8 : 0,
                 }
               },
-                msg.text
+                msg.text,
+                msg.citations && msg.citations.length > 0 ? React.createElement("div", {
+                  style: { marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(255,255,255,0.2)", fontSize: 11 }
+                },
+                  React.createElement("div", { style: { fontWeight: 700, color: "var(--glh-accent)", marginBottom: 4 } }, "📚 Tài liệu tham khảo:"),
+                  msg.citations.map((c, cIdx) =>
+                    React.createElement("div", { key: cIdx, style: { marginBottom: 3 } },
+                      c.url ? React.createElement("a", { href: c.url, target: "_blank", rel: "noreferrer", style: { color: "#6aa3e0", textDecoration: "underline" } }, `[${cIdx + 1}] ${c.title || c.url}`)
+                            : React.createElement("span", { style: { color: "var(--rpg-muted)" } }, `[${cIdx + 1}] ${c.title || "Tài liệu nội bộ"}`)
+                    )
+                  )
+                ) : null
               ),
               msg.hasQuickReplies ? React.createElement("div", {
                 style: { display: "flex", flexDirection: "column", gap: 6 }
@@ -442,7 +472,12 @@ export function ChatBot(props) {
               ) : null
             )
           )
-        )
+        ),
+        loading ? React.createElement("div", { style: { display: "flex", justifyContent: "flex-start" } },
+          React.createElement("div", { style: { padding: "10px 14px", borderRadius: 8, background: "var(--ui-box-bg, var(--rpg-border))", color: "var(--rpg-muted)", fontSize: 13, fontStyle: "italic" } },
+            "⏳ Hộ giá đang suy nghĩ..."
+          )
+        ) : null
       ),
 
       // Input
@@ -465,11 +500,12 @@ export function ChatBot(props) {
         }),
         React.createElement("button", {
           onClick: handleSend,
+          disabled: loading,
           style: {
             background: "none",
             border: "none",
-            color: "var(--glh-accent)",
-            cursor: "pointer",
+            color: loading ? "var(--rpg-muted)" : "var(--glh-accent)",
+            cursor: loading ? "not-allowed" : "pointer",
             fontSize: 16,
             padding: 0,
             display: "flex",
@@ -477,7 +513,7 @@ export function ChatBot(props) {
             justifyContent: "center",
           }
         },
-          React.createElement(Icon, { name: "send", size: 18, color: "var(--glh-accent)" })
+          React.createElement(Icon, { name: "send", size: 18, color: loading ? "var(--rpg-muted)" : "var(--glh-accent)" })
         )
       )
     ) : null

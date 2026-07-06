@@ -1262,3 +1262,34 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
   .library-fab__label { max-width: 180px; white-space: normal; }
 }
 
+.contact-footer {
+  background: var(--ui-page);
+  border-top: 1px solid var(--ui-border);
+  color: var(--ui-text);
+  padding: 30px 16px 34px;
+  text-align: center;
+}
+.contact-footer__text {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.55;
+}
+.contact-footer a {
+  color: var(--glh-accent);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.contact-footer a:hover {
+  border-bottom-color: var(--glh-accent);
+}
+
+@media (max-width: 600px) {
+  .contact-footer {
+    padding: 26px 18px 30px;
+  }
+  .contact-footer__text {
+    font-size: 12px;
+  }
+}
+

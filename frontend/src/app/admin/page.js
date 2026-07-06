@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
 import { RequestsScreen } from '@/components/admin/ADMScreens2';
-import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen } from '@/components/admin/ADMScreens3';
+import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen, IntegrationsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 
 const { Sidebar } = ADMComponents;
@@ -76,6 +76,7 @@ function DevLoginButton() {
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
     site_feedback:{ label: "Site Feedback" },
+    bot_settings: { label: "Cấu hình Hệ thống" },
     accounts:     { label: "Admin Accounts" },
   };
 
@@ -205,13 +206,14 @@ function DevLoginButton() {
 
     const adminRole = adminSession.role;
     const screens = {
-      dashboard:    <Dashboard />,
+      dashboard:    <Dashboard onNavigate={navigate} />,
       users:        <UsersScreen />,
       courses:      <CoursesScreen />,
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,
       site_feedback:<SiteFeedbackScreen />,
+      bot_settings: <IntegrationsScreen />,
       accounts:     adminRole === "super_admin" ? <AccountsScreen /> : null,
     };
 

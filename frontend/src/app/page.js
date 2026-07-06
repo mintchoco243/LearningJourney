@@ -51,9 +51,14 @@ function XpToast() {
 
 /* ---------- FAQ section ---------- */
 const FAQ_SAMPLES = [
-  { id: 1, q: "Tôi có thể đăng ký bao nhiêu khóa học trong một tháng?", a: "Không giới hạn số lượng khóa đăng ký. Tuy nhiên, bạn nên cân nhắc lịch học để đảm bảo hoàn thành đúng hạn." },
-  { id: 3, q: "Tôi có thể đề xuất chủ đề đào tạo mới không?", a: "Có. Bạn có thể gửi đề xuất qua nút \"Gửi yêu cầu khóa học\" hoặc liên hệ trực tiếp team L&D qua email." },
-  { id: 5, q: "Khóa học E-learning có hạn truy cập không?", a: "Hiện tại các khóa E-learning được mở truy cập không thời hạn. Thông tin này có thể thay đổi, bạn nên theo dõi mục Chính sách để cập nhật." },
+  { id: 1, q: "Khóa học có giới hạn số lượng chỗ không? Nếu hết chỗ thì có được vào waitlist không?", a: "Chủ yếu các khóa không giới hạn số lượng chỗ, nếu có bạn sẽ nhìn thấy số lượng đã đăng ký / số lượng chỗ tối đa trên giao diện khóa học." },
+  { id: 3, q: "Sau khi đăng ký, tôi có nhận được xác nhận/nhắc lịch qua email hoặc calendar không?", a: "Có, bạn sẽ được đặt lịch trên calendar trong 24h kể từ khi đăng ký và được nhắc lịch trước ngày - giờ tổ chức khóa học." },
+  { id: 5, q: "Làm thế nào để xem tài liệu của các khóa đã qua/đã học? Nếu không tham gia thì có được xem tài liệu không?", a: "Tài liệu (slide, link) được đính kèm trực tiếp trên trang chi tiết từng khóa học và hiển thị cho tất cả người dùng đã đăng nhập, không giới hạn chỉ người đã tham gia hay đã đăng ký. Tuy nhiên một số buổi đào tạo sẽ có giới hạn bảo mật về tài liệu nên có thể không được mở truy cập cho tất cả mọi người." },
+  { id: 6, q: "Nếu tôi bỏ lỡ buổi học thì có bản ghi hình để xem lại không?", a: "Thông thường sẽ có đính kèm link bản ghi hình cho khóa học, trừ trường hợp có thông tin bảo mật. Nếu có, bạn có thể xem trực tiếp trên trang chi tiết khóa học — không phân biệt đã tham gia hay chưa." },
+  { id: 7, q: "Tôi đánh giá (rating) khóa học vào lúc nào — có bắt buộc để được tính \"hoàn thành\" không?", a: "Bạn có thể gửi trực tiếp tại buổi hoặc gửi đánh giá sau khi khóa học được ghi nhận hoàn thành trong hồ sơ của bạn. Không bắt buộc để tính hoàn thành, nhưng BP Đào tạo rất mong nhận được phản hồi của bạn để chuẩn bị những buổi đào tạo với chất lượng cao hơn!" },
+  { id: 8, q: "Đánh giá tôi gửi có hiển thị công khai cho người khác xem không, hay chỉ admin thấy?", a: "Một số đánh giá sẽ hiển thị công khai kèm tên và team của bạn cho tất cả người dùng xem trên trang khóa học với mục đích cung cấp thêm thông tin cho mọi người khi quyết định tham dự khóa học." },
+  { id: 9, q: "Nếu chủ đề tôi cần học chưa có trong danh mục, gửi yêu cầu (L&D Request) xong bao lâu thì được phản hồi?", a: "Bạn có thể gửi yêu cầu đào tạo riêng qua L&D Request, Bộ phận Đào tạo sẽ phản hồi trong 3-5 ngày làm việc. Trạng thái sẽ được cập nhật cho bạn trong Trang cá nhân." },
+  { id: 10, q: "Tôi có thể đăng ký khóa học không thuộc rank/phòng ban/vai trò được gợi ý cho mình không?", a: "Có. Rank và vai trò chỉ được dùng để gợi ý những khóa có độ phù hợp cao nhất cho bạn, chứ không giới hạn quyền đăng ký — bạn có thể đăng ký bất kỳ khóa học nào bạn muốn." },
 ];
 
 function FAQSection() {
@@ -61,28 +66,40 @@ function FAQSection() {
 
   return React.createElement("div", { className: "glh-container", style: { padding: "28px clamp(16px,4vw,40px)" } },
     React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(26px,4vw,36px)" } }, "FAQ"),
-    React.createElement("p", { style: { color: "var(--ui-muted)", marginBottom: 32, fontSize: 14 } }, "Các câu hỏi thường gặp về đăng ký, đề xuất và truy cập khóa học."),
+    React.createElement("p", { style: { color: "var(--ui-muted)", marginBottom: 24, fontSize: 14 } }, "Các câu hỏi thường gặp về đăng ký, đề xuất và truy cập khóa học."),
 
-    React.createElement("div", { className: "u-card", style: { marginBottom: 16, padding: 20 } },
-      React.createElement("h3", { className: "u-eyebrow", style: { marginBottom: 12 } }, "Câu hỏi thường gặp"),
-      FAQ_SAMPLES.map(item =>
-        React.createElement("div", {
+    React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 12 } },
+      FAQ_SAMPLES.map(item => {
+        const isOpen = expanded === item.id;
+        return React.createElement("div", {
           key: item.id,
-          style: { borderTop: "1px solid var(--ui-box-border)", padding: "16px 0" },
+          className: "u-card",
+          style: {
+            padding: 20,
+            borderColor: isOpen ? "var(--garena-red)" : "var(--ui-box-border)",
+          },
         },
           React.createElement("button", {
-            onClick: () => setExpanded(expanded === item.id ? null : item.id),
+            onClick: () => setExpanded(isOpen ? null : item.id),
             style: {
               background: "none", border: "none", color: "var(--ui-heading)", fontSize: 14, fontWeight: 600,
               width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between",
-              alignItems: "center", cursor: "pointer", padding: "8px 0",
+              alignItems: "center", gap: 16, cursor: "pointer", padding: 0,
             },
           },
-            item.q,
-            React.createElement(Icon, { name: expanded === item.id ? "chevron-down" : "chevron-right", size: 16, color: "var(--ui-muted)" })),
-          expanded === item.id && React.createElement("div", {
-            style: { fontSize: 13, color: "var(--ui-muted)", marginTop: 12, lineHeight: 1.6 },
-          }, item.a))))
+            React.createElement("span", null, item.q),
+            React.createElement("span", {
+              style: {
+                flex: "0 0 auto", width: 22, height: 22, borderRadius: "50%",
+                border: "1px solid var(--ui-box-border)", color: "var(--ui-muted)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, lineHeight: 1,
+              },
+            }, isOpen ? "×" : "+")),
+          isOpen && React.createElement("div", {
+            style: { fontSize: 13, color: "var(--ui-muted)", marginTop: 16, lineHeight: 1.7 },
+          }, item.a));
+      }))
   );
 }
 /* ---------- App bar (Sidebar) ---------- */
@@ -310,6 +327,17 @@ function TweaksUI(props) {
     }));
 }
 
+function ContactFooter() {
+  return React.createElement("footer", { className: "contact-footer" },
+    React.createElement("p", { className: "contact-footer__text" },
+      "Mọi thắc mắc vui lòng liên hệ bộ phận People: ",
+      React.createElement("a", { href: "mailto:minhngoc.phamnguyen@garena.vn" }, "minhngoc.phamnguyen@garena.vn"),
+      " hoặc ",
+      React.createElement("a", { href: "mailto:thutrang.pham@garena.vn" }, "thutrang.pham@garena.vn")
+    )
+  );
+}
+
 /* ---------- Root App ---------- */
 function AppInner() {
   const [mounted, setMounted] = React.useState(false);
@@ -369,7 +397,7 @@ function AppInner() {
   });
 
   React.useEffect(() => {
-    if (["login", "onboarding", "character", "quiz", "reveal"].includes(phase)) return;
+    if (phase === "login") return; // Chỉ loại trừ màn hình login, theo dõi toàn bộ phễu onboarding
     const pageName = phase === "app" ? activeTab : phase;
     trackPageView(`/${pageName}`, pageName);
     if (pageName === "policy") trackEvent("policy_view", { page: "policy" });
@@ -477,6 +505,7 @@ function AppInner() {
       hideOnGameWorld: true,
       onOpenLdRequest: () => setLdRequest(true)
     }) : null,
+    !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(ContactFooter, null) : null,
     React.createElement(XpToast, null),
     React.createElement(TweaksUI, { t, setTweak }));
 }

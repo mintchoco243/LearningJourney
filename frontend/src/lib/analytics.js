@@ -1,6 +1,10 @@
 "use client";
 
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
+export let GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
+
+export function setDynamicGaId(id) {
+  if (id) GA_MEASUREMENT_ID = id;
+}
 
 export function trackEvent(name, params = {}) {
   if (!GA_MEASUREMENT_ID) return;

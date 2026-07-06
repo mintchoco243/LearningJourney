@@ -1,17 +1,48 @@
 import express from "express";
 import { GoogleAuth } from "google-auth-library";
 import { config } from "../../config.js";
+import { query } from "../../db.js";
 
 export const adminAnalyticsRouter = express.Router();
 
 const GA_DATA_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const GA_DATA_ENDPOINT = "https://analyticsdata.googleapis.com/v1beta";
 
-function emptyAnalytics(reason, message = null) {
+async function getAnalyticsConfig() {
+  let propertyId = config.analytics.propertyId;
+  let serviceAccountRaw =
+    config.analytics.serviceAccountJson ||
+    (config.analytics.serviceAccountJsonBase64
+      ? Buffer.from(config.analytics.serviceAccountJsonBase64, "base64").toString("utf8")
+      : "");
+  let measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || "";
+
+  try {
+    const res = await query("SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ($1, $2, $3)", [
+      "ga_property_id",
+      "ga_service_account_json",
+      "ga_measurement_id"
+    ]);
+    if (res && res.rows) {
+      for (const row of res.rows) {
+        if (row.setting_key === "ga_property_id" && row.setting_value) propertyId = row.setting_value;
+        if (row.setting_key === "ga_service_account_json" && row.setting_value) serviceAccountRaw = row.setting_value;
+        if (row.setting_key === "ga_measurement_id" && row.setting_value) measurementId = row.setting_value;
+      }
+    }
+  } catch (e) {
+    console.warn("[admin/analytics] Could not read GA settings from db:", e.message);
+  }
+
+  return { propertyId, serviceAccountRaw, measurementId };
+}
+
+function emptyAnalytics(reason, message = null, measurementId = "") {
   return {
     implemented: false,
     empty_reason: reason,
     message,
+    measurement_id: measurementId,
     metrics: {
       users: null,
       sessions: null,
@@ -25,24 +56,21 @@ function emptyAnalytics(reason, message = null) {
   };
 }
 
-function parseServiceAccountCredentials() {
-  const raw =
-    config.analytics.serviceAccountJson ||
-    (config.analytics.serviceAccountJsonBase64
-      ? Buffer.from(config.analytics.serviceAccountJsonBase64, "base64").toString("utf8")
-      : "");
-
+function parseServiceAccountCredentials(raw) {
   if (!raw) return null;
-
-  const credentials = JSON.parse(raw);
-  if (credentials.private_key) {
-    credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
+  try {
+    const credentials = JSON.parse(raw);
+    if (credentials.private_key) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, "\n");
+    }
+    return credentials;
+  } catch (_) {
+    return null;
   }
-  return credentials;
 }
 
-async function getGaAccessToken() {
-  const credentials = parseServiceAccountCredentials();
+async function getGaAccessToken(raw) {
+  const credentials = parseServiceAccountCredentials(raw);
   if (!credentials) return null;
 
   const auth = new GoogleAuth({
@@ -54,8 +82,7 @@ async function getGaAccessToken() {
   return typeof token === "string" ? token : token?.token;
 }
 
-async function runReport(accessToken, body) {
-  const propertyId = config.analytics.propertyId;
+async function runReport(accessToken, propertyId, body) {
   const response = await fetch(`${GA_DATA_ENDPOINT}/properties/${propertyId}:runReport`, {
     method: "POST",
     headers: {
@@ -84,8 +111,8 @@ function formatPercent(numerator, denominator) {
   return `${((numerator / denominator) * 100).toFixed(1)}%`;
 }
 
-async function eventCount(accessToken, eventName) {
-  const report = await runReport(accessToken, {
+async function eventCount(accessToken, propertyId, eventName) {
+  const report = await runReport(accessToken, propertyId, {
     dateRanges: [{ startDate: config.analytics.range, endDate: "today" }],
     dimensions: [{ name: "eventName" }],
     metrics: [{ name: "eventCount" }],
@@ -100,27 +127,29 @@ async function eventCount(accessToken, eventName) {
 }
 
 adminAnalyticsRouter.get("/", async (req, res) => {
-  if (!config.analytics.propertyId) {
-    res.json(emptyAnalytics("GA_PROPERTY_ID_NOT_CONFIGURED"));
+  const { propertyId, serviceAccountRaw, measurementId } = await getAnalyticsConfig();
+
+  if (!propertyId) {
+    res.json(emptyAnalytics("GA_PROPERTY_ID_NOT_CONFIGURED", null, measurementId));
     return;
   }
 
   let accessToken = null;
   try {
-    accessToken = await getGaAccessToken();
+    accessToken = await getGaAccessToken(serviceAccountRaw);
   } catch (error) {
-    res.json(emptyAnalytics("GA_SERVICE_ACCOUNT_INVALID", error.message));
+    res.json(emptyAnalytics("GA_SERVICE_ACCOUNT_INVALID", error.message, measurementId));
     return;
   }
 
   if (!accessToken) {
-    res.json(emptyAnalytics("GA_SERVICE_ACCOUNT_NOT_CONFIGURED"));
+    res.json(emptyAnalytics("GA_SERVICE_ACCOUNT_NOT_CONFIGURED", null, measurementId));
     return;
   }
 
   try {
     const [summary, today, topPages, courseViews, registerClicks] = await Promise.all([
-      runReport(accessToken, {
+      runReport(accessToken, propertyId, {
         dateRanges: [{ startDate: config.analytics.range, endDate: "today" }],
         metrics: [
           { name: "activeUsers" },
@@ -128,19 +157,19 @@ adminAnalyticsRouter.get("/", async (req, res) => {
           { name: "screenPageViews" },
         ],
       }),
-      runReport(accessToken, {
+      runReport(accessToken, propertyId, {
         dateRanges: [{ startDate: "today", endDate: "today" }],
         metrics: [{ name: "activeUsers" }],
       }),
-      runReport(accessToken, {
+      runReport(accessToken, propertyId, {
         dateRanges: [{ startDate: config.analytics.range, endDate: "today" }],
         dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
         metrics: [{ name: "screenPageViews" }],
         orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
         limit: 5,
       }),
-      eventCount(accessToken, "course_view"),
-      eventCount(accessToken, "course_register_click"),
+      eventCount(accessToken, propertyId, "course_view"),
+      eventCount(accessToken, propertyId, "course_register_click"),
     ]);
 
     const users = metricValue(summary, 0);
@@ -149,6 +178,7 @@ adminAnalyticsRouter.get("/", async (req, res) => {
 
     res.json({
       implemented: true,
+      measurement_id: measurementId,
       date_range: {
         start: config.analytics.range,
         end: "today",
@@ -170,6 +200,6 @@ adminAnalyticsRouter.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("[admin/analytics] GA Data API failed", error);
-    res.json(emptyAnalytics("GA_DATA_API_FAILED", error.message));
+    res.json(emptyAnalytics("GA_DATA_API_FAILED", error.message, measurementId));
   }
 });

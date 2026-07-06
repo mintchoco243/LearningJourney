@@ -19,8 +19,6 @@ const { CourseModal, CourseCard } = GLHParts;
 
 
 
-
-
 /* ---------- Profile Screen ---------- */
 export function Profile(props) {
   const { user, actions } = useGame();
@@ -151,78 +149,226 @@ export function Profile(props) {
 }
 
 /* ---------- Policy Screen ---------- */
+function normalizePolicyHeadingText(text) {
+  return String(text || "")
+    .replace(/^[IVXLCDM]+\.\s*/i, "")
+    .replace(/\s+/g, " ")
+    .replace(/[:：.]$/, "")
+    .trim()
+    .toLowerCase();
+}
+
+function isDuplicatePolicyHeading(source, target) {
+  return normalizePolicyHeadingText(source) === normalizePolicyHeadingText(target);
+}
+
+function isHiddenPolicySection(title) {
+  return normalizePolicyHeadingText(title) === normalizePolicyHeadingText("I. Khóa học nội bộ do công ty tổ chức");
+}
+
+function stripPolicyNumber(title) {
+  return String(title || "").replace(/^[IVXLCDM]+\.\s*/i, "").trim();
+}
+
+function toRomanNumber(value) {
+  const numerals = [
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let n = value;
+  let result = "";
+  numerals.forEach(([amount, numeral]) => {
+    while (n >= amount) {
+      result += numeral;
+      n -= amount;
+    }
+  });
+  return result;
+}
+
 function PolicyItem(props) {
   const [open, setOpen] = React.useState(false);
-  return React.createElement("div", { style: { borderTop: "1px solid var(--ui-box-border)", padding: "16px 0" } },
+  const isHtml = props.content && (
+    props.content.trimStart().startsWith("<") ||
+    props.content.includes("<p") ||
+    props.content.includes("<div") ||
+    props.content.includes("<ul") ||
+    props.content.includes("<table")
+  );
+
+  return React.createElement("div", { style: { borderTop: "1px solid var(--ui-box-border)" } },
     React.createElement("button", {
       onClick: () => setOpen(!open),
       style: {
         background: "none", border: "none", color: "var(--ui-heading)", fontSize: 14, fontWeight: 600,
         width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between",
-        alignItems: "center", cursor: "pointer", padding: "8px 0",
+        alignItems: "center", cursor: "pointer", padding: "16px 0",
       },
     },
       props.title,
       React.createElement(Icon, { name: open ? "chevron-up" : "chevron-down", size: 16, color: "var(--ui-muted)" })
     ),
-    open ? React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)", marginTop: 12, lineHeight: 1.6 } },
-      props.children) : null
+    open ? React.createElement("div", { style: { paddingBottom: 16 } },
+      isHtml
+        ? React.createElement("div", {
+            className: "policy-rich-content",
+            dangerouslySetInnerHTML: { __html: props.content }
+          })
+        : React.createElement("div", {
+            style: { fontSize: 13, color: "var(--ui-muted)", lineHeight: 1.6 }
+          }, props.content)
+    ) : null
   );
 }
+
+const POLICY_STYLES = `
+  .policy-rich-content {
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: var(--ui-text, #374151);
+    font-family: var(--garena-font-vn);
+    overflow-wrap: anywhere;
+  }
+  .policy-rich-content,
+  .policy-rich-content * {
+    font-family: var(--garena-font-vn) !important;
+    letter-spacing: 0 !important;
+  }
+  .policy-rich-content * {
+    color: var(--ui-text) !important;
+  }
+  .policy-rich-content p { margin: 0 0 8px; }
+  .policy-rich-content ul, .policy-rich-content ol { padding-left: 22px; margin: 6px 0 10px; }
+  .policy-rich-content li { margin-bottom: 4px; }
+  .policy-rich-content strong { font-weight: 700; color: var(--ui-heading, #111) !important; }
+  .policy-rich-content em { font-style: italic; color: var(--ui-muted) !important; }
+  .policy-rich-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .policy-rich-content table td, .policy-rich-content table th {
+    border: 1px solid var(--ui-box-border, #e5e7eb);
+    padding: 8px 10px;
+    vertical-align: top;
+    text-align: left;
+    background: var(--ui-box-2);
+    color: var(--ui-text) !important;
+  }
+  .policy-rich-content table th,
+  .policy-rich-content table tr:first-child td {
+    background: var(--glh-accent, #E51A34);
+    color: #fff !important;
+    font-weight: 700;
+    border-color: var(--glh-accent, #E51A34);
+    text-align: center;
+  }
+  .policy-rich-content table tbody tr:nth-child(even) td {
+    background: var(--ui-box, #fafafa);
+  }
+  .policy-rich-content img {
+    display: block !important;
+    float: none !important;
+    clear: both !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 16px auto !important;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .policy-rich-content a {
+    color: var(--glh-accent, #E51A34) !important;
+    text-decoration: underline;
+  }
+  .policy-rich-content h1, .policy-rich-content h2, .policy-rich-content h3, .policy-rich-content h4 {
+    font-weight: 700;
+    color: var(--ui-heading) !important;
+    margin: 14px 0 8px;
+    line-height: 1.35;
+  }
+  .policy-rich-content h1 { font-size: 18px !important; }
+  .policy-rich-content h2 { font-size: 16px !important; }
+  .policy-rich-content h3,
+  .policy-rich-content h4 { font-size: 14px !important; }
+  .policy-rich-content span,
+  .policy-rich-content p,
+  .policy-rich-content li,
+  .policy-rich-content td {
+    font-size: inherit !important;
+  }
+  .policy-rich-content > div[class="policy-html-content"] > p:first-child,
+  .policy-rich-content > div[class="policy-html-content"] > span:first-child {
+    margin-top: 0;
+  }
+  .policy-rich-content > .policy-html-content > h1:first-child,
+  .policy-rich-content > .policy-html-content > h2:first-child,
+  .policy-rich-content > .policy-html-content > h3:first-child,
+  .policy-rich-content > .policy-html-content > h4:first-child,
+  .policy-rich-content > .policy-html-content > strong:first-child {
+    display: none !important;
+  }
+`;
 
 export function Policy(props) {
   const STATIC_CATEGORIES = [
     {
       title: "Loại hình đào tạo",
       items: [
-        { title: "Workshop nội bộ", desc: "Các buổi workshop do L&D team tổ chức định kỳ, dành cho toàn bộ nhân sự..." },
-        { title: "Khóa học online", desc: "Hỗ trợ đăng ký các nền tảng học trực tuyến như Coursera, LinkedIn Learning..." },
+        { title: "Workshop nội bộ", content: "Các buổi workshop do L&D team tổ chức định kỳ, dành cho toàn bộ nhân sự." },
+        { title: "Khóa học online", content: "Hỗ trợ đăng ký các nền tảng học trực tuyến như Coursera, LinkedIn Learning..." },
       ],
     },
     {
       title: "Hỗ trợ chi phí học tập",
       items: [
-        { title: "Quy trình xin hỗ trợ", desc: "Nhân sự có thể đề xuất khóa học ngoài và nhận hỗ trợ chi phí theo quy định..." },
-        { title: "Mức hỗ trợ", desc: "Mức hỗ trợ tối đa tùy theo cấp bậc và loại hình đào tạo..." },
-      ],
-    },
-    {
-      title: "Quy trình đăng ký",
-      items: [
-        { title: "Đăng ký workshop", desc: "Truy cập tab Lịch đào tạo, chọn workshop phù hợp và nhấn Đặt chỗ..." },
-        { title: "Đề xuất nhu cầu", desc: "Nếu không tìm thấy khóa học phù hợp, sử dụng form Gửi yêu cầu học tập..." },
-      ],
-    },
-    {
-      title: "Câu hỏi thường gặp",
-      items: [
-        { title: "Tôi có thể học bao nhiêu khóa mỗi quý?", desc: "Không giới hạn số khóa học nội bộ. Khuyến khích tối thiểu 1 khóa/quý." },
-        { title: "Khi nào giờ học được ghi nhận?", desc: "Giờ học được ghi nhận khi bạn hoàn thành khóa hoặc khi L&D xác minh tham gia." },
+        { title: "Quy trình xin hỗ trợ", content: "Nhân sự có thể đề xuất khóa học ngoài và nhận hỗ trợ chi phí theo quy định." },
+        { title: "Mức hỗ trợ", content: "Mức hỗ trợ tối đa tùy theo cấp bậc và loại hình đào tạo." },
       ],
     },
   ];
 
   const [categories, setCategories] = React.useState(STATIC_CATEGORIES);
+  const [loading, setLoading] = React.useState(true);
+
   React.useEffect(() => {
     fetch("/api/policies", { credentials: "include" })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!data || !data.policies || !data.policies.length) return;
-        const map = {};
-        data.policies.forEach(p => {
-          if (!p.is_active) return;
-          if (!map[p.category]) map[p.category] = { title: p.category, items: [] };
-          map[p.category].items.push({ title: p.title, desc: p.content || "" });
-        });
-        const cats = Object.values(map);
+        if (!data || !data.policies) return;
+
+        let cats;
+        // API may return grouped object { "Category": [...] } or flat array
+        if (Array.isArray(data.policies)) {
+          const map = {};
+          data.policies.forEach(p => {
+            if (!p.is_active) return;
+            if (isHiddenPolicySection(p.category) || isHiddenPolicySection(p.title)) return;
+            if (!map[p.category]) map[p.category] = { title: p.category, items: [] };
+            map[p.category].items.push({ title: p.title, content: p.content || p.preview || "" });
+          });
+          cats = Object.values(map).filter(cat => cat.items.length);
+        } else {
+          cats = Object.entries(data.policies)
+            .filter(([catName]) => !isHiddenPolicySection(catName))
+            .map(([catName, entries]) => ({
+              title: catName,
+              items: (entries || [])
+                .filter(p => p.is_active !== false && !isHiddenPolicySection(p.title))
+                .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+                .map(p => ({ title: p.title, content: p.content || p.preview || "" })),
+            }))
+            .filter(cat => cat.items.length);
+        }
         if (cats.length) setCategories(cats);
       })
-      .catch(() => { });
+      .catch(() => { })
+      .finally(() => setLoading(false));
   }, []);
 
-  const categories_used = categories;
-
   return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 40 } },
+    React.createElement("style", null, POLICY_STYLES),
     React.createElement("div", { className: "glh-container", style: { padding: "28px clamp(16px,4vw,40px)" } },
       React.createElement("button", {
         onClick: props.onBack,
@@ -232,20 +378,33 @@ export function Policy(props) {
         "Quay lại"
       ),
 
-      React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(26px,4vw,36px)" } }, "Chính sách & Hướng dẫn L&D"),
+      React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(22px,4vw,32px)" } }, "Chính sách & Hướng dẫn L&D"),
       React.createElement("p", { style: { color: "var(--ui-muted)", marginBottom: 32, fontSize: 14 } }, "Tìm hiểu về các hình thức hỗ trợ học tập tại Garena"),
 
-      categories_used.map((cat, catIdx) =>
-        React.createElement("div", { key: catIdx, className: "u-card", style: { marginBottom: 16, padding: 20 } },
-          React.createElement("h3", { className: "u-eyebrow", style: { marginBottom: 12 } }, cat.title),
-          cat.items.map((item, itemIdx) =>
-            React.createElement(PolicyItem, { key: itemIdx, title: item.title },
-              item.desc)
-          )
-        )
-      )
+      loading
+        ? React.createElement("div", { style: { textAlign: "center", padding: 40, color: "var(--ui-muted)", fontSize: 14 } }, "Đang tải...")
+        : categories.map((cat, catIdx) => {
+            const visibleItems = (cat.items || [])
+              .filter(item => !isHiddenPolicySection(item.title))
+              .map((item, itemIdx) => ({
+                ...item,
+                displayTitle: `${toRomanNumber(itemIdx + 1)}. ${stripPolicyNumber(item.title)}`,
+              }));
+            const firstItemTitle = visibleItems[0]?.displayTitle || "";
+            const showCategoryHeading = cat.title
+              && cat.title !== "Chính sách đào tạo"
+              && cat.title !== "General"
+              && !isDuplicatePolicyHeading(cat.title, firstItemTitle);
+
+            return React.createElement("div", { key: catIdx, className: "u-card", style: { marginBottom: 16, padding: "4px 20px 4px" } },
+              showCategoryHeading
+                ? React.createElement("h3", { className: "u-eyebrow", style: { marginBottom: 0, paddingTop: 16, paddingBottom: 4 } }, cat.title)
+                : React.createElement("div", { style: { height: 12 } }), // spacer instead of eyebrow
+              visibleItems.map((item, itemIdx) =>
+                React.createElement(PolicyItem, { key: itemIdx, title: item.displayTitle, content: item.content })
+              )
+            );
+          })
     )
   );
 }
-
-

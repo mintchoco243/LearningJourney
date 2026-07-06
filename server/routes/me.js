@@ -52,9 +52,9 @@ meRouter.post("/onboarding", async (req, res) => {
 
   await query(
     `UPDATE users
-     SET learning_formats = COALESCE($2, '{}'),
+     SET learning_formats = COALESCE($2, JSON_ARRAY()),
          weekly_hours = $3,
-         preferred_trainers = COALESCE($4, '{}'),
+         preferred_trainers = COALESCE($4, JSON_ARRAY()),
          onboarding_done = TRUE,
          xp_total = GREATEST(xp_total, 50),
          updated_at = NOW()

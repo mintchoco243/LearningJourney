@@ -1,7 +1,12 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { config } from "./config.js";
-import { isMysqlUrl, mysqlPool, mysqlQuery, mysqlTransaction } from "./db-mysql.js";
+import { mysqlPool, mysqlQuery, mysqlTransaction } from "./db-mysql.js";
 
-let pgPool;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const mockDbPath = path.join(__dirname, "..", "_tmp_mock_db.json");
+
 let useMockDb = false;
 
 const mockDb = {
@@ -164,7 +169,46 @@ const mockDb = {
     { id: "ldr-1", user_id: 2, full_name: "Linh Nguyen", email: "linh.nguyen@garena.vn", description: "Need advanced product analytics", status: "pending", created_at: "2026-07-04T08:00:00.000Z" }
   ],
   policies: [
-    { id: "pol-1", category: "General", title: "Learning Policy", content: "Mock policy content", source_file: "mock", order_index: 1, is_active: true, updated_at: "2026-07-01T00:00:00.000Z" }
+    {
+      id: "pol-1",
+      category: "Chính sách đào tạo",
+      title: "I. Khóa học nội bộ do công ty tổ chức",
+      content: `<div class="policy-html-content"><p><span style="font-family:arial,sans-serif;font-size:10pt;">Các khóa học tại <strong>Garena Academy</strong> được thiết kế với ba lĩnh vực học tập: kỹ năng (<strong>Manage</strong>), thực hành (<strong>Make</strong>), và lãnh đạo (<strong>Grow/Mentor</strong>), cùng các chương trình cố vấn với đội ngũ lãnh đạo cấp cao.<br>Bạn có thể tham khảo và đặt chỗ tất cả các khóa học trong mục <strong>Lịch Đào Tạo</strong>. Các khóa học nội bộ hoàn toàn <strong>miễn phí</strong>.</span></p><img src="/policy-images/1.png" alt="Garena Academy Learning Framework" style="max-width:320px;margin:12px auto;display:block;" /></div>`,
+      source_file: "Gigi Garena.html",
+      order_index: 1,
+      is_active: true,
+      updated_at: "2026-07-07T00:00:00.000Z"
+    },
+    {
+      id: "pol-2",
+      category: "Chính sách đào tạo",
+      title: "II. Khóa học bên ngoài được công ty hỗ trợ chi phí",
+      content: `<div class="policy-html-content"><p><span style="font-family:arial,sans-serif;font-size:10pt;">Hy Garena hỗ trợ nhân viên trong việc tham gia đào tạo bên ngoài công ty. Chúng tôi khuyến khích học tập liên tục và cam kết hỗ trợ chi phí cho các khóa học phù hợp.</span></p><table style="width:100%;border-collapse:collapse;margin-top:12px;"><tbody><tr style="background-color:#c00000;"><td style="padding:8px 10px;border:1px solid #a00000;color:#fff;font-weight:700;">Mức hỗ trợ</td><td style="padding:8px 10px;border:1px solid #a00000;color:#fff;font-weight:700;">Mục đích</td><td style="padding:8px 10px;border:1px solid #a00000;color:#fff;font-weight:700;">Mức hỗ trợ</td></tr><tr><td style="padding:8px 10px;border:1px solid #e5e7eb;"><strong>Cấp thiết</strong></td><td style="padding:8px 10px;border:1px solid #e5e7eb;">Trực tiếp cải thiện hiệu suất trong công việc</td><td style="padding:8px 10px;border:1px solid #e5e7eb;">Hỗ trợ 100%<br>Lên đến 20 triệu VNĐ / lần</td></tr><tr style="background:#fafafa;"><td style="padding:8px 10px;border:1px solid #e5e7eb;"><strong>Bổ trợ</strong></td><td style="padding:8px 10px;border:1px solid #e5e7eb;">Hỗ trợ nhân viên nâng cao kỹ năng tổng quát</td><td style="padding:8px 10px;border:1px solid #e5e7eb;">Hỗ trợ 50%<br>Lên đến 10 triệu VNĐ / lần</td></tr></tbody></table><img src="/policy-images/image_2023-06-30_105551157-1024x436.png" alt="Bảng phân loại mức hỗ trợ" /><p><strong>YÊU CẦU VỀ KHÓA HỌC:</strong></p><ul><li>Các kỹ năng được học có đóng góp cụ thể nhằm tăng năng suất, hiệu suất và/hoặc doanh thu</li><li>Được cung cấp bởi tổ chức đào tạo uy tín (chứng nhận quốc tế, WSQ, WDA...)</li><li>Nội dung giảng dạy rõ ràng và chi tiết</li><li>Có thể cung cấp chứng chỉ khi hoàn thành khóa học</li><li>Chứng chỉ không bắt nguồn từ nội bộ Garena</li></ul></div>`,
+      source_file: "Gigi Garena.html",
+      order_index: 2,
+      is_active: true,
+      updated_at: "2026-07-07T00:00:00.000Z"
+    },
+    {
+      id: "pol-3",
+      category: "Chính sách đào tạo",
+      title: "III. Yêu cầu nhân viên & Quy trình đăng ký",
+      content: `<div class="policy-html-content"><p>Để đạt tiêu chuẩn được nhận hỗ trợ chi phí đào tạo, nhân viên cần:</p><ul><li><strong>Là nhân viên chính thức toàn thời gian đã làm việc tối thiểu 12 tháng</strong> tính tới ngày đầu tiên bắt đầu khóa đào tạo</li><li><strong>Chia sẻ rõ ràng mục đích, mục tiêu và cam kết kết quả</strong> trong Form Đăng ký hỗ trợ chi phí đào tạo</li><li><strong>Đồng ý tham gia vào các buổi chia sẻ nội bộ</strong> về những kiến thức đã được học</li></ul><p><strong>QUY TRÌNH ĐĂNG KÝ &amp; NHẬN HỖ TRỢ — Gồm 2 bước:</strong></p><p><strong>Bước 1: Đăng ký hỗ trợ chi phí đào tạo</strong></p><img src="/policy-images/Picture1.png" alt="Sơ đồ bước 1" /><ul><li><strong>Đối với nhân viên:</strong> Tạo ticket từ Form Đăng ký hỗ trợ chi phí đào tạo. Kết quả cập nhật trong vòng 2 tuần.</li></ul><img src="/policy-images/image_2023-06-30_105635367-1024x328.png" alt="Form đánh giá quản lý trước khóa" /><ul><li><strong>Đối với Quản lý trực tiếp:</strong> Hoàn thành Form Đánh giá năng lực nhân viên trước khi khóa học bắt đầu.</li></ul><p><strong>Bước 2: Đánh giá sau khóa học và yêu cầu hoàn phí</strong></p><img src="/policy-images/image_2022-07-07_114130694.png" alt="Sơ đồ bước 2" /><ul><li>Hoàn thành <strong>Form Đánh giá sau khóa học</strong> tối đa 30 ngày sau khi kết thúc</li><li>Chuẩn bị chứng từ: (1) File PDF ticket đã phê duyệt, (2) Chứng chỉ hoàn thành, (3) Hóa đơn chi phí</li></ul><img src="/policy-images/image_2023-06-30_105952492.png" alt="Nộp chứng từ HRIS" /><ul><li>Nộp chứng từ trên hệ thống <strong>HRIS → New Claim → Project VHB-PJ-264: HRBP_2026</strong></li></ul><img src="/policy-images/SeaTalk_IMG_20260306_134217.png" alt="Hướng dẫn HRIS" /></div>`,
+      source_file: "Gigi Garena.html",
+      order_index: 3,
+      is_active: true,
+      updated_at: "2026-07-07T00:00:00.000Z"
+    },
+    {
+      id: "pol-4",
+      category: "Chính sách đào tạo",
+      title: "IV. Các trường hợp không áp dụng & Liên hệ",
+      content: `<div class="policy-html-content"><p>Vui lòng liên hệ Bộ phận Đào tạo để được hỗ trợ thêm với các khóa học:</p><ul><li>Các chương trình đào tạo của công ty giải quyết khoảng cách năng lực trong nước và khu vực</li><li>Các khóa học nội bộ</li></ul><p>Nếu có câu hỏi, liên hệ Bộ phận Đào tạo:<br>📧 <a href="mailto:thutrang.pham@garena.vn">thutrang.pham@garena.vn</a> hoặc <a href="mailto:minhngoc.phamnguyen@garena.vn">minhngoc.phamnguyen@garena.vn</a></p><hr/><p><strong>Phụ lục:</strong></p><ul><li>Mẫu Ticket Đăng ký hỗ trợ chi phí (nhân viên): <a href="https://drive.google.com/file/d/1nP0hci2GwVWNlE6LnYHYJMgZ1QfmHy4J/view" target="_blank">LINK</a></li><li>Mẫu Ticket Đăng ký hỗ trợ chi phí (quản lý): <a href="https://drive.google.com/file/d/1YUiarin2lVOV4mjNyRdd0-gvsvWHnf_s/view" target="_blank">LINK</a></li></ul></div>`,
+      source_file: "Gigi Garena.html",
+      order_index: 4,
+      is_active: true,
+      updated_at: "2026-07-07T00:00:00.000Z"
+    }
   ],
   site_feedback: [
     { id: "fb-1", is_anonymous: false, user_name: "Linh Nguyen", user_team: "Publishing", user_role: "Product", overall_rating: 5, aspect_ratings: JSON.stringify({ visual: 5, content: 4, usability: 5, usefulness: 4 }), aspect_feedback: JSON.stringify({}), additional_feedback: "Great experience.", status: "open", created_at: "2026-07-05T09:00:00.000Z" }
@@ -174,10 +218,141 @@ const mockDb = {
   ],
   admin_accounts: [
     { email: "demo@garena.vn", full_name: "Demo User", role: "super_admin", is_active: 1 }
+  ],
+  app_settings: [
+    { setting_key: "alpha_base_url", setting_value: "https://knowledge.alpha.insea.io/api/" },
+    { setting_key: "alpha_api_key", setting_value: "" },
+    { setting_key: "alpha_expert_id", setting_value: "" },
+    { setting_key: "ga_property_id", setting_value: "" },
+    { setting_key: "ga_measurement_id", setting_value: "" },
+    { setting_key: "ga_service_account_json", setting_value: "" }
   ]
 };
 
+function loadMockDb() {
+  try {
+    if (fs.existsSync(mockDbPath)) {
+      const data = JSON.parse(fs.readFileSync(mockDbPath, "utf8"));
+      Object.assign(mockDb, data);
+    }
+  } catch (e) {
+    console.warn("Could not load mock DB from file:", e.message);
+  }
+}
+loadMockDb();
+
+function extractPolicySection(html, startText, endText) {
+  const startIdx = html.indexOf(startText);
+  if (startIdx === -1) return null;
+
+  let start = startIdx;
+  while (start > 0 && html[start] !== "<") start--;
+
+  let end = html.length;
+  if (endText) {
+    end = html.indexOf(endText, startIdx);
+    if (end === -1) end = html.length;
+    else while (end > startIdx && html[end] !== "<") end--;
+  }
+
+  return html.substring(start, end).trim();
+}
+
+function buildPolicySectionsFromGigiHtml() {
+  const htmlPath = path.join(__dirname, "..", "Gigi Garena.html");
+  if (!fs.existsSync(htmlPath)) return null;
+
+  const raw = fs.readFileSync(htmlPath, "utf8");
+  const bodyStart = raw.indexOf('<div class="body">');
+  const bodyEnd = raw.indexOf("<span style=\"font-family: arial, helvetica, sans-serif; font-size: 10pt;\">Bộ Phận Đào Tạo</span></p>", bodyStart);
+  if (bodyStart === -1 || bodyEnd === -1) return null;
+
+  let body = raw.substring(bodyStart, bodyEnd);
+  body = body
+    .replace(/src="\.\/Gigi Garena_files\/(.*?)"/g, 'src="/policy-images/$1"')
+    .replace(/src="\.\/Gigi%20Garena_files\/(.*?)"/g, 'src="/policy-images/$1"')
+    .replace(/style="padding-left:\s*\d+px;?"/g, 'style="text-align:center"')
+    .replace(/class="[^"]*aligncenter[^"]*"/g, 'class="policy-img-center"');
+
+  const category = "Chính sách đào tạo";
+  const sections = [
+    {
+      id: "pol-gigi-1",
+      title: "I. Khóa học nội bộ do công ty tổ chức",
+      start: "I. Khóa học nội bộ do công ty tổ chức",
+      end: "II. Khóa học bên ngoài",
+      order_index: 1,
+    },
+    {
+      id: "pol-gigi-2",
+      title: "II. Khóa học bên ngoài được công ty hỗ trợ chi phí",
+      start: "II. Khóa học bên ngoài",
+      end: "3. YÊU CẦU VỀ NHÂN VIÊN",
+      order_index: 2,
+    },
+    {
+      id: "pol-gigi-3",
+      title: "III. Yêu cầu nhân viên & Quy trình đăng ký",
+      start: "3. YÊU CẦU VỀ NHÂN VIÊN",
+      end: "5. CÁC TRƯỜNG HỢP KHÔNG ÁP DỤNG",
+      order_index: 3,
+    },
+    {
+      id: "pol-gigi-4",
+      title: "IV. Các trường hợp không áp dụng & Liên hệ",
+      start: "5. CÁC TRƯỜNG HỢP KHÔNG ÁP DỤNG",
+      end: null,
+      order_index: 4,
+    },
+  ];
+
+  const policies = sections
+    .map((section) => {
+      const content = extractPolicySection(body, section.start, section.end);
+      if (!content) return null;
+      return {
+        id: section.id,
+        category,
+        title: section.title,
+        content: `<div class="policy-html-content">${content}</div>`,
+        source_file: "Gigi Garena.html",
+        order_index: section.order_index,
+        is_active: true,
+        updated_at: "2026-07-07T00:00:00.000Z",
+      };
+    })
+    .filter(Boolean);
+
+  return policies.length ? policies : null;
+}
+
+const importedPolicySections = buildPolicySectionsFromGigiHtml();
+if (importedPolicySections) {
+  const importedCategory = "Chính sách đào tạo";
+  mockDb.policies = [
+    ...mockDb.policies.filter((policy) => policy.category !== importedCategory && policy.source_file !== "Gigi Garena.html"),
+    ...importedPolicySections,
+  ];
+}
+
+function saveMockDb() {
+  try {
+    fs.writeFileSync(mockDbPath, JSON.stringify(mockDb, null, 2), "utf8");
+  } catch (e) {
+    console.warn("Could not save mock DB to file:", e.message);
+  }
+}
+
 function handleMockQuery(text, params) {
+  const res = executeMockQuery(text, params);
+  const sql = text.replace(/\s+/g, " ").trim();
+  if (/^(INSERT|UPDATE|DELETE)/i.test(sql) && !/(migration_history|CREATE|ALTER|DROP)/i.test(sql)) {
+    saveMockDb();
+  }
+  return res;
+}
+
+function executeMockQuery(text, params) {
   const sql = text.replace(/\s+/g, " ").trim();
 
   const withCounts = (user) => ({
@@ -189,9 +364,45 @@ function handleMockQuery(text, params) {
   });
 
   if (/admin_accounts/i.test(sql)) {
+    if (/INSERT\s+INTO\s+admin_accounts/i.test(sql)) {
+      const email = (params[0] || "").toLowerCase();
+      let account = mockDb.admin_accounts.find(a => a.email.toLowerCase() === email);
+      if (!account) {
+        account = {
+          id: mockDb.admin_accounts.length + 1,
+          email: email,
+          full_name: params[1] || email.split("@")[0],
+          role: params[2] || "ld_admin",
+          is_active: params[3] === undefined ? 1 : Number(params[3]),
+          added_by: params[4] || null,
+          created_at: new Date().toISOString()
+        };
+        mockDb.admin_accounts.push(account);
+      } else {
+        account.full_name = params[1] || account.full_name;
+        account.role = params[2] || account.role;
+        account.is_active = params[3] === undefined ? 1 : Number(params[3]);
+      }
+      return { rows: [account], rowCount: 1 };
+    }
+    if (/UPDATE\s+admin_accounts/i.test(sql)) {
+      const id = params[0];
+      let account = mockDb.admin_accounts.find(a => String(a.id) === String(id) || a.email.toLowerCase() === String(id).toLowerCase());
+      if (account) {
+        if (params[1] !== undefined) account.role = params[1];
+        if (params[2] !== undefined) account.is_active = Number(params[2]);
+      }
+      return { rows: account ? [account] : [], rowCount: account ? 1 : 0 };
+    }
+    if (/DELETE\s+FROM\s+admin_accounts/i.test(sql)) {
+      const id = params[0];
+      const before = mockDb.admin_accounts.length;
+      mockDb.admin_accounts = mockDb.admin_accounts.filter(a => String(a.id) !== String(id) && a.email.toLowerCase() !== String(id).toLowerCase());
+      return { rows: [], rowCount: before - mockDb.admin_accounts.length };
+    }
     const email = params[0] || "demo@garena.vn";
-    const found = mockDb.admin_accounts.filter(a => a.email.toLowerCase() === email.toLowerCase());
-    return { rows: found, rowCount: found.length };
+    const found = mockDb.admin_accounts.filter(a => a.email.toLowerCase() === String(email).toLowerCase() || String(a.id) === String(email));
+    return { rows: found.length ? found : mockDb.admin_accounts, rowCount: found.length ? found.length : mockDb.admin_accounts.length };
   }
 
   if (/^SELECT COUNT\(\*\).*FROM users/i.test(sql)) {
@@ -206,13 +417,103 @@ function handleMockQuery(text, params) {
     return { rows: [{ source: "admin_import", count: mockDb.enrollments.length }], rowCount: 1 };
   }
 
-  if (/FROM ld_requests/i.test(sql)) {
+  if (/ld_requests/i.test(sql)) {
+    if (/INSERT\s+INTO\s+ld_requests/i.test(sql)) {
+      const reqItem = {
+        id: `ldr-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        user_id: params[0] || null,
+        full_name: params[1] || "Anonymous",
+        email: params[2] || "anonymous@garena.vn",
+        description: params[3] || "",
+        status: "pending",
+        created_at: new Date().toISOString()
+      };
+      mockDb.ld_requests.push(reqItem);
+      return { rows: [reqItem], rowCount: 1 };
+    }
+    if (/UPDATE\s+ld_requests/i.test(sql)) {
+      const id = params[0];
+      let reqItem = mockDb.ld_requests.find(r => String(r.id) === String(id));
+      if (reqItem && params[1] !== undefined) reqItem.status = params[1];
+      return { rows: reqItem ? [reqItem] : [], rowCount: reqItem ? 1 : 0 };
+    }
     if (/COUNT\(\*\)/i.test(sql)) return { rows: [{ pending_ld_requests: mockDb.ld_requests.filter((r) => r.status === "pending").length }], rowCount: 1 };
     return { rows: mockDb.ld_requests, rowCount: mockDb.ld_requests.length };
   }
 
-  if (/FROM policies/i.test(sql)) {
+  if (/policies/i.test(sql)) {
+    if (/INSERT\s+INTO\s+policies/i.test(sql)) {
+      const policy = {
+        id: `pol-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        category: params[0] || "General",
+        title: params[1] || "New Policy",
+        content: params[2] || "",
+        source_file: params[3] || null,
+        order_index: Number(params[4] || 0),
+        is_active: params[5] === undefined ? true : Boolean(params[5]),
+        updated_at: new Date().toISOString()
+      };
+      mockDb.policies.push(policy);
+      return { rows: [policy], rowCount: 1 };
+    }
+    if (/UPDATE\s+policies/i.test(sql)) {
+      const id = params[0];
+      let policy = mockDb.policies.find(p => String(p.id) === String(id));
+      if (policy) {
+        if (params[1] !== undefined) policy.category = params[1];
+        if (params[2] !== undefined) policy.title = params[2];
+        if (params[3] !== undefined) policy.content = params[3];
+        if (params[4] !== undefined) policy.source_file = params[4];
+        if (params[5] !== undefined) policy.order_index = Number(params[5]);
+        if (params[6] !== undefined) policy.is_active = Boolean(params[6]);
+        policy.updated_at = new Date().toISOString();
+      }
+      return { rows: policy ? [policy] : [], rowCount: policy ? 1 : 0 };
+    }
+    if (/DELETE\s+FROM\s+policies/i.test(sql)) {
+      const id = params[0];
+      const before = mockDb.policies.length;
+      mockDb.policies = mockDb.policies.filter(p => String(p.id) !== String(id));
+      return { rows: [], rowCount: before - mockDb.policies.length };
+    }
+    if (/WHERE id = \$1/i.test(sql)) {
+      const found = mockDb.policies.filter(p => String(p.id) === String(params[0]));
+      return { rows: found, rowCount: found.length };
+    }
+    if (/WHERE category = \$1 AND title = \$2/i.test(sql)) {
+      const found = mockDb.policies.filter(p => String(p.category) === String(params[0]) && String(p.title) === String(params[1]));
+      return { rows: found, rowCount: found.length };
+    }
     return { rows: mockDb.policies, rowCount: mockDb.policies.length };
+  }
+
+  if (/app_settings/i.test(sql)) {
+    if (/SELECT/i.test(sql)) {
+      if (/WHERE setting_key = \$1/i.test(sql)) {
+        const found = mockDb.app_settings.filter(s => s.setting_key === params[0]);
+        return { rows: found, rowCount: found.length };
+      }
+      return { rows: mockDb.app_settings, rowCount: mockDb.app_settings.length };
+    }
+    if (/UPDATE app_settings/i.test(sql)) {
+      const key = params[0];
+      const val = params[1];
+      let found = mockDb.app_settings.find(s => s.setting_key === key);
+      if (found) found.setting_value = val;
+      return { rows: [], rowCount: 1 };
+    }
+    if (/INSERT INTO app_settings/i.test(sql)) {
+      const key = params[0];
+      const val = params[1];
+      let found = mockDb.app_settings.find(s => s.setting_key === key);
+      if (found) {
+        found.setting_value = val;
+      } else {
+        mockDb.app_settings.push({ setting_key: key, setting_value: val });
+      }
+      return { rows: [], rowCount: 1 };
+    }
+    return { rows: mockDb.app_settings, rowCount: mockDb.app_settings.length };
   }
 
   if (/UPDATE site_feedback SET status = \$(1|2)/i.test(sql)) {
@@ -231,8 +532,79 @@ function handleMockQuery(text, params) {
     return { rows: mockDb.site_feedback, rowCount: mockDb.site_feedback.length };
   }
 
-  if (/FROM testimonials/i.test(sql)) {
+  if (/testimonials/i.test(sql)) {
+    if (/INSERT\s+INTO\s+testimonials/i.test(sql)) {
+      const testimonial = {
+        id: `tes-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+        course_id: params[0] || "",
+        user_id: params[1] || null,
+        user_name: params[2] || "Learner",
+        user_role: params[3] || "Member",
+        user_team: params[4] || "Garena",
+        rating: Number(params[5] || 5),
+        content: params[6] || "",
+        aspect_ratings: params[7] || "{}",
+        applied_learning: params[8] || "",
+        improvement_feedback: params[9] || "",
+        is_featured: false,
+        created_at: new Date().toISOString()
+      };
+      mockDb.testimonials.push(testimonial);
+      return { rows: [testimonial], rowCount: 1 };
+    }
+    if (/UPDATE\s+testimonials/i.test(sql)) {
+      const id = params[0];
+      let test = mockDb.testimonials.find(t => String(t.id) === String(id));
+      if (test && params[1] !== undefined) test.is_featured = Boolean(params[1]);
+      return { rows: test ? [test] : [], rowCount: test ? 1 : 0 };
+    }
+    if (/DELETE\s+FROM\s+testimonials/i.test(sql)) {
+      const id = params[0];
+      const before = mockDb.testimonials.length;
+      mockDb.testimonials = mockDb.testimonials.filter(t => String(t.id) !== String(id));
+      return { rows: [], rowCount: before - mockDb.testimonials.length };
+    }
     return { rows: mockDb.testimonials, rowCount: mockDb.testimonials.length };
+  }
+
+  if (/INSERT\s+INTO\s+courses/i.test(sql)) {
+    const course = {
+      id: `crs-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+      course_code: params[0] || `CRS-${Date.now()}`,
+      title: params[1] || "New Course",
+      trainer: params[2] || "Internal Trainer",
+      trainer_type: params[3] || "internal",
+      format: params[4] || "offline",
+      duration_hours: Number(params[5] || 2),
+      rating: Number(params[6] || 5),
+      skill_tags: params[7] || "",
+      rank_targets: params[8] || "",
+      role_targets: params[9] || "",
+      type: params[10] || "mandatory",
+      min_participants: Number(params[11] || 5),
+      registration_url: params[12] || "",
+      description: params[13] || "",
+      xp_reward: Number(params[14] || 100),
+      is_active: params[15] === undefined ? true : Boolean(params[15]),
+      status: params[16] || "open",
+      material_url: params[17] || null,
+      session_date: params[18] || null,
+      session_time: params[19] || null,
+      location: params[20] || null,
+      max_participants: params[21] || null,
+      enrolled_count: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    mockDb.courses.push(course);
+    return { rows: [course], rowCount: 1 };
+  }
+
+  if (/DELETE\s+FROM\s+courses/i.test(sql)) {
+    const id = params[0];
+    const before = mockDb.courses.length;
+    mockDb.courses = mockDb.courses.filter(c => String(c.id) !== String(id));
+    return { rows: [], rowCount: before - mockDb.courses.length };
   }
 
   if (/UPDATE courses SET/i.test(sql)) {
@@ -252,6 +624,10 @@ function handleMockQuery(text, params) {
   if (/FROM courses/i.test(sql)) {
     if (/WHERE id = \$1/i.test(sql)) {
       const found = mockDb.courses.filter((course) => String(course.id) === String(params[0]));
+      return { rows: found, rowCount: found.length };
+    }
+    if (/WHERE course_code = \$1/i.test(sql)) {
+      const found = mockDb.courses.filter((course) => String(course.course_code).toLowerCase() === String(params[0]).toLowerCase());
       return { rows: found, rowCount: found.length };
     }
     if (/ORDER BY enrolled_count DESC/i.test(sql)) {
@@ -392,27 +768,18 @@ function handleMockQuery(text, params) {
     return { rows: found ? [withCounts(found)] : [], rowCount: found ? 1 : 0 };
   }
 
-  return { rows: [], rowCount: 0 };
-}
-
-async function getPgPool() {
-  const pg = await import("pg");
-  const { Pool } = pg.default || pg;
-  if (!pgPool) {
-    pgPool = new Pool({
-      connectionString: config.databaseUrl,
-      ssl: config.nodeEnv === "production" ? { rejectUnauthorized: false } : false,
-    });
+  if (/SELECT\s+UUID\(\)/i.test(sql) || /ALTER\s+TABLE/i.test(sql) || /CREATE\s+TABLE/i.test(sql) || /CREATE\s+INDEX/i.test(sql) || /DROP\s+TABLE/i.test(sql) || /INSERT\s+INTO\s+migration_history/i.test(sql) || /DELETE\s+r\s+FROM/i.test(sql)) {
+    return { rows: [{ uuid: `00000000-0000-4000-8000-${Math.floor(100000000000 + Math.random()*900000000000)}`, id: "mock-id" }], rowCount: 1 };
   }
-  return pgPool;
+
+  return { rows: [], rowCount: 0 };
 }
 
 export const pool = {
   query: async (text, params = []) => query(text, params),
   end: async () => {
     if (useMockDb) return;
-    if (isMysqlUrl()) return mysqlPool().end();
-    if (pgPool) return pgPool.end();
+    return mysqlPool().end();
   },
 };
 
@@ -421,9 +788,7 @@ export async function query(text, params = []) {
     return handleMockQuery(text, params);
   }
   try {
-    if (isMysqlUrl()) return await mysqlQuery(text, params);
-    const pgPool = await getPgPool();
-    return await pgPool.query(text, params);
+    return await mysqlQuery(text, params);
   } catch (error) {
     if (error.code === "ECONNREFUSED" || error.message.includes("ECONNREFUSED") ||
         error.message.includes("Access denied") || error.message.includes("connect")) {
@@ -445,20 +810,7 @@ export async function withTransaction(fn) {
     return fn(client);
   }
   try {
-    if (isMysqlUrl()) return await mysqlTransaction(fn);
-    const pgPool = await getPgPool();
-    const client = await pgPool.connect();
-    try {
-      await client.query("BEGIN");
-      const result = await fn(client);
-      await client.query("COMMIT");
-      return result;
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
+    return await mysqlTransaction(fn);
   } catch (error) {
     if (error.code === "ECONNREFUSED" || error.message.includes("ECONNREFUSED") ||
         error.message.includes("Access denied") || error.message.includes("connect")) {

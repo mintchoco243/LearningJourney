@@ -32,46 +32,6 @@ const D = GLH_DATA;
     last_seen: null,
   };
 
-  const MOCK_HOME_USER = {
-    onboarded: true,
-    email: "mock.user@garena.vn",
-    full_name: "Mock User",
-    db_role: "Marketing",
-    db_team: "Marketing",
-    db_rank: "rank_02",
-    learning_formats: ["online", "offline", "elearning"],
-    weekly_hours: "2-4",
-    preferred_trainers: ["L&D Team"],
-    character: { hair: "short", outfit: "red", accessory: "headset", skin: "s1" },
-    quiz_result: {
-      class_id: "strategist",
-      personality: "analyst",
-      rank_id: "rank_02",
-      start_xp: 50,
-      completed_at: new Date().toISOString(),
-    },
-    xp: 120,
-    hours_total: 1,
-    completed_sessions_count: 0,
-    completed_courses: [],
-    completed_course_details: [],
-    registered_events: [],
-    unlocked_skills: [],
-    badges: ["first_quest"],
-    last_seen: new Date().toISOString(),
-  };
-
-  const shouldUseMockHomeUser = () =>
-    typeof process !== "undefined" && process.env.NODE_ENV !== "production";
-
-  const isMockCourse = (courseOrId) => {
-    if (!shouldUseMockHomeUser()) return false;
-    if (typeof courseOrId === "object" && courseOrId) {
-      return [courseOrId.course_code, courseOrId.code, courseOrId.id, courseOrId._id, courseOrId.course_id]
-        .some((value) => String(value || "").startsWith("MOCK-"));
-    }
-    return String(courseOrId || "").startsWith("MOCK-");
-  };
 
   function load() {
     try {
@@ -189,7 +149,7 @@ const D = GLH_DATA;
   export const GameContext = React.createContext(null);
 
   export function GameProvider(props) {
-    const [user, setUser] = React.useState(() => load() || Object.assign({}, DEFAULT_USER, shouldUseMockHomeUser() ? MOCK_HOME_USER : {}));
+    const [user, setUser] = React.useState(() => load() || Object.assign({}, DEFAULT_USER));
     // xpBurst: a transient {amount} for the XP gain toast
     const [xpBurst, setXpBurst] = React.useState(null);
 
@@ -251,22 +211,6 @@ const D = GLH_DATA;
         if ((user.completed_courses || []).includes(apiCourseId)) return false;
         if (!apiCourseId) return false;
 
-        if (isMockCourse(course) || isMockCourse(apiCourseId)) {
-          persist(Object.assign({}, user, {
-            xp: (Number(user.xp) || 0) + (Number(course.xp_reward) || D.XP.course_complete_default),
-            hours_total: (Number(user.hours_total) || 0) + (Number(course.duration_minutes || 0) / 60),
-            completed_sessions_count: (user.completed_sessions_count || 0) + 1,
-            completed_courses: Array.from(new Set([...(user.completed_courses || []), apiCourseId])),
-            completed_course_details: Array.from(
-              new Map([...(user.completed_course_details || []), course].map((item) => {
-                const key = item?._id || item?.id || item?.course_row_id || item?.course_id;
-                return [key, item];
-              })).values()
-            ),
-          }));
-          return true;
-        }
-
         const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
           method: "POST",
           credentials: "include",
@@ -311,22 +255,6 @@ const D = GLH_DATA;
         const apiCourseId = course._id || course.id || course.course_row_id || course.course_id;
         if (!apiCourseId) return false;
 
-        if (isMockCourse(course) || isMockCourse(apiCourseId)) {
-          const completedCourses = (user.completed_courses || []).filter((id) => id !== apiCourseId);
-          const completedCourseDetails = (user.completed_course_details || []).filter((item) => {
-            const key = item?._id || item?.id || item?.course_row_id || item?.course_id;
-            return key !== apiCourseId;
-          });
-          persist(Object.assign({}, user, {
-            xp: Math.max((Number(user.xp) || 0) - (Number(course.xp_reward) || D.XP.course_complete_default), 0),
-            hours_total: Math.max((Number(user.hours_total) || 0) - (Number(course.duration_minutes || 0) / 60), 0),
-            completed_sessions_count: Math.max((user.completed_sessions_count || 0) - 1, 0),
-            completed_courses: completedCourses,
-            completed_course_details: completedCourseDetails,
-          }));
-          return true;
-        }
-
         const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
           method: "DELETE",
           credentials: "include",
@@ -352,13 +280,6 @@ const D = GLH_DATA;
       async reserveCourseSession(course) {
         const sessionId = course.session_id || course._id || course.id || course.course_row_id || course.course_id;
         if (!sessionId || (user.registered_events || []).includes(sessionId)) return false;
-
-        if (isMockCourse(course) || isMockCourse(sessionId)) {
-          persist(Object.assign({}, user, {
-            registered_events: Array.from(new Set([...(user.registered_events || []), sessionId])),
-          }));
-          return true;
-        }
 
         const response = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/reserve", {
           method: "POST",

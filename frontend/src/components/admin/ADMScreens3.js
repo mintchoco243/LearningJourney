@@ -758,4 +758,267 @@ const D = ADM_DATA;
     );
   }
 
-  export const ADMScreens3 = { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen };
+  export function IntegrationsScreen() {
+    const [activeTab, setActiveTab] = React.useState("ga");
+    const [msg, setMsg] = React.useState("");
+
+    // Bot states
+    const [baseUrl, setBaseUrl] = React.useState("");
+    const [apiKey, setApiKey] = React.useState("");
+    const [expertId, setExpertId] = React.useState("");
+    const [loadingBot, setLoadingBot] = React.useState(true);
+    const [savingBot, setSavingBot] = React.useState(false);
+
+    // GA states
+    const [propertyId, setPropertyId] = React.useState("");
+    const [measurementId, setMeasurementId] = React.useState("");
+    const [serviceAccountJson, setServiceAccountJson] = React.useState("");
+    const [hasServiceAccount, setHasServiceAccount] = React.useState(false);
+    const [serviceAccountEmail, setServiceAccountEmail] = React.useState("");
+    const [loadingGa, setLoadingGa] = React.useState(true);
+    const [savingGa, setSavingGa] = React.useState(false);
+
+    React.useEffect(() => {
+      apiFetch("/admin/api/settings/bot")
+        .then(data => {
+          setBaseUrl(data.baseUrl || "");
+          setApiKey(data.apiKey || "");
+          setExpertId(data.expertId || "");
+        })
+        .catch(() => {})
+        .finally(() => setLoadingBot(false));
+
+      apiFetch("/admin/api/settings/analytics")
+        .then(data => {
+          setPropertyId(data.propertyId || "");
+          setMeasurementId(data.measurementId || "");
+          setHasServiceAccount(Boolean(data.hasServiceAccount));
+          setServiceAccountEmail(data.serviceAccountEmail || "");
+        })
+        .catch(() => {})
+        .finally(() => setLoadingGa(false));
+    }, []);
+
+    async function handleSaveBot(e) {
+      e.preventDefault();
+      setSavingBot(true);
+      setMsg("");
+      try {
+        const res = await apiFetch("/admin/api/settings/bot", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ baseUrl, apiKey, expertId })
+        });
+        setMsg(res.message || "Đã lưu cấu hình AI Bot thành công!");
+      } catch (err) {
+        alert("Lỗi khi lưu cấu hình AI Bot: " + err.message);
+      } finally {
+        setSavingBot(false);
+      }
+    }
+
+    async function handleSaveGa(e) {
+      e.preventDefault();
+      setSavingGa(true);
+      setMsg("");
+      try {
+        const res = await apiFetch("/admin/api/settings/analytics", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ propertyId, measurementId, serviceAccountJson })
+        });
+        setMsg(res.message || "Đã lưu cấu hình Google Analytics thành công!");
+        setServiceAccountJson("");
+        const updated = await apiFetch("/admin/api/settings/analytics");
+        setPropertyId(updated.propertyId || "");
+        setMeasurementId(updated.measurementId || "");
+        setHasServiceAccount(Boolean(updated.hasServiceAccount));
+        setServiceAccountEmail(updated.serviceAccountEmail || "");
+      } catch (err) {
+        alert("Lỗi khi lưu cấu hình GA: " + err.message);
+      } finally {
+        setSavingGa(false);
+      }
+    }
+
+    if (loadingBot && loadingGa) {
+      return <div style={{ color: "var(--rpg-muted)", padding: 40, textAlign: "center" }}>Đang tải cấu hình hệ thống...</div>;
+    }
+
+    return (
+      <div style={{ maxWidth: 720 }}>
+        <PageHeader
+          title="Cấu hình Hệ thống (Integrations)"
+          sub="Thiết lập kết nối với các dịch vụ bên ngoài (Google Analytics & AI Bot Alpha Knowledge)."
+        />
+
+        <div style={{ display: "flex", gap: 10, borderBottom: "1px solid var(--rpg-border)", paddingBottom: 12, marginBottom: 24, marginTop: 20 }}>
+          <button
+            type="button"
+            className={`adm-btn ${activeTab === "ga" ? "adm-btn--primary" : ""}`}
+            onClick={() => { setActiveTab("ga"); setMsg(""); }}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            Google Analytics (GA4)
+          </button>
+          <button
+            type="button"
+            className={`adm-btn ${activeTab === "bot" ? "adm-btn--primary" : ""}`}
+            onClick={() => { setActiveTab("bot"); setMsg(""); }}
+            style={{ display: "flex", alignItems: "center", gap: 8 }}
+          >
+            AI Bot (Alpha Knowledge)
+          </button>
+        </div>
+
+        {activeTab === "ga" ? (
+          <div className="adm-section">
+            <form onSubmit={handleSaveGa} style={{ display: "grid", gap: 20 }}>
+              <div style={{ padding: 16, background: "rgba(255,255,255,0.03)", border: "1px solid var(--rpg-border)", borderRadius: 8, display: "grid", gap: 10 }}>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+                  Trạng thái kết nối Google Analytics Data API
+                </div>
+                <div style={{ fontSize: 13, color: "var(--rpg-text)" }}>
+                  Service Account: <strong style={{ color: hasServiceAccount ? "#2BB6A3" : "#F5A623" }}>
+                    {hasServiceAccount ? (serviceAccountEmail || "Đã cấu hình Key JSON") : "Chưa cấu hình"}
+                  </strong>
+                </div>
+                {hasServiceAccount && serviceAccountEmail && (
+                  <div style={{ fontSize: 12, color: "var(--rpg-muted)", lineHeight: 1.5 }}>
+                    💡 <em>Hãy chắc chắn bạn đã thêm email <strong>{serviceAccountEmail}</strong> vào mục <strong>Property Access Management</strong> trên GA4 với quyền <strong>Viewer</strong>.</em>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  GA4 Measurement ID <span style={{ color: "var(--rpg-muted)", fontWeight: 400 }}>(Dành cho tracking Frontend, ví dụ: G-XXXXXXXXXX)</span>
+                </label>
+                <input
+                  type="text"
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px" }}
+                  value={measurementId}
+                  onChange={e => setMeasurementId(e.target.value)}
+                  placeholder="G-XXXXXXXXXX"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  GA4 Property ID <span style={{ color: "var(--amber)" }}>*</span> <span style={{ color: "var(--rpg-muted)", fontWeight: 400 }}>(Dành cho Data API Backend, ví dụ: 123456789)</span>
+                </label>
+                <input
+                  type="text"
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px" }}
+                  value={propertyId}
+                  onChange={e => setPropertyId(e.target.value)}
+                  placeholder="123456789"
+                />
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
+                  Lấy từ GA4 -&gt; Admin -&gt; Property Details.
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  Service Account JSON Key <span style={{ color: "var(--rpg-muted)", fontWeight: 400 }}>{hasServiceAccount ? "(Để trống nếu giữ nguyên key cũ)" : "(Dán toàn bộ nội dung file .json tải từ Google Cloud)"}</span>
+                </label>
+                <textarea
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px", minHeight: 120, fontFamily: "monospace", fontSize: 12 }}
+                  value={serviceAccountJson}
+                  onChange={e => setServiceAccountJson(e.target.value)}
+                  placeholder={hasServiceAccount ? "•••••••••••••••• (Đã lưu trong Database - Để trống để giữ nguyên)" : '{\n  "type": "service_account",\n  "project_id": "...",\n  "private_key_id": "...",\n  "private_key": "...",\n  "client_email": "..."\n}'}
+                />
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
+                  Tải file JSON từ Google Cloud Console -&gt; IAM &amp; Admin -&gt; Service Accounts -&gt; Keys. Nội dung sẽ được lưu vào Database production và không bao giờ hiển thị lại ra trình duyệt để bảo mật Private Key.
+                </div>
+              </div>
+
+              {msg && (
+                <div style={{ padding: "10px 14px", background: "rgba(43, 182, 163, 0.15)", border: "1px solid #2bb6a3", color: "#2bb6a3", borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
+                  {msg}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <button type="submit" className="adm-btn adm-btn--primary" disabled={savingGa} style={{ minWidth: 160 }}>
+                  {savingGa ? "Đang lưu GA..." : "Lưu Cấu Hình GA"}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : (
+          <div className="adm-section">
+            <form onSubmit={handleSaveBot} style={{ display: "grid", gap: 20 }}>
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  Alpha Knowledge Base URL <span style={{ color: "var(--rpg-muted)", fontWeight: 400 }}>(Mặc định: https://knowledge.alpha.insea.io/api/)</span>
+                </label>
+                <input
+                  type="text"
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px" }}
+                  value={baseUrl}
+                  onChange={e => setBaseUrl(e.target.value)}
+                  placeholder="https://knowledge.alpha.insea.io/api/"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  Expert ID <span style={{ color: "var(--amber)" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px" }}
+                  value={expertId}
+                  onChange={e => setExpertId(e.target.value)}
+                  placeholder="Ví dụ: 00000000-0000-0000-0000-000000000000"
+                  required
+                />
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
+                  Lấy từ đường dẫn trang chỉnh sửa Bot trên hệ thống Alpha Knowledge.
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+                  API Key (Bearer Token) <span style={{ color: "var(--amber)" }}>*</span>
+                </label>
+                <input
+                  type="password"
+                  className="adm-input"
+                  style={{ width: "100%", padding: "10px 14px" }}
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  placeholder="Nhập API Key của bot..."
+                />
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
+                  Lấy trong phần Cài đặt Bot -&gt; Khóa API trên hệ thống Alpha Knowledge. Key sẽ được mã hóa và lưu an toàn trong Database của server production.
+                </div>
+              </div>
+
+              {msg && (
+                <div style={{ padding: "10px 14px", background: "rgba(43, 182, 163, 0.15)", border: "1px solid #2bb6a3", color: "#2bb6a3", borderRadius: 6, fontWeight: 600, fontSize: 13 }}>
+                  {msg}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                <button type="submit" className="adm-btn adm-btn--primary" disabled={savingBot} style={{ minWidth: 140 }}>
+                  {savingBot ? "Đang lưu Bot..." : "Lưu Cấu Hình Bot"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  export const ADMScreens3 = { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen, BotSettingsScreen: IntegrationsScreen, IntegrationsScreen };
+
