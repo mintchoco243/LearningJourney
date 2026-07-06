@@ -1,6 +1,7 @@
 import express from "express";
 import { query, withTransaction } from "../db.js";
 import { sendMail } from "../services/mail.js";
+import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 
 export const sessionsRouter = express.Router();
 
@@ -31,7 +32,8 @@ sessionsRouter.get("/", async (req, res) => {
      ORDER BY c.session_date ASC, c.session_time ASC`,
     params
   );
-  res.json({ sessions: result.rows });
+  const sessions = await attachPublicCourseRatings(result.rows);
+  res.json({ sessions });
 });
 
 sessionsRouter.post("/:id/reserve", async (req, res, next) => {

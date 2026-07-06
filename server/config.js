@@ -2,8 +2,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const nodeEnv = process.env.NODE_ENV || "development";
+
 export const config = {
-  nodeEnv: process.env.NODE_ENV || "development",
+  nodeEnv,
   apiOnly: (process.env.API_ONLY || "false").toLowerCase() === "true",
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.DATABASE_URL,
@@ -21,8 +23,7 @@ export const config = {
     range: process.env.GA_REPORT_RANGE || "30daysAgo",
   },
   devAuthEnabled:
-    (process.env.DEV_AUTH_ENABLED || "true").toLowerCase() === "true" ||
-    (process.env.NODE_ENV || "development") !== "production",
+    (process.env.DEV_AUTH_ENABLED || (nodeEnv === "production" ? "false" : "true")).toLowerCase() === "true",
 };
 
 export function assertRuntimeConfig() {

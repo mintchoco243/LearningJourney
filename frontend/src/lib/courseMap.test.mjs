@@ -18,7 +18,7 @@ assert.equal(daysUntil("2026-06-30", TODAY), -1);
 
 // session -> upcoming item (pg-style ISO date + "HH:MM:SS")
 const up = mapSessionToUpcoming(
-  { id: "s1", course_code: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", duration_hours: 2, xp_reward: 100, rating: "4.8", session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
+  { id: "s1", course_code: "LC-001", title: "Foundations", format: "Workshop", location: "HQ", description: "d", duration_hours: 2, xp_reward: 100, rating: "4.8", featured_testimonial_count: 1, session_date: "2026-07-08T00:00:00.000Z", session_time: "10:00:00", status: "open" },
   TODAY
 );
 assert.equal(up.session_id, "s1");
@@ -58,6 +58,8 @@ assert.equal(card.format, "elearning");
 assert.equal(card.duration_minutes, 90);
 assert.equal(card.url, "#");
 assert.equal(card.course_status, "open");
+assert.equal(mapCourseToCard({ id: "row-003", rating: "4.9" }).rating, null);
+assert.equal(mapCourseToCard({ id: "row-004", rating: "4.9", has_featured_testimonial: true }).rating, 4.9);
 
 // course -> card: ended status carries material_url through for the "Xem tài liệu" CTA
 const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended", material_url: "https://docs.example/lc-003" });

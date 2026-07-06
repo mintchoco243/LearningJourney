@@ -1,5 +1,6 @@
 import express from "express";
 import { query, withTransaction } from "../db.js";
+import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 
 export const coursesRouter = express.Router();
 
@@ -83,7 +84,8 @@ coursesRouter.get("/", async (req, res, next) => {
 
     const userResult = await query("SELECT role, rank, team FROM users WHERE id = $1", [req.user.id]);
     const user = userResult.rows[0] || {};
-    res.json({ courses: result.rows.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
+    const courses = await attachPublicCourseRatings(result.rows);
+    res.json({ courses: courses.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
   } catch (err) {
     next(err);
   }
@@ -103,7 +105,8 @@ coursesRouter.get("/:id", async (req, res, next) => {
       [req.params.id, req.user.id]
     );
     if (!result.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
-    res.json({ course: result.rows[0] });
+    const [course] = await attachPublicCourseRatings(result.rows);
+    res.json({ course });
   } catch (err) {
     next(err);
   }
@@ -160,6 +163,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
         already_completed: true,
       });
     }
+    const [course] = await attachPublicCourseRatings([result.course]);
     res.json({
       course_id: result.course.id,
       xp_earned: result.course.xp_reward,
@@ -167,7 +171,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       new_total_xp: result.user.xp_total,
       new_total_hours: result.user.hours_total,
       already_completed: false,
-      course: result.course,
+      course,
       enrollment: result.enrollment,
     });
   } catch (error) {
@@ -215,6 +219,7 @@ coursesRouter.delete("/:id/complete", async (req, res, next) => {
       return { missing: false, course: updatedCourse.rows[0] || c, user: user.rows[0], enrollment: e };
     });
     if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+    const [course] = await attachPublicCourseRatings([result.course]);
     res.json({
       course_id: result.course.id,
       xp_removed: result.missing ? 0 : Number(result.enrollment.xp_earned || 0),
@@ -222,7 +227,7 @@ coursesRouter.delete("/:id/complete", async (req, res, next) => {
       new_total_xp: result.user.xp_total,
       new_total_hours: result.user.hours_total,
       already_not_completed: result.missing,
-      course: result.course,
+      course,
     });
   } catch (error) {
     next(error);
@@ -231,10 +236,10 @@ coursesRouter.delete("/:id/complete", async (req, res, next) => {
 
 coursesRouter.get("/:id/testimonials", async (req, res) => {
   const result = await query(
-    `SELECT t.*, u.full_name, u.avatar_url
+    `SELECT t.*, u.full_name, u.team AS user_team, u.role AS user_role, u.avatar_url
      FROM testimonials t
      JOIN users u ON u.id = t.user_id
-     WHERE t.course_id = $1
+     WHERE t.course_id = $1 AND t.is_featured = TRUE
      ORDER BY t.is_featured DESC, t.created_at DESC`,
     [req.params.id]
   );
@@ -273,7 +278,7 @@ coursesRouter.post("/:id/testimonials", async (req, res, next) => {
       [req.params.id]
     );
     const result = await query(
-      `SELECT t.*, u.full_name, u.avatar_url FROM testimonials t
+      `SELECT t.*, u.full_name, u.team AS user_team, u.role AS user_role, u.avatar_url FROM testimonials t
        JOIN users u ON u.id = t.user_id
        WHERE t.course_id = $1 AND t.user_id = $2
        ORDER BY t.created_at DESC LIMIT 1`,

@@ -51,6 +51,17 @@ function normalizeSessionStatus(status) {
   return String(status || "open").trim().toLowerCase();
 }
 
+export function hasFeaturedTestimonial(row) {
+  if (!row) return false;
+  return row.has_featured_testimonial === true || Number(row.featured_testimonial_count || 0) > 0;
+}
+
+export function publicCourseRating(row) {
+  if (!hasFeaturedTestimonial(row)) return null;
+  const rating = Number(row.rating);
+  return Number.isFinite(rating) && rating > 0 ? rating : null;
+}
+
 function effectiveLifecycle(status, date, today = new Date()) {
   const normalized = normalizeSessionStatus(status);
   const remainingDays = daysUntil(date, today);
@@ -82,7 +93,9 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     trainer: s.trainer || "",
     duration_minutes: s.duration_hours != null ? Math.round(Number(s.duration_hours) * 60) : null,
     xp_reward: s.xp_reward,
-    rating: s.rating != null ? Number(s.rating) : null,
+    rating: publicCourseRating(s),
+    featured_testimonial_count: Number(s.featured_testimonial_count || 0),
+    has_featured_testimonial: hasFeaturedTestimonial(s),
     material_url: s.material_url || null,
     min_participants: s.min_participants ?? null,
     max_participants: s.max_participants ?? null,
@@ -145,7 +158,9 @@ export function mapCourseToCard(c, today = new Date()) {
     material_url: c.material_url || null,
     min_participants: c.min_participants ?? null,
     audience: c.audience || "Mọi cấp độ",
-    rating: c.rating != null ? Number(c.rating) : null,
+    rating: publicCourseRating(c),
+    featured_testimonial_count: Number(c.featured_testimonial_count || 0),
+    has_featured_testimonial: hasFeaturedTestimonial(c),
   };
 }
 

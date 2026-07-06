@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
-import { getCalendarEvents, getStaticCalendarCourses } from '@/lib/mockApi';
+import { getCalendarEvents } from '@/lib/mockApi';
 import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
 import { trackEvent } from '@/lib/analytics';
 
@@ -38,7 +38,7 @@ function ctaColor(cta) {
   /* ---------------- Catalog ---------------- */
   export function Catalog(props) {
     const { user } = useGame();
-    const [courses, setCourses] = React.useState(D.COURSES);
+    const [courses, setCourses] = React.useState([]);
     const [q, setQ] = React.useState("");
     const [fmtFilter,      setFmtFilter]      = React.useState("all");
     const [cmFilter,       setCmFilter]       = React.useState("all"); // Chuyên môn
@@ -53,11 +53,11 @@ function ctaColor(cta) {
         .then((data) => {
           const sourceCourses = Array.isArray(data?.courses)
             ? data.courses.map((course) => mapCourseToCard(course))
-            : D.COURSES;
+            : [];
           setCourses(sourceCourses);
         })
         .catch(() => {
-          setCourses(D.COURSES);
+          setCourses([]);
         });
     }, []);
 
@@ -274,7 +274,7 @@ function ctaColor(cta) {
     const _now = new Date();
     const [cursor, setCursor] = React.useState({ y: _now.getFullYear(), m: _now.getMonth() });
     const [skillFilter, setSkillFilter] = React.useState("all");
-    const [calendarEvents, setCalendarEvents] = React.useState(() => getStaticCalendarCourses());
+    const [calendarEvents, setCalendarEvents] = React.useState([]);
 
     React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
 

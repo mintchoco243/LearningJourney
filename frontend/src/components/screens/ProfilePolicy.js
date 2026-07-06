@@ -6,7 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLHParts } from '../GLHParts';
 import { GLH_DATA } from '@/data/glhData';
-import { getRecommendedCourses, getStaticCalendarCourses } from '@/lib/mockApi';
+import { getRecommendedCourses, getCalendarEvents } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
 import { rankCompassCourses, isCompletedCourse, Stat } from './Dashboard';
 
@@ -24,9 +24,11 @@ export function Profile(props) {
   const { user, actions } = useGame();
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [recommended, setRecommended] = React.useState([]);
+  const [calendarCourses, setCalendarCourses] = React.useState([]);
 
   React.useEffect(() => {
     getRecommendedCourses().then(setRecommended);
+    getCalendarEvents().then(setCalendarCourses);
   }, []);
 
   const qr = user.quiz_result;
@@ -44,11 +46,9 @@ export function Profile(props) {
   const completedCoursesFromApi = (user.completed_course_details || [])
     .map((course) => course?._id || course?.course_row_id ? course : mapCourseToCard(course))
     .filter(Boolean);
-  const completedCourses = (completedCoursesFromApi.length ? completedCoursesFromApi : (user.completed_courses || [])
-    .map((id) => D.COURSES.find((c) => c.course_id === id || c._id === id)))
-    .filter(Boolean);
+  const completedCourses = completedCoursesFromApi.filter(Boolean);
 
-  const allUpcoming = getStaticCalendarCourses();
+  const allUpcoming = calendarCourses;
   const registeredCourses = (user.registered_events || [])
     .map((id) => allUpcoming.find((c) => c.session_id === id || c._id === id || c.course_id === id))
     .filter(Boolean);

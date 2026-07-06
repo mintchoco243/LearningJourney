@@ -1,5 +1,6 @@
 import express from "express";
 import { query } from "../db.js";
+import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 
 export const meRouter = express.Router();
 
@@ -28,7 +29,8 @@ meRouter.get("/", async (req, res) => {
      ORDER BY s.session_date ASC`,
     [req.user.id]
   );
-  res.json({ user: profile.rows[0], enrollments: enrollments.rows, reservations: reservations.rows });
+  const publicEnrollments = await attachPublicCourseRatings(enrollments.rows, (row) => row.id || row.course_id);
+  res.json({ user: profile.rows[0], enrollments: publicEnrollments, reservations: reservations.rows });
 });
 
 meRouter.put("/", async (req, res) => {

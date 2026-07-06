@@ -4,7 +4,7 @@ import React from "react";
 import { GLHUI } from './GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
-import { getCourseCta } from '@/lib/courseMap.mjs';
+import { getCourseCta, publicCourseRating } from '@/lib/courseMap.mjs';
 import { trackEvent } from '@/lib/analytics';
 import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 
@@ -241,6 +241,8 @@ const D = GLH_DATA;
     const desc = c.description_short || c.description;
     const timeText = scheduleTime(c);
 
+    const rating = publicCourseRating(c);
+
     return React.createElement("button", {
       className: "u-card u-card--hover",
       style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
@@ -255,7 +257,7 @@ const D = GLH_DATA;
             FORMAT_LABEL[c.format] || c.format),
           statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: "rgba(138,147,168,0.14)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(138,147,168,0.22)" } },
             statusChipText)),
-        c.rating ? React.createElement(Stars, { value: c.rating }) : null,
+        rating ? React.createElement(Stars, { value: rating }) : null,
         // countdown (dashboard recommended only)
         showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
           c.countdown_days === 0 ? "Hôm nay" : "Còn " + c.countdown_days + " ngày"),
@@ -296,7 +298,7 @@ const D = GLH_DATA;
       const rowId = c._id || c.course_id;
       fetch(`/api/courses/${encodeURIComponent(rowId)}/testimonials`, { credentials: "include" })
         .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (active) setTestimonials(data?.testimonials?.length ? data.testimonials : null); })
+        .then((data) => { if (active) setTestimonials(Array.isArray(data?.testimonials) ? data.testimonials : []); })
         .catch(() => {});
       return () => { active = false; };
     }, [c]);
@@ -320,8 +322,9 @@ const D = GLH_DATA;
     const uncompletedNow = uncompletedCourseId === courseActionId;
     const done = !uncompletedNow && (completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
     const rec = isRecommended(c, user);
-    const rating = c.rating || meta.rating;
-    const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
+    const testimonialList = testimonials || [];
+    const featuredTestimonialRating = testimonialList.find((item) => item?.is_featured && item.rating)?.rating;
+    const rating = publicCourseRating(c) || (featuredTestimonialRating ? Number(featuredTestimonialRating) : null);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const modalCourse = Object.assign({}, c, {
       session_id: c.session_id || null,
@@ -406,7 +409,7 @@ const D = GLH_DATA;
       showActionError("Không thể đăng ký khóa học. Vui lòng thử lại.");
     };
     const handleRatingSubmitted = (testimonial) => {
-      if (testimonial) {
+      if (testimonial?.is_featured) {
         setTestimonials((items) => [testimonial, ...((items || []).filter((item) => item.id !== testimonial.id))]);
       }
       setRatingSubmittedCourseId(c.course_id);
@@ -502,9 +505,13 @@ const D = GLH_DATA;
             modalCourse.min_participants && !modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Tối thiểu mở lớp", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.min_participants }) : null,
             modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Số lượng", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.max_participants }) : null),
           testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
-            testimonialList.map((t, i) => React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
-              React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
-              React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + (t.full_name || t.author) + (t.role ? " · " + t.role : ""))))) : null,
+            testimonialList.map((t, i) => {
+              const reviewerName = t.full_name || t.user_name || t.author || "Người học";
+              const reviewerTeam = t.user_team || t.team || "";
+              return React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
+                React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
+                React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + reviewerName + (reviewerTeam ? " · " + reviewerTeam : "")));
+            })) : null,
           React.createElement(React.Fragment, null,
             cta.disabled
               ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, marginBottom: 12, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
