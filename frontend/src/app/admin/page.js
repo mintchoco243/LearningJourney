@@ -35,6 +35,33 @@ function AdminGateMessage({ title, message, action }) {
   );
 }
 
+function DevLoginButton() {
+  const [loading, setLoading] = React.useState(false);
+
+  async function login() {
+    setLoading(true);
+    try {
+      const res = await fetch("/auth/dev-login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: "demo@garena.vn" }),
+      });
+      if (!res.ok) throw new Error("DEV_LOGIN_FAILED");
+      window.location.reload();
+    } catch {
+      setLoading(false);
+      alert("Dev login failed. Please check backend port 5001.");
+    }
+  }
+
+  return (
+    <button className="adm-btn adm-btn--sec" onClick={login} disabled={loading}>
+      {loading ? "Dang dang nhap..." : "Dev login"}
+    </button>
+  );
+}
+
 
   
   
@@ -148,7 +175,12 @@ function AdminGateMessage({ title, message, action }) {
         <AdminGateMessage
           title="Can dang nhap"
           message="Dang nhap bang tai khoan Garena de tiep tuc vao man admin."
-          action={<a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Dang nhap Garena</a>}
+          action={
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+              <a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Dang nhap Garena</a>
+              {process.env.NODE_ENV !== "production" && <DevLoginButton />}
+            </div>
+          }
         />
       );
     }

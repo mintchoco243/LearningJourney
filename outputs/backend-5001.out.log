@@ -1,0 +1,126 @@
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+[0mPOST /auth/dev-login [32m200[0m 242.466 ms - 788[0m
+[0mGET /admin/api/users [32m200[0m 4.705 ms - 573[0m
+[0mGET /admin/api/courses [32m200[0m 1.558 ms - 2215[0m
+[0mGET /admin/api/users/1 [32m200[0m 2.010 ms - 2622[0m
+[0mPOST /auth/dev-login [32m200[0m 1.478 ms - 788[0m
+[0mGET /admin/api/users [32m200[0m 2.061 ms - 573[0m
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+[0mPOST /auth/dev-login [32m200[0m 507.436 ms - 788[0m
+[0mGET /admin/api/users [32m200[0m 4.926 ms - 1981[0m
+[0mGET /admin/api/courses [32m200[0m 2.011 ms - 2215[0m
+[0mPOST /admin/api/users/bulk [32m200[0m 2.639 ms - 705[0m
+[0mPATCH /admin/api/site-feedback/fb-1/status [33m404[0m 1.931 ms - 21[0m
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+[0mPOST /auth/dev-login [32m200[0m 399.496 ms - 788[0m
+[0mPUT /admin/api/site-feedback/fb-1 [32m200[0m 10.724 ms - 345[0m
+[0mGET /admin/api/site-feedback [32m200[0m 2.140 ms - 347[0m
+[0mGET /admin/api/me [32m200[0m 2.278 ms - 82[0m
+[0mGET /admin/api/ld-requests [36m304[0m 1.737 ms - -[0m
+[0mGET /admin/api/testimonials [36m304[0m 1.778 ms - -[0m
+[0mGET /admin/api/testimonials [36m304[0m 1.121 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.968 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 1.074 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 1.077 ms - -[0m
+
+==================================================
+📧 [EMAIL SENT]
+📅 Date: 2026-07-06T03:35:01.283Z
+👤 To: linh.nguyen@garena.vn
+📝 Subject: Cập nhật yêu cầu L&D của bạn: [pending]
+🌐 Content (HTML): <p>Chào Linh Nguyen,</p><p>Yêu cầu đào tạo của bạn gửi ngày <strong>2026-07-04T08:00:00.000Z</strong> đã được cập nhật trạng thái mới: <strong>pending</strong>.</p>
+==================================================
+
+[0mPUT /admin/api/ld-requests/ldr-1 [32m200[0m 3.493 ms - 203[0m
+
+==================================================
+📧 [EMAIL SENT]
+📅 Date: 2026-07-06T03:35:03.699Z
+👤 To: linh.nguyen@garena.vn
+📝 Subject: Cập nhật yêu cầu L&D của bạn: [approved]
+🌐 Content (HTML): <p>Chào Linh Nguyen,</p><p>Yêu cầu đào tạo của bạn gửi ngày <strong>2026-07-04T08:00:00.000Z</strong> đã được cập nhật trạng thái mới: <strong>approved</strong>.</p>
+==================================================
+
+[0mPUT /admin/api/ld-requests/ldr-1 [32m200[0m 2.668 ms - 203[0m
+[0mGET /admin/api/courses [32m200[0m 1.189 ms - 2215[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.759 ms - -[0m
+[0mGET /admin/api/courses [36m304[0m 0.851 ms - -[0m
+[0mGET /admin/api/policies [32m200[0m 1.139 ms - 202[0m
+[0mGET /admin/api/ld-requests [36m304[0m 1.009 ms - -[0m
+[0mGET /admin/api/policies [36m304[0m 1.358 ms - -[0m
+[0mGET /admin/api/testimonials [36m304[0m 0.773 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.769 ms - -[0m
+[0mGET /admin/api/testimonials [36m304[0m 0.900 ms - -[0m
+[0mGET /admin/api/site-feedback [32m200[0m 1.351 ms - 347[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.765 ms - -[0m
+[0mGET /admin/api/site-feedback [36m304[0m 0.700 ms - -[0m
+[0mPUT /admin/api/site-feedback/fb-1 [32m200[0m 1.478 ms - 345[0m
+[0mPUT /admin/api/site-feedback/fb-1 [32m200[0m 0.894 ms - 345[0m
+[0mGET /admin/api/courses [36m304[0m 0.709 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.646 ms - -[0m
+[0mGET /admin/api/courses [36m304[0m 0.734 ms - -[0m
+[0mGET /admin/api/users [32m200[0m 1.236 ms - 1981[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.734 ms - -[0m
+[0mGET /admin/api/users [36m304[0m 0.972 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 3.401 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 0.793 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 2.118 ms - -[0m
+
+==================================================
+📧 [EMAIL SENT]
+📅 Date: 2026-07-06T03:38:11.814Z
+👤 To: linh.nguyen@garena.vn
+📝 Subject: Cập nhật yêu cầu L&D của bạn: [approved]
+🌐 Content (HTML): <p>Chào Linh Nguyen,</p><p>Yêu cầu đào tạo của bạn gửi ngày <strong>2026-07-04T08:00:00.000Z</strong> đã được cập nhật trạng thái mới: <strong>approved</strong>.</p>
+==================================================
+
+[0mPUT /admin/api/ld-requests/ldr-1 [32m200[0m 2.705 ms - 203[0m
+[0mGET /admin/api/users [36m304[0m 1.031 ms - -[0m
+[0mGET /admin/api/ld-requests [36m304[0m 1.268 ms - -[0m
+[0mGET /admin/api/users [36m304[0m 1.922 ms - -[0m
+[0mGET /admin/api/users/1 [32m200[0m 10.005 ms - 2622[0m
+[0mGET /admin/api/users/1 [36m304[0m 1.225 ms - -[0m
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+ver/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001
+Restarting 'server/index.js'
+Failed running 'server/index.js'. Waiting for file changes before restarting...
+Restarting 'server/index.js'
+Garena Learning Hub listening on :5001

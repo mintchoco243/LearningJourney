@@ -15,6 +15,30 @@ function fitTag(course, user) {
   return null;
 }
 
+const REQUIRED_TESTIMONIAL_RATING_KEYS = ["overall", "content", "trainer", "organization_support"];
+
+function normalizeIntegerRating(value) {
+  const rating = Number(value);
+  return Number.isInteger(rating) && rating >= 1 && rating <= 5 ? rating : null;
+}
+
+function normalizeTestimonialRatings(body, fallbackRating) {
+  const source = body?.aspect_ratings && typeof body.aspect_ratings === "object"
+    ? body.aspect_ratings
+    : {};
+  const ratings = {};
+  for (const key of REQUIRED_TESTIMONIAL_RATING_KEYS) {
+    const normalized = normalizeIntegerRating(source[key] ?? (key === "overall" ? body?.overall_rating : undefined) ?? fallbackRating);
+    if (!normalized) return null;
+    ratings[key] = normalized;
+  }
+  return ratings;
+}
+
+function cleanOptionalText(value) {
+  return String(value || "").trim() || null;
+}
+
 coursesRouter.get("/", async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page || 1), 1);
@@ -96,7 +120,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       const c = course.rows[0];
       const enrollment = await client.query(
         `INSERT INTO enrollments (user_id, course_id, source, xp_earned, hours_earned)
-         VALUES ($1, $2, 'self_reported', $3, $4)
+         VALUES ($1, $2, 'self_marked', $3, $4)
          ON CONFLICT (user_id, course_id) DO NOTHING
          RETURNING *`,
         [req.user.id, c.id, c.xp_reward, c.duration_hours]
@@ -112,11 +136,17 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
       await client.query(
         `UPDATE courses
-         SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1)
+         SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1),
+             updated_at = NOW()
          WHERE id = $1`,
         [c.id]
       );
-      return { duplicate: false, course: c, user: user.rows[0] };
+      const savedEnrollment = await client.query(
+        "SELECT * FROM enrollments WHERE user_id = $1 AND course_id = $2",
+        [req.user.id, c.id]
+      );
+      const updatedCourse = await client.query("SELECT * FROM courses WHERE id = $1", [c.id]);
+      return { duplicate: false, course: updatedCourse.rows[0] || c, user: user.rows[0], enrollment: savedEnrollment.rows[0] };
     });
     if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
     if (result.duplicate) {
@@ -139,6 +169,62 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       new_total_xp: result.user.xp_total,
       new_total_hours: result.user.hours_total,
       already_completed: false,
+      course: result.course,
+      enrollment: result.enrollment,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+coursesRouter.delete("/:id/complete", async (req, res, next) => {
+  try {
+    const result = await withTransaction(async (client) => {
+      const course = await client.query(
+        "SELECT * FROM courses WHERE id = $1 AND is_active = TRUE",
+        [req.params.id]
+      );
+      if (!course.rowCount) return null;
+      const c = course.rows[0];
+      const enrollment = await client.query(
+        "SELECT * FROM enrollments WHERE user_id = $1 AND course_id = $2",
+        [req.user.id, c.id]
+      );
+      if (!enrollment.rowCount) {
+        const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
+        return { missing: true, course: c, user: user.rows[0] };
+      }
+
+      const e = enrollment.rows[0];
+      await client.query("DELETE FROM enrollments WHERE id = $1", [e.id]);
+      await client.query(
+        `UPDATE users
+         SET xp_total = GREATEST(xp_total - $2, 0),
+             hours_total = GREATEST(hours_total - $3, 0),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [req.user.id, Number(e.xp_earned || 0), Number(e.hours_earned || 0)]
+      );
+      await client.query(
+        `UPDATE courses
+         SET enrolled_count = (SELECT COUNT(*) FROM enrollments WHERE course_id = $1),
+             updated_at = NOW()
+         WHERE id = $1`,
+        [c.id]
+      );
+      const user = await client.query("SELECT xp_total, hours_total FROM users WHERE id = $1", [req.user.id]);
+      const updatedCourse = await client.query("SELECT * FROM courses WHERE id = $1", [c.id]);
+      return { missing: false, course: updatedCourse.rows[0] || c, user: user.rows[0], enrollment: e };
+    });
+    if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+    res.json({
+      course_id: result.course.id,
+      xp_removed: result.missing ? 0 : Number(result.enrollment.xp_earned || 0),
+      hours_removed: result.missing ? 0 : Number(result.enrollment.hours_earned || 0),
+      new_total_xp: result.user.xp_total,
+      new_total_hours: result.user.hours_total,
+      already_not_completed: result.missing,
+      course: result.course,
     });
   } catch (error) {
     next(error);
@@ -157,25 +243,46 @@ coursesRouter.get("/:id/testimonials", async (req, res) => {
   res.json({ testimonials: result.rows });
 });
 
-coursesRouter.post("/:id/testimonials", async (req, res) => {
-  const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [req.user.id, req.params.id]);
-  if (!completed.rowCount) return res.status(403).json({ error: "COMPLETE_COURSE_FIRST" });
-  await query(
-    `INSERT INTO testimonials (course_id, user_id, rating, content) VALUES ($1, $2, $3, $4)`,
-    [req.params.id, req.user.id, req.body.rating, req.body.content || null]
-  );
-  await query(
-    `UPDATE courses SET rating = (
-       SELECT ROUND(AVG(rating), 1) FROM testimonials WHERE course_id = $1
-     ) WHERE id = $1`,
-    [req.params.id]
-  );
-  const result = await query(
-    `SELECT t.*, u.full_name, u.avatar_url FROM testimonials t
-     JOIN users u ON u.id = t.user_id
-     WHERE t.course_id = $1 AND t.user_id = $2
-     ORDER BY t.created_at DESC LIMIT 1`,
-    [req.params.id, req.user.id]
-  );
-  res.status(201).json({ testimonial: result.rows[0] });
+coursesRouter.post("/:id/testimonials", async (req, res, next) => {
+  try {
+    const rating = normalizeIntegerRating(req.body.overall_rating ?? req.body.rating);
+    if (!rating) {
+      return res.status(400).json({ error: "INVALID_RATING" });
+    }
+    const aspectRatings = normalizeTestimonialRatings(req.body, rating);
+    if (!aspectRatings) return res.status(400).json({ error: "INVALID_ASPECT_RATINGS" });
+
+    const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [req.user.id, req.params.id]);
+    if (!completed.rowCount) return res.status(403).json({ error: "COMPLETE_COURSE_FIRST" });
+
+    const appliedLearning = cleanOptionalText(req.body.applied_learning);
+    const improvementFeedback = cleanOptionalText(req.body.improvement_feedback);
+    const content = cleanOptionalText(req.body.content) || improvementFeedback || appliedLearning;
+
+    await query(
+      `INSERT INTO testimonials (
+         course_id, user_id, rating, content, aspect_ratings, applied_learning, improvement_feedback
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [req.params.id, req.user.id, rating, content, JSON.stringify(aspectRatings), appliedLearning, improvementFeedback]
+    );
+    await query(
+      `UPDATE courses
+       SET rating = (
+         SELECT ROUND(AVG(rating), 1) FROM testimonials WHERE course_id = $1
+       ),
+       updated_at = NOW()
+       WHERE id = $1`,
+      [req.params.id]
+    );
+    const result = await query(
+      `SELECT t.*, u.full_name, u.avatar_url FROM testimonials t
+       JOIN users u ON u.id = t.user_id
+       WHERE t.course_id = $1 AND t.user_id = $2
+       ORDER BY t.created_at DESC LIMIT 1`,
+      [req.params.id, req.user.id]
+    );
+    res.status(201).json({ testimonial: result.rows[0] });
+  } catch (error) {
+    next(error);
+  }
 });

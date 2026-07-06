@@ -90,7 +90,8 @@ sessionsRouter.post("/:id/reserve", async (req, res, next) => {
              session_status = CASE
                WHEN max_participants IS NOT NULL AND $2 >= max_participants THEN 'full'
                ELSE session_status
-             END
+             END,
+             updated_at = NOW()
          WHERE id = $1`,
         [req.params.id, newCount]
       );
@@ -170,7 +171,8 @@ sessionsRouter.delete("/:id/reserve", async (req, res, next) => {
         `UPDATE courses
          SET current_count = $2,
              status = CASE WHEN status = 'full' THEN 'open' ELSE status END,
-             session_status = CASE WHEN session_status = 'full' THEN 'open' ELSE session_status END
+             session_status = CASE WHEN session_status = 'full' THEN 'open' ELSE session_status END,
+             updated_at = NOW()
          WHERE id = $1`,
         [req.params.id, activeCount]
       );

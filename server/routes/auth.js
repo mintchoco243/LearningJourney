@@ -5,6 +5,10 @@ import { requireAuth } from "../middleware/requireAuth.js";
 
 export const authRouter = express.Router();
 
+function isInactive(user) {
+  return user?.is_active === false || user?.is_active === 0;
+}
+
 function safeReturnTo(value) {
   if (typeof value !== "string") return "/";
   if (!value.startsWith("/") || value.startsWith("//")) return "/";
@@ -38,6 +42,7 @@ authRouter.get("/callback", async (req, res, next) => {
   try {
     const profile = await getGoogleProfile(req.query.code);
     const user = await upsertUser(profile);
+    if (isInactive(user)) return res.status(403).json({ error: "USER_INACTIVE" });
     const token = signToken(user);
     setAuthCookie(res, token);
     const returnTo = safeReturnTo(req.cookies?.glh_return_to);
@@ -61,6 +66,7 @@ authRouter.post("/dev-login", async (req, res, next) => {
       if (!admin.rowCount) return res.status(403).json({ error: "ADMIN_REQUIRED" });
     }
     const user = await devLoginUser(email);
+    if (isInactive(user)) return res.status(403).json({ error: "USER_INACTIVE" });
     const token = signToken(user);
     setAuthCookie(res, token);
     res.json({ token, user });

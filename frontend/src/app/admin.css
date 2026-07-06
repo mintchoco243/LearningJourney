@@ -829,9 +829,34 @@ textarea {
   overflow: hidden;
 }
 
+.adm-table-wrap--scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-color: rgba(154, 170, 215, 0.55) rgba(255, 255, 255, 0.04);
+  scrollbar-width: thin;
+}
+
+.adm-table-wrap--scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.adm-table-wrap--scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.adm-table-wrap--scroll::-webkit-scrollbar-thumb {
+  background: rgba(154, 170, 215, 0.45);
+  border-radius: 999px;
+}
+
 .adm-table {
   width: 100%;
   border-collapse: collapse;
+}
+
+.adm-users-table {
+  min-width: 1540px;
 }
 
 .adm-table th {
@@ -873,6 +898,23 @@ textarea {
 
 .adm-table tbody tr.is-pending td:first-child {
   border-left: 2px solid var(--glh-accent);
+}
+
+.adm-table-sticky-action {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: var(--rpg-panel);
+  box-shadow: -12px 0 18px rgba(7, 10, 16, 0.42);
+}
+
+.adm-table th.adm-table-sticky-action {
+  z-index: 3;
+  background: #171d29;
+}
+
+.adm-table tbody tr:hover .adm-table-sticky-action {
+  background: #171d29;
 }
 
 /* ===== MODAL ===== */
@@ -1206,6 +1248,52 @@ textarea {
   border-radius: 999px;
   background: var(--glh-accent);
   transition: width 0.7s var(--ease-out);
+}
+
+.adm-bar-fill--teal {
+  background: #2bb6a3;
+}
+
+.adm-ga-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adm-ga-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adm-ga-metric {
+  border: 1px solid var(--rpg-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 0;
+}
+
+.adm-ga-metric__label {
+  color: var(--rpg-muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.adm-ga-metric__value {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.adm-ga-title {
+  color: var(--rpg-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 .adm-bar-val {

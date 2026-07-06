@@ -405,9 +405,13 @@ const D = ADM_DATA;
       course_code: t.course_code || t.course_id,
       course_title: t.course_title || t.title || t.course_code || t.course_id,
       user_name: t.user_name || t.full_name || "Người dùng",
-      user_role: t.user_role || t.user_team || "Learner",
+      user_role: t.user_role || "Learner",
+      user_team: t.user_team || "",
       rating: Number(t.rating || 0),
       content: t.content || "",
+      aspect_ratings: parseJsonMaybe(t.aspect_ratings, {}),
+      applied_learning: t.applied_learning || "",
+      improvement_feedback: t.improvement_feedback || "",
       is_featured: Boolean(t.is_featured),
       created_at: String(t.created_at || "").slice(0, 10),
     };
@@ -422,91 +426,191 @@ const D = ADM_DATA;
   export function SiteFeedbackScreen() {
     const [items, setItems] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
-    const aspectLabels = {
-      visual: "Hình thức",
-      content: "Nội dung",
-      usability: "Tiện lợi, dễ sử dụng",
-      usefulness: "Hữu ích cho tôi",
-    };
+    const [dateFilter, setDateFilter] = React.useState("");
+    const [ratingFilter, setRatingFilter] = React.useState("all");
+    const [statusFilter, setStatusFilter] = React.useState("all");
+    const [commentFilter, setCommentFilter] = React.useState("all");
+    const [detailItem, setDetailItem] = React.useState(null);
 
-    React.useEffect(() => {
-      apiFetch("/admin/api/site-feedback")
+    const normalize = React.useCallback((item) => {
+      return {
+        ...item,
+        aspect_ratings: parseJsonMaybe(item.aspect_ratings),
+        aspect_feedback: parseJsonMaybe(item.aspect_feedback),
+        status: item.status || "open",
+        created_at: String(item.created_at || "").slice(0, 16).replace("T", " "),
+      };
+    }, []);
+
+    const reload = React.useCallback(() => {
+      return apiFetch("/admin/api/site-feedback")
         .then(data => {
           const rows = Array.isArray(data.feedback) ? data.feedback : [];
-          setItems(rows.map(item => ({
-            ...item,
-            aspect_ratings: parseJsonMaybe(item.aspect_ratings),
-            aspect_feedback: parseJsonMaybe(item.aspect_feedback),
-            created_at: String(item.created_at || "").slice(0, 16).replace("T", " "),
-          })));
+          setItems(rows.map(normalize));
         })
-        .catch(() => {})
         .finally(() => setLoading(false));
-    }, []);
+    }, [normalize]);
+
+    React.useEffect(() => {
+      reload().catch(() => setLoading(false));
+    }, [reload]);
+
+    async function updateStatus(item, status) {
+      const data = await apiFetch(`/admin/api/site-feedback/${item.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const updated = normalize(data.feedback);
+      setItems(rows => rows.map(row => row.id === updated.id ? updated : row));
+      setDetailItem(current => current?.id === updated.id ? updated : current);
+    }
+
+    const ratingOf = (item, key) => item.aspect_ratings?.[key] || "-";
+    const userLabel = (item) => item.is_anonymous ? "Anonymous" : (item.user_name || "User");
+    const teamRole = (item) => item.is_anonymous ? "-" : ([item.user_team, item.user_role].filter(Boolean).join(" / ") || "-");
+    const hasComment = (item) => Boolean(String(item.additional_feedback || "").trim());
+    const filtered = items.filter(item => {
+      if (dateFilter && !String(item.created_at || "").startsWith(dateFilter)) return false;
+      if (ratingFilter !== "all" && Number(item.overall_rating) !== Number(ratingFilter)) return false;
+      if (statusFilter !== "all" && item.status !== statusFilter) return false;
+      if (commentFilter === "yes" && !hasComment(item)) return false;
+      if (commentFilter === "no" && hasComment(item)) return false;
+      return true;
+    });
 
     return (
       <div data-screen-label="Site Feedback">
         <PageHeader
           title="Site Feedback"
-          subtitle={`${items.length} đánh giá từ người dùng`}
+          subtitle={`${filtered.length}/${items.length} feedback entries`}
         />
 
-        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải feedback...</div>}
+        <div className="adm-filter-row">
+          <input className="adm-input" type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ maxWidth: 170 }} />
+          <select className="adm-select" value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={{ maxWidth: 150 }}>
+            <option value="all">All ratings</option>
+            {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} stars</option>)}
+          </select>
+          <select className="adm-select" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ maxWidth: 150 }}>
+            <option value="all">All status</option>
+            {["open", "reviewed", "resolved"].map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select className="adm-select" value={commentFilter} onChange={e => setCommentFilter(e.target.value)} style={{ maxWidth: 160 }}>
+            <option value="all">All comments</option>
+            <option value="yes">Has comment</option>
+            <option value="no">No comment</option>
+          </select>
+        </div>
 
-        <div style={{ display: "grid", gap: 12 }}>
-          {items.map(item => (
-            <div key={item.id} className="adm-section-card" style={{ margin: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginBottom: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 700, color: "#fff", fontSize: 14 }}>
-                    {item.is_anonymous ? "Ẩn danh" : (item.user_name || "Người dùng")}
-                  </div>
-                  {!item.is_anonymous && (
-                    <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 3 }}>
-                      {[item.user_team, item.user_role].filter(Boolean).join(" · ") || "Chưa có team/role"}
-                    </div>
-                  )}
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "var(--amber)", fontWeight: 800, fontSize: 18 }}>{item.overall_rating}/5</div>
-                  <div style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{item.created_at}</div>
-                </div>
-              </div>
+        {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Loading feedback...</div>}
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: item.additional_feedback ? 12 : 0 }}>
-                {Object.entries(aspectLabels).map(([key, label]) => (
-                  <div key={key} style={{ border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, background: "rgba(255,255,255,0.03)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: item.aspect_feedback?.[key] ? 6 : 0 }}>
-                      <span style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 700 }}>{label}</span>
-                      <span style={{ color: "var(--rpg-text)", fontSize: 12, fontWeight: 800 }}>{item.aspect_ratings?.[key] || "-"}/5</span>
-                    </div>
-                    {item.aspect_feedback?.[key] && (
-                      <div style={{ color: "var(--rpg-text)", fontSize: 12, lineHeight: 1.5 }}>{item.aspect_feedback[key]}</div>
-                    )}
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th style={{ width: 130 }}>Date</th>
+                <th style={{ minWidth: 150 }}>User</th>
+                <th style={{ minWidth: 150 }}>Team/Role</th>
+                <th style={{ width: 90 }}>Overall</th>
+                <th style={{ width: 80 }}>UI</th>
+                <th style={{ width: 90 }}>Content</th>
+                <th style={{ width: 105 }}>Navigation</th>
+                <th style={{ width: 110 }}>Performance</th>
+                <th>Additional feedback</th>
+                <th style={{ width: 130 }}>Status</th>
+                <th style={{ width: 90 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!loading && filtered.map(item => (
+                <tr key={item.id}>
+                  <td style={{ color: "var(--rpg-muted)", fontSize: 12 }}>{item.created_at}</td>
+                  <td style={{ color: "#fff", fontWeight: 700 }}>{userLabel(item)}</td>
+                  <td style={{ color: "var(--rpg-muted)", fontSize: 12 }}>{teamRole(item)}</td>
+                  <td style={{ color: "var(--amber)", fontWeight: 800 }}>{item.overall_rating}/5</td>
+                  <td>{ratingOf(item, "visual")}</td>
+                  <td>{ratingOf(item, "content")}</td>
+                  <td>{ratingOf(item, "usability")}</td>
+                  <td>{ratingOf(item, "usefulness")}</td>
+                  <td style={{ maxWidth: 280, color: "var(--rpg-muted)", fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.additional_feedback || "-"}
+                  </td>
+                  <td>
+                    <select className="adm-select" value={item.status} onChange={e => updateStatus(item, e.target.value)} style={{ minWidth: 112, fontSize: 12, padding: "6px 28px 6px 10px" }}>
+                      {["open", "reviewed", "resolved"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td>
+                    <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setDetailItem(item)}>Detail</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!loading && filtered.length === 0 && <div className="adm-empty">No feedback matches the filters.</div>}
+        </div>
+
+        <Modal open={!!detailItem} onClose={() => setDetailItem(null)} title="Feedback detail" width={700}>
+          {detailItem && (
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,minmax(0,1fr))", gap: 10, marginBottom: 16 }}>
+                {[
+                  ["Date", detailItem.created_at],
+                  ["User", userLabel(detailItem)],
+                  ["Team/Role", teamRole(detailItem)],
+                  ["Overall", `${detailItem.overall_rating}/5`],
+                  ["Status", detailItem.status],
+                  ["Has comment", hasComment(detailItem) ? "Yes" : "No"],
+                ].map(([label, value]) => (
+                  <div key={label} style={{ border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 10, background: "rgba(255,255,255,.03)" }}>
+                    <div style={{ color: "var(--rpg-muted)", fontSize: 10, textTransform: "uppercase", letterSpacing: ".06em", marginBottom: 5 }}>{label}</div>
+                    <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>{value || "-"}</div>
                   </div>
                 ))}
               </div>
-
-              {item.additional_feedback && (
-                <p style={{ margin: 0, color: "var(--rpg-text)", fontSize: 13, lineHeight: 1.6 }}>
-                  {item.additional_feedback}
-                </p>
-              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4,minmax(0,1fr))", gap: 10, marginBottom: 16 }}>
+                {[
+                  ["UI", "visual"],
+                  ["Content", "content"],
+                  ["Navigation", "usability"],
+                  ["Performance", "usefulness"],
+                ].map(([label, key]) => (
+                  <div key={key} style={{ border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 10, background: "rgba(255,255,255,.03)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: detailItem.aspect_feedback?.[key] ? 8 : 0 }}>
+                      <span style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 700 }}>{label}</span>
+                      <span style={{ color: "#fff", fontWeight: 800 }}>{ratingOf(detailItem, key)}/5</span>
+                    </div>
+                    {detailItem.aspect_feedback?.[key] && <div style={{ color: "var(--rpg-text)", fontSize: 12, lineHeight: 1.5 }}>{detailItem.aspect_feedback[key]}</div>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 12, background: "rgba(255,255,255,.03)", color: "var(--rpg-text)", fontSize: 13, lineHeight: 1.6 }}>
+                {detailItem.additional_feedback || "No additional feedback."}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
+                {["open", "reviewed", "resolved"].map(s => (
+                  <button key={s} className={`adm-btn adm-btn--sm${detailItem.status === s ? " adm-btn--primary" : " adm-btn--sec"}`} onClick={() => updateStatus(detailItem, s)}>{s}</button>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-
-        {!loading && items.length === 0 && (
-          <div className="adm-empty" style={{ marginTop: 28 }}>Chưa có site feedback nào.</div>
-        )}
+          )}
+        </Modal>
       </div>
     );
   }
 
   export function TestimonialsScreen() {
-    const [testimonials, setTestimonials] = React.useState(D.ADMIN_TESTIMONIALS);
+    const [testimonials, setTestimonials] = React.useState(() => D.ADMIN_TESTIMONIALS.map(normalizeTestimonial));
     const [filterCourse, setFilterCourse] = React.useState("all");
+    const [selected, setSelected] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
+    const aspectLabels = {
+      overall: "Tổng thể",
+      content: "Nội dung",
+      trainer: "Giảng viên",
+      organization_support: "Tổ chức & hỗ trợ",
+    };
 
     React.useEffect(() => {
       apiFetch("/admin/api/testimonials")
@@ -563,35 +667,93 @@ const D = ADM_DATA;
           </div>
         </div>
 
-        <div className="adm-testimonial-grid">
-          {filtered.map(t => (
-            <div key={t.id} className={`adm-testimonial-card${t.is_featured?" is-featured":""}`}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: "#fff" }}>{t.user_name}</div>
-                  <div style={{ fontSize: 11, color: "var(--rpg-muted)", marginTop: 2 }}>{t.user_role}</div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                  {t.is_featured && <Badge status="featured" />}
-                  <Toggle value={t.is_featured} onChange={() => toggleFeatured(t.id)} />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 2, marginBottom: 9 }}>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Icon key={i} name="star" size={13} color={i < t.rating ? "var(--amber)" : "var(--rpg-faint)"} fill={i < t.rating ? "var(--amber)" : "none"} />
-                ))}
-              </div>
-              <p style={{ fontSize: 12, color: "var(--rpg-text)", lineHeight: 1.65, margin: "0 0 11px" }}>&quot;{t.content}&quot;</p>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--rpg-faint)" }}>
-                <span>{t.course_title}</span>
-                <span>{t.created_at}</span>
-              </div>
-            </div>
-          ))}
+        <div className="adm-table-wrap">
+          <table className="adm-table">
+            <thead>
+              <tr>
+                <th>Khóa học</th>
+                <th>Người gửi</th>
+                <th>Tổng thể</th>
+                <th>Nội dung</th>
+                <th>Giảng viên</th>
+                <th>Tổ chức & hỗ trợ</th>
+                <th>Điều áp dụng được</th>
+                <th>Góp ý cải thiện</th>
+                <th>Ngày gửi</th>
+                <th>Nổi bật</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(t => (
+                <tr key={t.id}>
+                  <td>
+                    <div style={{ fontWeight: 700, color: "#fff" }}>{t.course_title}</div>
+                    <div style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{t.course_code}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontWeight: 700, color: "#fff" }}>{t.user_name}</div>
+                    <div style={{ color: "var(--rpg-muted)", fontSize: 11 }}>{[t.user_team, t.user_role].filter(Boolean).join(" · ")}</div>
+                  </td>
+                  <td style={{ color: "var(--amber)", fontWeight: 800 }}>{t.aspect_ratings.overall || t.rating}/5</td>
+                  <td>{t.aspect_ratings.content || "-"}/5</td>
+                  <td>{t.aspect_ratings.trainer || "-"}/5</td>
+                  <td>{t.aspect_ratings.organization_support || "-"}/5</td>
+                  <td style={{ maxWidth: 220 }}>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.applied_learning || "-"}</div>
+                  </td>
+                  <td style={{ maxWidth: 220 }}>
+                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.improvement_feedback || t.content || "-"}</div>
+                  </td>
+                  <td>{t.created_at}</td>
+                  <td>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      {t.is_featured && <Badge status="featured" />}
+                      <Toggle value={t.is_featured} onChange={() => toggleFeatured(t.id)} />
+                    </div>
+                  </td>
+                  <td>
+                    <button className="adm-btn adm-btn--sec" onClick={() => setSelected(t)}>
+                      <Icon name="eye" size={13} /> Xem
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         {!loading && filtered.length === 0 && (
           <div className="adm-empty" style={{ marginTop: 28 }}>Chưa có testimonial nào từ user.</div>
         )}
+
+        <Modal open={!!selected} onClose={() => setSelected(null)} title="Chi tiết đánh giá khóa học" width={720}>
+          {selected && (
+            <div style={{ display: "grid", gap: 16 }}>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: 16 }}>{selected.course_title}</div>
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
+                  {selected.user_name} · {[selected.user_team, selected.user_role].filter(Boolean).join(" · ") || "Learner"} · {selected.created_at}
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10 }}>
+                {Object.entries(aspectLabels).map(([key, label]) => (
+                  <div key={key} style={{ border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, background: "rgba(255,255,255,0.03)" }}>
+                    <div style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 700 }}>{label}</div>
+                    <div style={{ color: key === "overall" ? "var(--amber)" : "#fff", fontWeight: 900, fontSize: 18, marginTop: 4 }}>{selected.aspect_ratings[key] || (key === "overall" ? selected.rating : "-")}/5</div>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>Điều học được và có thể áp dụng</div>
+                <p style={{ margin: 0, color: "var(--rpg-text)", lineHeight: 1.65 }}>{selected.applied_learning || "Không có phản hồi."}</p>
+              </div>
+              <div>
+                <div style={{ color: "var(--rpg-muted)", fontSize: 12, fontWeight: 800, marginBottom: 6 }}>Phản hồi / gợi ý cải thiện</div>
+                <p style={{ margin: 0, color: "var(--rpg-text)", lineHeight: 1.65 }}>{selected.improvement_feedback || selected.content || "Không có phản hồi."}</p>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     );
   }

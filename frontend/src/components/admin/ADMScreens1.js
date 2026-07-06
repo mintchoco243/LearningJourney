@@ -17,6 +17,14 @@ const COURSE_TYPES = [
   { id: "material_only", label: "Tài liệu / recording" },
 ];
 
+const COURSE_STATUSES = [
+  { id: "draft", label: "Nháp" },
+  { id: "open", label: "Đang mở" },
+  { id: "full", label: "Đã đủ slot / nhu cầu" },
+  { id: "ended", label: "Đã tổ chức xong" },
+  { id: "cancelled", label: "Đã hủy" },
+];
+
 
   
   
@@ -95,6 +103,7 @@ const COURSE_TYPES = [
   export function Dashboard() {
     const [stats, setStats] = React.useState(D.ADMIN_STATS);
     const [pendingReqs, setPendingReqs] = React.useState(D.ADMIN_REQUESTS.filter(r => r.status === "pending"));
+    const [analytics, setAnalytics] = React.useState(null);
 
     React.useEffect(() => {
       apiFetch("/admin/api/stats").then(data => {
@@ -121,11 +130,17 @@ const COURSE_TYPES = [
           })));
         }
       }).catch(() => {});
+      apiFetch("/admin/api/analytics").then(data => setAnalytics(data)).catch(() => setAnalytics(null));
     }, []);
 
     const s = stats;
-    const total = (s.enrollments_breakdown || []).reduce((a, i) => a + i.count, 0) || 1;
     const maxE  = Math.max(...(s.top_courses || []).map(c => c.enrollments), 1);
+    const metrics = analytics?.metrics || {};
+    const topGaPages = analytics?.top_pages || [];
+    const maxGaViews = Math.max(...topGaPages.map(page => Number(page.views) || 0), 1);
+    const courseViews = Number(metrics.course_views) || 0;
+    const registerClicks = Number(metrics.register_clicks) || 0;
+    const maxGaEvent = Math.max(courseViews, registerClicks, 1);
 
     return (
       <div data-screen-label="Dashboard">
@@ -157,23 +172,67 @@ const COURSE_TYPES = [
               </div>
             </SectionCard>
 
-            {(s.enrollments_breakdown || []).length > 0 && (
-              <SectionCard title={`Breakdown theo nguồn · ${total} enrollments`}>
-                <div className="adm-source-list">
-                  {s.enrollments_breakdown.map((item, i) => (
-                    <div key={i} className="adm-source-item">
-                      <span className="adm-source-dot" style={{ background: item.color }} />
-                      <span className="adm-source-name">{item.source}</span>
-                      <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,.06)", borderRadius: 999, overflow: "hidden", maxWidth: 180 }}>
-                        <div style={{ height: "100%", background: item.color, borderRadius: 999, width: `${(item.count / total) * 100}%`, transition: "width .7s" }} />
+            <SectionCard title="Site Analytics">
+              {analytics?.implemented ? (
+                <div className="adm-ga-dashboard">
+                  <div className="adm-ga-metrics">
+                    {[
+                      ["Users", metrics.users],
+                      ["Sessions", metrics.sessions],
+                      ["Pageviews", metrics.pageviews],
+                      ["Active today", metrics.active_users_today],
+                      ["Course views", metrics.course_views],
+                      ["Register clicks", metrics.register_clicks],
+                      ["Conversion rate", metrics.conversion_rate],
+                    ].map(([label, value]) => (
+                      <div key={label} className="adm-ga-metric">
+                        <div className="adm-ga-metric__label">{label}</div>
+                        <div className="adm-ga-metric__value">{value ?? "-"}</div>
                       </div>
-                      <span className="adm-source-count">{item.count}</span>
-                      <span className="adm-source-pct">{Math.round((item.count / total) * 100)}%</span>
+                    ))}
+                  </div>
+
+                  <div>
+                    <div className="adm-ga-title">Course funnel</div>
+                    <div className="adm-bar-chart">
+                      {[
+                        ["Course views", courseViews],
+                        ["Register clicks", registerClicks],
+                      ].map(([label, value]) => (
+                        <div key={label} className="adm-bar-row">
+                          <span className="adm-bar-name" title={label}>{label}</span>
+                          <div className="adm-bar-track">
+                            <div className="adm-bar-fill adm-bar-fill--teal" style={{ width: `${(value / maxGaEvent) * 100}%` }} />
+                          </div>
+                          <span className="adm-bar-val">{value}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  {topGaPages.length > 0 && (
+                    <div>
+                      <div className="adm-ga-title">Top pages</div>
+                      <div className="adm-bar-chart">
+                        {topGaPages.map((page, i) => (
+                          <div key={`${page.path || page.title}-${i}`} className="adm-bar-row">
+                            <span className="adm-bar-name" title={page.path || page.title}>{page.path || page.title}</span>
+                            <div className="adm-bar-track">
+                              <div className="adm-bar-fill" style={{ width: `${((Number(page.views) || 0) / maxGaViews) * 100}%` }} />
+                            </div>
+                            <span className="adm-bar-val">{page.views}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </SectionCard>
-            )}
+              ) : (
+                <div className="adm-empty" style={{ margin: 0 }}>
+                  {analytics?.message || "GA Data API is not configured yet. Analytics tracking can still be enabled with NEXT_PUBLIC_GA_MEASUREMENT_ID."}
+                </div>
+              )}
+            </SectionCard>
           </div>
 
           <SectionCard title="L&D Requests chờ duyệt">
@@ -236,7 +295,7 @@ const COURSE_TYPES = [
     const [confirmTarget, setConfirmTarget] = React.useState(null);
     const [confirming, setConfirming] = React.useState(false);
     const [syncModal, setSyncModal] = React.useState(false);
-    const [batchActionModal, setBatchActionModal] = React.useState(null); // null | {type, title} where type = 'format'|'is_active'|'rank_targets'|'xp_reward'
+    const [batchActionModal, setBatchActionModal] = React.useState(null); // null | {type, title} where type = 'format'|'is_active'|'rank_targets'|'xp_reward'|'status'|'type'
     const [batchValue, setBatchValue] = React.useState("");
     const [batchRanks, setBatchRanks] = React.useState([]);
     const [editTarget, setEditTarget] = React.useState(null);
@@ -304,12 +363,12 @@ const COURSE_TYPES = [
             rank_targets: course.rank_targets,
             role_targets: course.role_targets,
             skill_tags: course.skill_tags,
-            type: course.type,
+            type: type === 'type' ? batchValue : course.type,
             xp_reward: course.xp_reward,
             rating: course.rating || 0,
             description: course.description,
             registration_url: course.registration_url,
-            status: course.status,
+            status: type === 'status' ? batchValue : course.status,
             material_url: course.material_url,
             min_participants: course.min_participants ?? null,
             session_date: course.session_date || null,
@@ -527,6 +586,12 @@ const COURSE_TYPES = [
               <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'format', title: 'Chọn format' })}>
                 <Icon name="layers" size={13} /> Format
               </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'status', title: 'Chọn status' })}>
+                <Icon name="check-circle" size={13} /> Status
+              </button>
+              <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'type', title: 'Chọn type' })}>
+                <Icon name="layers" size={13} /> Type
+              </button>
               <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setBatchActionModal({ type: 'is_active', title: 'Chọn hiển thị' })}>
                 <Icon name="eye" size={13} /> Hiển thị
               </button>
@@ -683,6 +748,30 @@ const COURSE_TYPES = [
                     <option value="">-- Chọn format --</option>
                     {["online","offline","elearning","webinar","workshop","bootcamp","talk"].map(f => (
                       <option key={f} value={f}>{f.charAt(0).toUpperCase()+f.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {batchActionModal.type === 'status' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">Status</label>
+                  <select className="adm-select" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+                    <option value="">-- Chọn status --</option>
+                    {COURSE_STATUSES.map(s => (
+                      <option key={s.id} value={s.id}>{s.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {batchActionModal.type === 'type' && (
+                <div className="adm-form-group">
+                  <label className="adm-label">Type</label>
+                  <select className="adm-select" value={batchValue} onChange={e => setBatchValue(e.target.value)}>
+                    <option value="">-- Chọn type --</option>
+                    {COURSE_TYPES.map(t => (
+                      <option key={t.id} value={t.id}>{t.label}</option>
                     ))}
                   </select>
                 </div>

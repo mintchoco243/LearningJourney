@@ -120,6 +120,14 @@ async function detectAlreadyApplied(file) {
     if (file.startsWith("012_")) {
       return await tableExists("site_feedback");
     }
+    // 013_testimonial_survey
+    if (file.startsWith("013_")) {
+      return (
+        (await columnExists("testimonials", "aspect_ratings")) &&
+        (await columnExists("testimonials", "applied_learning")) &&
+        (await columnExists("testimonials", "improvement_feedback"))
+      );
+    }
   } catch {
     // If detection fails (e.g. table doesn't exist yet), assume not applied
     return false;
@@ -392,6 +400,22 @@ async function runCourseRatingMigration(file) {
   }
 }
 
+async function runTestimonialSurveyMigration(file) {
+  const targets = [
+    { column: "aspect_ratings", definition: "JSON NULL" },
+    { column: "applied_learning", definition: "TEXT NULL" },
+    { column: "improvement_feedback", definition: "TEXT NULL" },
+  ];
+
+  for (const target of targets) {
+    if (await columnExists("testimonials", target.column)) continue;
+    await executeStatement(
+      file,
+      `ALTER TABLE testimonials ADD COLUMN ${quoteIdent(target.column)} ${target.definition}`,
+    );
+  }
+}
+
 // One-shot migrations that DROP/RENAME tables can't be re-run safely (e.g. on
 // container restart). Skip them once their target state already exists.
 async function shouldSkip(file) {
@@ -442,6 +466,12 @@ for (const file of files) {
   }
   if (isMysqlUrl() && file.startsWith("011_course_rating")) {
     await runCourseRatingMigration(file);
+    process.stdout.write("done\n");
+    await recordMigration(file);
+    continue;
+  }
+  if (isMysqlUrl() && file.startsWith("013_testimonial_survey")) {
+    await runTestimonialSurveyMigration(file);
     process.stdout.write("done\n");
     await recordMigration(file);
     continue;

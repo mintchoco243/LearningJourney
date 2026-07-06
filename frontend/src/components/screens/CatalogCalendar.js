@@ -7,6 +7,7 @@ import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
 import { getCalendarEvents, getStaticCalendarCourses } from '@/lib/mockApi';
 import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
+import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
 const { Icon, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
@@ -93,6 +94,26 @@ function ctaColor(cta) {
       const frame = requestAnimationFrame(() => setPage(1));
       return () => cancelAnimationFrame(frame);
     }, [q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
+
+    React.useEffect(() => {
+      const term = q.trim();
+      if (!term) return;
+      const timer = setTimeout(() => {
+        trackEvent("search", { search_term: term, location: "course_catalog" });
+      }, 600);
+      return () => clearTimeout(timer);
+    }, [q]);
+
+    React.useEffect(() => {
+      trackEvent("filter_course", {
+        format: fmtFilter,
+        class_filter: cmFilter,
+        trainer: trainerFilter,
+        duration: durationFilter,
+        tag: tagFilter,
+        sort: sortMode,
+      });
+    }, [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);

@@ -1,0 +1,341 @@
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/e
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+======================[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInClust
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/D[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\L
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+
+========================================================
+⚠️  DATABASE CONNECTION FAILED! Running in Local Mock Mode.
+========================================================
+
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+   [config] DATABASE_URL is not set; DB-backed API routes will fail.
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+erver/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::5001
+    at Server.setupListenHandle [as _listen2] (node:net:2008:16)
+    at listenInCluster (node:net:2065:12)
+    at Server.listen (node:net:2170:7)
+    at app.listen (D:\Downloads\KV lam viec\LearningJourney\node_modules\express\lib\application.js:635:24)
+    at startServer (file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:101:7)
+    at file:///D:/Downloads/KV%20lam%20viec/LearningJourney/server/index.js:107:3
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:2044:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5001
+}
+
+Node.js v24.15.0

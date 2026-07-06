@@ -5,6 +5,8 @@ import { GLHUI } from './GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { getCourseCta } from '@/lib/courseMap.mjs';
+import { trackEvent } from '@/lib/analytics';
+import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 
 const { Icon, fmtDate, fmtDuration, FORMAT_LABEL } = GLHUI;
 const { useGame, isRecommended } = GLHEngine;
@@ -74,12 +76,184 @@ const D = GLH_DATA;
     return c.end_time ? `${c.start_time} - ${c.end_time}` : c.start_time;
   }
 
+  function ConfirmPopup({ dialog, busy, onCancel, onConfirm }) {
+    if (!dialog) return null;
+    return React.createElement("div", {
+      className: "modal-bg",
+      onClick: onCancel,
+      style: { zIndex: 120, background: "rgba(13,17,23,0.68)" },
+    },
+      React.createElement("div", {
+        className: "modal",
+        onClick: (e) => e.stopPropagation(),
+        style: { maxWidth: 420, overflow: "hidden" },
+      },
+        React.createElement("div", { style: { padding: "22px 24px" } },
+          React.createElement("h3", { style: { margin: "0 0 10px", fontSize: 18, lineHeight: 1.3, color: "var(--ui-heading)" } }, dialog.title || "Xác nhận"),
+          React.createElement("p", { style: { margin: 0, fontSize: 14, lineHeight: 1.6, color: "var(--ui-text)" } }, dialog.message),
+          React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22, flexWrap: "wrap" } },
+            dialog.cancelText ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: onCancel, disabled: busy }, dialog.cancelText) : null,
+            dialog.confirmText ? React.createElement("button", { className: "u-btn u-btn--primary", onClick: onConfirm, disabled: busy }, busy ? "Đang xử lý..." : dialog.confirmText) : null))));
+  }
+
+  const COURSE_RATING_ASPECTS = [
+    { key: "content", label: "Mức độ hài lòng với nội dung" },
+    { key: "trainer", label: "Mức độ hài lòng với giảng viên" },
+    { key: "organization_support", label: "Mức độ hài lòng với công tác tổ chức và hỗ trợ của bộ phận đào tạo?" },
+  ];
+
+  function CourseRatingPopup({ course, onClose, onSubmitted }) {
+    const [ratings, setRatings] = React.useState({ overall: 0, content: 0, trainer: 0, organization_support: 0 });
+    const [appliedLearning, setAppliedLearning] = React.useState("");
+    const [improvementFeedback, setImprovementFeedback] = React.useState("");
+    const [submitting, setSubmitting] = React.useState(false);
+    const [error, setError] = React.useState("");
+    const [confirming, setConfirming] = React.useState(false);
+    const [submitted, setSubmitted] = React.useState(false);
+
+    const setRating = (key, value) => {
+      setRatings((prev) => ({ ...prev, [key]: value }));
+      setError("");
+    };
+    const missingRating = () => {
+      if (!ratings.overall) return "Vui lòng đánh giá trải nghiệm tổng thể.";
+      const missingAspect = COURSE_RATING_ASPECTS.find((aspect) => !ratings[aspect.key]);
+      return missingAspect ? "Vui lòng đánh giá: " + missingAspect.label : "";
+    };
+    const requestSubmit = () => {
+      const missing = missingRating();
+      if (missing) {
+        setError(missing);
+        return;
+      }
+      setConfirming(true);
+    };
+    const submit = async () => {
+      setSubmitting(true);
+      setError("");
+      try {
+        const courseId = course._id || course.id || course.course_row_id || course.course_id || course.course_code;
+        const isMockCourse = [course.course_code, course.code, courseId]
+          .some((value) => String(value || "").startsWith("MOCK-"));
+        if (isMockCourse) {
+          onSubmitted({
+            id: "mock-testimonial-" + Date.now(),
+            course_id: courseId,
+            rating: ratings.overall,
+            content: improvementFeedback.trim() || appliedLearning.trim() || "",
+            aspect_ratings: ratings,
+            applied_learning: appliedLearning.trim(),
+            improvement_feedback: improvementFeedback.trim(),
+            full_name: "Mock User",
+            created_at: new Date().toISOString(),
+          });
+          setConfirming(false);
+          setSubmitted(true);
+          return;
+        }
+        const res = await fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rating: ratings.overall,
+            overall_rating: ratings.overall,
+            aspect_ratings: ratings,
+            applied_learning: appliedLearning.trim() || null,
+            improvement_feedback: improvementFeedback.trim() || null,
+            content: improvementFeedback.trim() || appliedLearning.trim() || null,
+          }),
+        });
+        if (!res.ok) throw new Error("SUBMIT_FAILED");
+        const data = await res.json().catch(() => null);
+        onSubmitted(data?.testimonial || null);
+        setConfirming(false);
+        setSubmitted(true);
+      } catch {
+        setConfirming(false);
+        setError("Không thể gửi đánh giá. Vui lòng thử lại.");
+      } finally {
+        setSubmitting(false);
+      }
+    };
+
+    if (submitted) {
+      return (
+        <div className="modal-bg" style={{ zIndex: 130 }} onClick={onClose}>
+          <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 460, textAlign: "center", padding: 42 }}>
+            <div style={{ width: 54, height: 54, borderRadius: "50%", margin: "0 auto 16px", display: "grid", placeItems: "center", background: "rgba(43,182,163,0.16)", color: "var(--garena-positive)", fontSize: 28, fontWeight: 900 }}>✓</div>
+            <h3 style={{ margin: "0 0 8px", color: "var(--ui-heading)", fontSize: 20 }}>Gửi thành công</h3>
+            <p style={{ margin: "0 0 22px", color: "var(--ui-text)", lineHeight: 1.6 }}>Cảm ơn bạn đã gửi đánh giá</p>
+            <button className="u-btn u-btn--primary" onClick={onClose}>Đóng</button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="modal-bg" style={{ zIndex: 130 }} onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660, padding: 0, maxHeight: "88vh", overflow: "auto" }}>
+          <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--ui-box-border)" }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
+              <div>
+                <h3 style={{ margin: "0 0 5px", color: "var(--ui-heading)", fontSize: 19 }}>Đánh giá khóa học</h3>
+                <div style={{ color: "var(--ui-muted)", fontSize: 13, lineHeight: 1.5 }}>{course.title}</div>
+              </div>
+              <button onClick={onClose} style={{ background: "transparent", border: "none", color: "var(--ui-muted)", cursor: "pointer", padding: 4 }}>
+                <Icon name="x" size={18} />
+              </button>
+            </div>
+          </div>
+          <div style={{ padding: "22px 28px 28px" }}>
+            <div style={{ marginBottom: 28 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", marginBottom: 14, textTransform: "uppercase", letterSpacing: ".05em" }}>1. Trải nghiệm tổng thể</div>
+              <FaceScale value={ratings.overall} onChange={(value) => setRating("overall", value)} faces={RATING_FACES} />
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", marginBottom: 18, textTransform: "uppercase", letterSpacing: ".05em" }}>2. Từng khía cạnh</div>
+              {COURSE_RATING_ASPECTS.map((aspect) => (
+                <div key={aspect.key} style={{ marginBottom: 22 }}>
+                  <div style={{ color: "var(--ui-heading)", fontSize: 14, fontWeight: 800, marginBottom: 10 }}>{aspect.label}</div>
+                  <FaceScale value={ratings[aspect.key]} onChange={(value) => setRating(aspect.key, value)} faces={RATING_FACES} compact />
+                </div>
+              ))}
+            </div>
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", marginBottom: 12, textTransform: "uppercase", letterSpacing: ".05em" }}>3. Thông tin khác</div>
+              <label style={{ display: "block", color: "var(--ui-heading)", fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Vui lòng chia sẻ một điều mà bạn học được và có thể áp dụng trong thực tế công việc thông qua khóa học này?</label>
+              <textarea className="u-input" value={appliedLearning} onChange={(e) => setAppliedLearning(e.target.value)} placeholder="Tùy chọn trả lời" rows={3} style={{ width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 16, padding: 12 }} />
+              <label style={{ display: "block", color: "var(--ui-heading)", fontSize: 13, fontWeight: 700, marginBottom: 8 }}>Vui lòng chia sẻ thêm các phản hồi /gợi ý khác của bạn để cải thiện chất lượng đào tạo?</label>
+              <textarea className="u-input" value={improvementFeedback} onChange={(e) => setImprovementFeedback(e.target.value)} placeholder="Tùy chọn trả lời" rows={3} style={{ width: "100%", boxSizing: "border-box", resize: "vertical", padding: 12 }} />
+            </div>
+            {error ? <div style={{ color: "var(--glh-accent)", fontWeight: 800, fontSize: 13, marginBottom: 14 }}>{error}</div> : null}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+              <button className="u-btn u-btn--sec" onClick={onClose} disabled={submitting}>Để sau</button>
+              <button className="u-btn u-btn--primary" onClick={requestSubmit} disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi đánh giá"}</button>
+            </div>
+          </div>
+        </div>
+        {confirming ? (
+          <div className="modal-bg" style={{ zIndex: 150, background: "rgba(13,17,23,0.72)" }} onClick={() => !submitting && setConfirming(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+              <h3 style={{ margin: "0 0 10px", color: "var(--ui-heading)", fontSize: 18 }}>Xác nhận gửi đánh giá</h3>
+              <p style={{ margin: 0, color: "var(--ui-text)", fontSize: 14, lineHeight: 1.6 }}>Bạn muốn gửi đánh giá cho khóa học này?</p>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
+                <button className="u-btn u-btn--sec" onClick={() => setConfirming(false)} disabled={submitting}>Hủy</button>
+                <button className="u-btn u-btn--primary" onClick={submit} disabled={submitting}>{submitting ? "Đang gửi..." : "Gửi đánh giá"}</button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user } = useGame();
     const fc = FORMAT_COLOR[c.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
-    const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
+    const done = c.mock_completed || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id));
     const cta = getCourseCta(c, user);
     const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
     const desc = c.description_short || c.description;
@@ -127,12 +301,12 @@ const D = GLH_DATA;
     const meta = (D.COURSE_META || {})[c?.course_id] || {};
     const [testimonials, setTestimonials] = React.useState(null);
     const [completedCourseId, setCompletedCourseId] = React.useState(null);
+    const [uncompletedCourseId, setUncompletedCourseId] = React.useState(null);
     const [ratingFormCourseId, setRatingFormCourseId] = React.useState(null);
-    const [courseRating, setCourseRating] = React.useState(0);
-    const [courseReview, setCourseReview] = React.useState("");
     const [ratingSubmittedCourseId, setRatingSubmittedCourseId] = React.useState(null);
     const [busyAction, setBusyAction] = React.useState(null);
     const [reservedSessionId, setReservedSessionId] = React.useState(null);
+    const [confirmDialog, setConfirmDialog] = React.useState(null);
 
     React.useEffect(() => {
       if (!c) return;
@@ -145,13 +319,24 @@ const D = GLH_DATA;
       return () => { active = false; };
     }, [c]);
 
+    React.useEffect(() => {
+      if (!c) return;
+      trackEvent("course_view", {
+        course_id: c._id || c.id || c.course_row_id || c.course_id,
+        course_code: c.course_code || c.course_id,
+        course_title: c.title,
+      });
+    }, [c]);
+
     if (!c) return null;
     const isEnded = c.course_status === "ended";
-    const completedNow = completedCourseId === c.course_id;
     const showRatingForm = ratingFormCourseId === c.course_id;
     const ratingSubmitted = ratingSubmittedCourseId === c.course_id;
     const rowId = c._id || c.id || c.course_row_id;
-    const done = completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id));
+    const courseActionId = rowId || c.course_id;
+    const completedNow = completedCourseId === courseActionId;
+    const uncompletedNow = uncompletedCourseId === courseActionId;
+    const done = !uncompletedNow && (completedNow || c.mock_completed || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
     const rec = isRecommended(c, user);
     const rating = c.rating || meta.rating;
     const testimonialList = testimonials || (meta.testimonial ? [meta.testimonial] : []);
@@ -168,8 +353,10 @@ const D = GLH_DATA;
     });
     const reservedNow = reservedSessionId === modalCourse.session_id;
     const effectiveUser = Object.assign({}, user, {
-      completed_courses: completedNow
+      completed_courses: completedNow || (c.mock_completed && !uncompletedNow)
         ? Array.from(new Set([...(user.completed_courses || []), rowId || c.course_id]))
+        : uncompletedNow
+          ? (user.completed_courses || []).filter((id) => id !== courseActionId)
         : user.completed_courses,
       registered_events: reservedNow
         ? Array.from(new Set([...(user.registered_events || []), modalCourse.session_id]))
@@ -181,28 +368,82 @@ const D = GLH_DATA;
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
     };
+    const showError = () => {
+      setConfirmDialog({
+        type: "notice",
+        title: "Không thể cập nhật",
+        message: "Không thể cập nhật trạng thái hoàn thành. Vui lòng thử lại.",
+        confirmText: "Đã hiểu",
+      });
+    };
+    const showActionError = (message) => {
+      setConfirmDialog({
+        type: "notice",
+        title: "Không thể cập nhật",
+        message,
+        confirmText: "Đã hiểu",
+      });
+    };
     const markComplete = async () => {
       setBusyAction("complete");
       const ok = await actions.completeCourse(c);
       setBusyAction(null);
-      if (!ok) return;
-      setCompletedCourseId(c.course_id);
-      setRatingFormCourseId(null);
-    };
-    const submitCourseRating = () => {
-      if (!courseRating) {
-        alert("Vui lòng chọn số sao");
+      if (!ok) {
+        showError();
         return;
       }
-      const courseId = c._id || c.course_id || c.course_code;
-      fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rating: courseRating, content: courseReview.trim() || null }),
-      }).catch(() => {});
-      setRatingSubmittedCourseId(c.course_id);
+      setCompletedCourseId(courseActionId);
+      setUncompletedCourseId(null);
       setRatingFormCourseId(null);
+    };
+    const unmarkComplete = async () => {
+      setBusyAction("uncomplete");
+      const ok = await actions.uncompleteCourse(c);
+      setBusyAction(null);
+      if (!ok) {
+        showError();
+        return;
+      }
+      setUncompletedCourseId(courseActionId);
+      setCompletedCourseId(null);
+      setRatingFormCourseId(null);
+    };
+    const reserveCourse = async () => {
+      setBusyAction("reserve");
+      const ok = await actions.reserveCourseSession(modalCourse);
+      setBusyAction(null);
+      if (ok) {
+        setReservedSessionId(modalCourse.session_id);
+        trackEvent("course_reserve_success", {
+          course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
+          course_code: modalCourse.course_code || modalCourse.course_id,
+          course_title: modalCourse.title,
+        });
+        return;
+      }
+      showActionError("Không thể đăng ký khóa học. Vui lòng thử lại.");
+    };
+    const handleRatingSubmitted = (testimonial) => {
+      if (testimonial) {
+        setTestimonials((items) => [testimonial, ...((items || []).filter((item) => item.id !== testimonial.id))]);
+      }
+      setRatingSubmittedCourseId(c.course_id);
+    };
+    const requestConfirmation = (dialog) => {
+      setConfirmDialog(Object.assign({ cancelText: "Hủy" }, dialog));
+    };
+    const handleConfirm = async () => {
+      const dialog = confirmDialog;
+      if (!dialog) return;
+      if (dialog.type === "notice") {
+        setConfirmDialog(null);
+        return;
+      }
+      setConfirmDialog(null);
+      if (dialog.type === "complete") await markComplete();
+      if (dialog.type === "uncomplete") await unmarkComplete();
+      if (dialog.type === "reserve") await reserveCourse();
+      if (dialog.type === "register_url") window.open(modalCourse.url, "_blank", "noreferrer");
     };
     const handlePrimary = async () => {
       if (cta.action === "material" && canOpenMaterial) {
@@ -210,18 +451,46 @@ const D = GLH_DATA;
         return;
       }
       if (cta.action === "url" && modalCourse.url && modalCourse.url !== "#") {
+        if (cta.key === "register" || cta.key === "external_register") {
+          trackEvent("course_register_click", {
+            course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
+            course_code: modalCourse.course_code || modalCourse.course_id,
+            course_title: modalCourse.title,
+            action: cta.key,
+          });
+          requestConfirmation({
+            type: "register_url",
+            title: "Xác nhận đăng ký",
+            message: "Bạn muốn đăng ký khóa học này?",
+            confirmText: "Xác nhận đăng ký",
+          });
+          return;
+        }
         window.open(modalCourse.url, "_blank", "noreferrer");
         return;
       }
       if (cta.action === "reserve") {
-        setBusyAction("reserve");
-        const ok = await actions.reserveCourseSession(modalCourse);
-        setBusyAction(null);
-        if (ok) setReservedSessionId(modalCourse.session_id);
+        trackEvent("course_register_click", {
+          course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
+          course_code: modalCourse.course_code || modalCourse.course_id,
+          course_title: modalCourse.title,
+          action: "reserve",
+        });
+        requestConfirmation({
+          type: "reserve",
+          title: "Xác nhận đăng ký",
+          message: "Bạn muốn đăng ký khóa học này?",
+          confirmText: "Xác nhận đăng ký",
+        });
         return;
       }
       if (cta.action === "complete") {
-        markComplete();
+        requestConfirmation({
+          type: "complete",
+          title: "Xác nhận hoàn thành",
+          message: "Bạn xác nhận đã hoàn thành khóa học này?",
+          confirmText: "Xác nhận hoàn thành",
+        });
       }
     };
     const stop = (e) => e.stopPropagation();
@@ -281,24 +550,40 @@ const D = GLH_DATA;
               ) : null,
               canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
               done
-                ? React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: () => setRatingFormCourseId(showRatingForm ? null : c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi đánh giá" : "Gửi đánh giá")
-                : cta.key !== "complete" ? React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: markComplete }, "Đánh dấu đã hoàn thành") : null),
-            showRatingForm ? React.createElement("div", { style: { marginTop: 14, padding: 14, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid var(--rpg-border)" } },
-              React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 10 } },
-                [1, 2, 3, 4, 5].map((s) => React.createElement("button", {
-                  key: s,
-                  onClick: () => setCourseRating(s),
-                  style: { background: "transparent", border: "none", cursor: "pointer", padding: 2 },
-                  title: s + " sao",
-                }, React.createElement(Icon, { name: "star", size: 24, color: courseRating >= s ? "var(--amber)" : "var(--ui-muted)", fill: courseRating >= s ? "var(--amber)" : "none" })))),
-              React.createElement("textarea", {
-                value: courseReview,
-                onChange: (e) => setCourseReview(e.target.value),
-                placeholder: "Chia sẻ cảm nhận ngắn về khóa học...",
-                rows: 3,
-                style: { width: "100%", boxSizing: "border-box", resize: "vertical", marginBottom: 10, background: "var(--ui-surface-2)", border: "1px solid var(--rpg-border)", borderRadius: 6, padding: 10, color: "var(--ui-text)", fontSize: 13 },
-              }),
-              React.createElement("button", { className: "u-btn u-btn--primary", onClick: submitCourseRating }, "Gửi đánh giá")) : null))));
+                ? React.createElement(React.Fragment, null,
+                    React.createElement("button", {
+                      className: "u-btn u-btn--sec",
+                      style: completionButtonStyle,
+                      onClick: () => requestConfirmation({
+                        type: "uncomplete",
+                        title: "Xác nhận hoàn tác",
+                        message: "Bạn muốn đánh dấu khóa học này là chưa hoàn thành?",
+                        confirmText: "Xác nhận",
+                      }),
+                      disabled: !!busyAction,
+                    }, busyAction === "uncomplete" ? "Đang lưu..." : "Hoàn tác hoàn thành"),
+                    React.createElement("button", { className: "u-btn u-btn--sec", style: completionButtonStyle, onClick: () => setRatingFormCourseId(c.course_id), disabled: ratingSubmitted }, ratingSubmitted ? "Đã gửi đánh giá" : "Gửi đánh giá"))
+                : cta.key !== "complete" ? React.createElement("button", {
+                    className: "u-btn u-btn--sec",
+                    style: completionButtonStyle,
+                    onClick: () => requestConfirmation({
+                      type: "complete",
+                      title: "Xác nhận hoàn thành",
+                      message: "Bạn xác nhận đã hoàn thành khóa học này?",
+                      confirmText: "Xác nhận hoàn thành",
+                    }),
+                  }, "Đánh dấu đã hoàn thành") : null),
+            showRatingForm ? React.createElement(CourseRatingPopup, {
+              course: modalCourse,
+              onClose: () => setRatingFormCourseId(null),
+              onSubmitted: handleRatingSubmitted,
+            }) : null),
+          React.createElement(ConfirmPopup, {
+            dialog: confirmDialog,
+            busy: !!busyAction,
+            onCancel: () => setConfirmDialog(null),
+            onConfirm: handleConfirm,
+          }))));
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

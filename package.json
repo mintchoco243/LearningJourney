@@ -13,6 +13,7 @@
     "start": "node -e \"process.env.NODE_ENV=process.env.NODE_ENV || 'production'; import('./server/index.js')\"",
     "db:migrate": "node server/migrate.js",
     "db:seed": "node server/seed.js",
+    "db:seed:test-courses": "node server/seed-test-courses.js",
     "cron:reminder": "node server/scripts/sessionReminder.js",
     "check": "node server/scripts/smoke-check.js"
   },

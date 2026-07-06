@@ -14,6 +14,12 @@ export const config = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
     callbackUrl: process.env.GOOGLE_CALLBACK_URL || "https://garena-learning-hub-mn.demo.ffol4.vn/auth/callback",
   },
+  analytics: {
+    propertyId: process.env.GA_PROPERTY_ID || "",
+    serviceAccountJson: process.env.GA_SERVICE_ACCOUNT_JSON || "",
+    serviceAccountJsonBase64: process.env.GA_SERVICE_ACCOUNT_JSON_BASE64 || "",
+    range: process.env.GA_REPORT_RANGE || "30daysAgo",
+  },
   devAuthEnabled:
     (process.env.DEV_AUTH_ENABLED || "true").toLowerCase() === "true" ||
     (process.env.NODE_ENV || "development") !== "production",

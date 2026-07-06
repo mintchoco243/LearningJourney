@@ -239,6 +239,7 @@ export function Dashboard(props) {
 
   const [upcoming, setUpcoming]       = React.useState([]);
   const [recommended, setRecommended] = React.useState([]);
+  const mockCourses = D.MOCK_COURSES || [];
 
   React.useEffect(() => {
     Promise.all([getUpcomingCourses(), getRecommendedCourses()]).then(([up, rec]) => {
@@ -273,6 +274,12 @@ export function Dashboard(props) {
       React.createElement("div", { style: { display: "flex", gap: 24 } },
         React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
+
+    // ── Mock popup test ──────────────────────────────────────────────────────
+    mockCourses.length > 0 && React.createElement(React.Fragment, null,
+      React.createElement(SectionRow, { title: "Mock test popup" }),
+      React.createElement("div", { className: "rec-grid" },
+        mockCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
 
     // ── Gợi ý cho rank của bạn ───────────────────────────────────────────────
     React.createElement(React.Fragment, null,

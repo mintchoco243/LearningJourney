@@ -17,6 +17,9 @@ adminTestimonialsRouter.get("/", async (req, res, next) => {
          u.team AS user_team,
          t.rating,
          t.content,
+         t.aspect_ratings,
+         t.applied_learning,
+         t.improvement_feedback,
          t.is_featured,
          t.created_at
        FROM testimonials t
@@ -52,6 +55,9 @@ adminTestimonialsRouter.put("/:id", async (req, res, next) => {
          u.team AS user_team,
          t.rating,
          t.content,
+         t.aspect_ratings,
+         t.applied_learning,
+         t.improvement_feedback,
          t.is_featured,
          t.created_at
        FROM testimonials t

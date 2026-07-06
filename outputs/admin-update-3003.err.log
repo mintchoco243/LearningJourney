@@ -1,0 +1,9 @@
+[config] DATABASE_URL is not set; DB-backed API routes will fail.
+⨯ Another next dev server is already running.
+
+- Local:        http://localhost:3000
+- PID:          37116
+- Dir:          D:\Downloads\KV lam viec\LearningJourney\frontend
+- Log:          .next\dev\logs\next-development.log
+
+Run taskkill /PID 37116 /F to stop it.

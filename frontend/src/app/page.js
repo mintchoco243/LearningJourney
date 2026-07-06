@@ -15,6 +15,7 @@ import { Dashboard } from '@/components/screens/Dashboard';
 import { Catalog, Calendar } from '@/components/screens/CatalogCalendar';
 import { LdRequestPopup, ChatBot } from '@/components/screens/LdRequestChatBot';
 import { RatingModal, Tutorial } from '@/components/screens/RatingTutorial';
+import { trackEvent, trackPageView } from '@/lib/analytics';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
@@ -335,6 +336,16 @@ function AppInner() {
     fetch("/api/me", { credentials: "include" })
       .then((r) => {
         if (r.status === 401) {
+          if (process.env.NODE_ENV !== "production" && user.email) {
+            return fetch("/auth/dev-login", {
+              method: "POST",
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: user.email }),
+            })
+              .then((loginRes) => (loginRes.ok ? fetch("/api/me", { credentials: "include" }) : null))
+              .then((meRes) => (meRes?.ok ? meRes.json() : null));
+          }
           if (!user.email && !user.onboarded && !user.quiz_result) setPhase("login");
           return null;
         }
@@ -356,6 +367,13 @@ function AppInner() {
   const [showTutorial, setShowTutorial] = React.useState(() => {
     try { if (typeof window !== "undefined") { return !localStorage.getItem("glh_tutorial_done"); } } catch (e) { } return false;
   });
+
+  React.useEffect(() => {
+    if (["login", "onboarding", "character", "quiz", "reveal"].includes(phase)) return;
+    const pageName = phase === "app" ? activeTab : phase;
+    trackPageView(`/${pageName}`, pageName);
+    if (pageName === "policy") trackEvent("policy_view", { page: "policy" });
+  }, [phase, activeTab]);
 
   const pendingScroll = React.useRef(null);
   React.useEffect(() => {

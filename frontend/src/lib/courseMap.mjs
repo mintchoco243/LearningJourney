@@ -176,13 +176,13 @@ export function getCourseCta(course, user = {}) {
     if (type === "elearning" || c.format === "elearning") {
       return hasUrl
         ? { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: "url", disabled: false }
-        : { key: "complete", text: "Đánh dấu hoàn thành", modalText: "Đánh dấu hoàn thành", tone: "success", action: "complete", disabled: false };
+        : { key: "complete", text: "Đánh dấu đã hoàn thành", modalText: "Đánh dấu đã hoàn thành", tone: "success", action: "complete", disabled: false };
     }
     if (hasMaterial) {
       return { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false };
     }
     if (type === "external") {
-      return { key: "complete", text: "Đánh dấu hoàn thành", modalText: "Đánh dấu hoàn thành", tone: "success", action: "complete", disabled: false };
+      return { key: "complete", text: "Đánh dấu đã hoàn thành", modalText: "Đánh dấu đã hoàn thành", tone: "success", action: "complete", disabled: false };
     }
     return { key: "ended", text: "Đã kết thúc", modalText: "Đã kết thúc", tone: "muted", action: "none", disabled: true };
   }

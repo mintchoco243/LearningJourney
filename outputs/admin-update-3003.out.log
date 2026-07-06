@@ -1,0 +1,5 @@
+
+> garena-learning-hub@0.1.0 dev:server
+> node --watch server/index.js
+
+Failed running 'server/index.js'. Waiting for file changes before restarting...

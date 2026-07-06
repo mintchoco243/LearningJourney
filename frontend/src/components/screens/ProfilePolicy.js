@@ -32,10 +32,15 @@ export function Profile(props) {
   }, []);
 
   const qr = user.quiz_result;
+  const cls = qr ? D.CLASSES[qr.class_id] : D.CLASSES["ENG"];
+  const rank = rankForUser(user);
+  const rankCourses = React.useMemo(
+    () => rankCompassCourses(recommended, user, rank, cls),
+    [recommended, user, rank, cls]
+  );
+
   if (!qr) return null;
 
-  const cls = D.CLASSES[qr.class_id];
-  const rank = rankForUser(user);
   const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
 
   const completedCoursesFromApi = (user.completed_course_details || [])
@@ -66,10 +71,6 @@ export function Profile(props) {
   const totalHours = Number(user.hours_total || 0);
   const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
 
-  const rankCourses = React.useMemo(
-    () => rankCompassCourses(recommended, user, rank, cls),
-    [recommended, user, rank, cls]
-  );
   const progressTotal = rankCourses.length;
   const progressCompleted = rankCourses.filter((course) => isCompletedCourse(course, user)).length;
   const progressPercent = progressTotal ? Math.round((progressCompleted / progressTotal) * 100) : 0;
