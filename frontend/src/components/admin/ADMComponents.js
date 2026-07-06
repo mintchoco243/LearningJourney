@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { GLHUI } from '../GLHUI';
@@ -23,10 +23,10 @@ const { Icon } = GLHUI;
       featured:    { label: "Nổi bật",         bg: "rgba(255,186,0,.13)",   color: "#FFBA00", bdr: "rgba(255,186,0,.3)"   },
       super_admin: { label: "Super Admin",     bg: "rgba(228,30,38,.13)",   color: "#E41E26", bdr: "rgba(228,30,38,.3)"   },
       ld_admin:    { label: "L&D Admin",       bg: "rgba(59,111,176,.13)",  color: "#6aa3e0", bdr: "rgba(59,111,176,.3)"  },
-      scheduled:    { label: "Co lich",         bg: "rgba(43,182,163,.10)",  color: "#2BB6A3", bdr: "rgba(43,182,163,.22)" },
-      interest:     { label: "Dat cho",         bg: "rgba(245,166,35,.10)",  color: "#F5A623", bdr: "rgba(245,166,35,.22)" },
+      scheduled:    { label: "Có lịch",         bg: "rgba(43,182,163,.10)",  color: "#2BB6A3", bdr: "rgba(43,182,163,.22)" },
+      interest:     { label: "Đặt chỗ",         bg: "rgba(245,166,35,.10)",  color: "#F5A623", bdr: "rgba(245,166,35,.22)" },
       external:     { label: "External",        bg: "rgba(138,147,168,.10)", color: "#8A93A8", bdr: "rgba(138,147,168,.22)"},
-      material_only:{ label: "Tai lieu",        bg: "rgba(138,147,168,.10)", color: "#8A93A8", bdr: "rgba(138,147,168,.22)"},
+      material_only:{ label: "Tài liệu",        bg: "rgba(138,147,168,.10)", color: "#8A93A8", bdr: "rgba(138,147,168,.22)"},
       elearning:   { label: "E-Learning",      bg: "rgba(124,92,255,.10)",  color: "#9b7fff", bdr: "rgba(124,92,255,.22)" },
       online:      { label: "Online",          bg: "rgba(59,111,176,.10)",  color: "#6aa3e0", bdr: "rgba(59,111,176,.22)" },
       offline:     { label: "Trực tiếp",       bg: "rgba(43,182,163,.10)",  color: "#2BB6A3", bdr: "rgba(43,182,163,.22)" },

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 import { GLHUI } from '../GLHUI';
@@ -363,12 +363,12 @@ const COURSE_STATUSES = [
             rank_targets: course.rank_targets,
             role_targets: course.role_targets,
             skill_tags: course.skill_tags,
-            type: type === 'type' ? batchValue : course.type,
+            type: course.type,
             xp_reward: course.xp_reward,
             rating: course.rating || 0,
             description: course.description,
             registration_url: course.registration_url,
-            status: type === 'status' ? batchValue : course.status,
+            status: course.status,
             material_url: course.material_url,
             min_participants: course.min_participants ?? null,
             session_date: course.session_date || null,
@@ -616,16 +616,16 @@ const COURSE_STATUSES = [
                 <th style={{ width: 40 }}>
                   <input type="checkbox" checked={paginatedRows.length > 0 && paginatedRows.every(c => selected.has(c.id))} onChange={() => paginatedRows.every(c => selected.has(c.id)) ? setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.delete(c.id)); return next; }) : setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.add(c.id)); return next; })} />
                 </th>
-                <th style={{ width: 110 }}>Ma</th>
-                <th>Ten khoa hoc</th>
+                <th style={{ width: 110 }}>Mã</th>
+                <th>Tên khóa học</th>
                 <th style={{ width: 104 }}>Type</th>
-                <th style={{ width: 120 }}>Ngay</th>
+                <th style={{ width: 120 }}>Ngày</th>
                 <th style={{ width: 108 }}>Format</th>
                 <th style={{ width: 118 }}>Status</th>
                 <th>Rank targets</th>
-                <th style={{ width: 104 }}>Dang ky</th>
-                <th style={{ width: 92 }}>Hoan thanh</th>
-                <th style={{ width: 110 }}>Hien thi</th>
+                <th style={{ width: 104 }}>Đăng ký</th>
+                <th style={{ width: 92 }}>Hoàn thành</th>
+                <th style={{ width: 110 }}>Hiển thị</th>
                 <th style={{ width: 190 }}></th>
               </tr>
             </thead>
@@ -638,7 +638,7 @@ const COURSE_STATUSES = [
                   <td><code style={{ fontSize: 11 }}>{c.course_code}</code></td>
                   <td>
                     <div style={{ fontWeight: 600, color: "#fff" }}>{c.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.trainer} · {c.duration} phut · row {String(c.id).slice(0, 8)}</div>
+                    <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.trainer} · {c.duration} phút · row {String(c.id).slice(0, 8)}</div>
                   </td>
                   <td><Badge status={c.type} /></td>
                   <td>
@@ -673,23 +673,23 @@ const COURSE_STATUSES = [
                   <td>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <Toggle value={c.is_active} onChange={() => toggleActive(c.id)} />
-                      <span style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.is_active ? "Hien" : "An"}</span>
+                      <span style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.is_active ? "Hiện" : "Ẩn"}</span>
                     </div>
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
                       {canReserve(c) && bookingCount(c) > 0 && c.status !== "confirmed" && c.status !== "cancelled" && (
-                        <button className="adm-btn adm-btn--primary adm-btn--sm adm-btn--icon" onClick={() => setConfirmTarget(c)} title="Xac nhan mo lop">
+                        <button className="adm-btn adm-btn--primary adm-btn--sm adm-btn--icon" onClick={() => setConfirmTarget(c)} title="Xác nhận mở lớp">
                           <Icon name="send" size={14} />
                         </button>
                       )}
                       <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => openImport(c)} title="Import participants">
                         <Icon name="users" size={14} />
                       </button>
-                      <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => openEdit(c)} title="Sua">
+                      <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => openEdit(c)} title="Sửa">
                         <Icon name="edit-3" size={14} />
                       </button>
-                      <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => handleDelete(c.id)} title="Xoa" style={{ color: "#E41E26" }}>
+                      <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => handleDelete(c.id)} title="Xóa" style={{ color: "#E41E26" }}>
                         <Icon name="trash-2" size={14} />
                       </button>
                     </div>
@@ -830,24 +830,24 @@ const COURSE_STATUSES = [
           <ImportForm onClose={() => { setImportModal(false); setImportTarget(null); reloadCourses(); }} courses={courses} initialCourse={importTarget} />
         </Modal>
 
-        <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)} title={attendeesModal ? `Danh sach dang ky - ${attendeesModal.course_code}` : ""} width={680}>
+        <Modal open={!!attendeesModal} onClose={() => setAttendeesModal(null)} title={attendeesModal ? `Danh sách đăng ký - ${attendeesModal.course_code}` : ""} width={680}>
           {attendeesModal && <AttendeesView course={attendeesModal} />}
         </Modal>
 
-        <Modal open={!!completionsModal} onClose={() => setCompletionsModal(null)} title={completionsModal ? `Danh sach hoan thanh - ${completionsModal.course_code}` : ""} width={720}>
+        <Modal open={!!completionsModal} onClose={() => setCompletionsModal(null)} title={completionsModal ? `Danh sách hoàn thành - ${completionsModal.course_code}` : ""} width={720}>
           {completionsModal && <CompletionsView course={completionsModal} />}
         </Modal>
 
-        <Modal open={!!confirmTarget} onClose={() => setConfirmTarget(null)} title="Xac nhan mo lop" width={440}>
+        <Modal open={!!confirmTarget} onClose={() => setConfirmTarget(null)} title="Xác nhận mở lớp" width={440}>
           {confirmTarget && (
             <div>
               <p style={{ color: "var(--rpg-text)", lineHeight: 1.6, fontSize: 14, marginBottom: 18 }}>
-                Xac nhan <strong style={{ color: "#fff" }}>{confirmTarget.title}</strong> va gui email cho {bookingCount(confirmTarget)} nguoi da dat cho.
+                Xác nhận <strong style={{ color: "#fff" }}>{confirmTarget.title}</strong> và gửi email cho {bookingCount(confirmTarget)} người đã đặt chỗ.
               </p>
               <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
-                <button className="adm-btn adm-btn--sec" onClick={() => setConfirmTarget(null)} disabled={confirming}>Huy</button>
+                <button className="adm-btn adm-btn--sec" onClick={() => setConfirmTarget(null)} disabled={confirming}>Hủy</button>
                 <button className="adm-btn adm-btn--primary" onClick={() => confirmCourse(confirmTarget)} disabled={confirming}>
-                  {confirming ? "Dang xu ly..." : <><Icon name="send" size={13} /> Xac nhan</>}
+                  {confirming ? "Đang xử lý..." : <><Icon name="send" size={13} /> Xác nhận</>}
                 </button>
               </div>
             </div>
@@ -995,6 +995,28 @@ const COURSE_STATUSES = [
           <div className="adm-form-group">
             <label className="adm-label">Số người tối thiểu</label>
             <input className="adm-input" type="number" min="1" value={form.min_participants} onChange={e => set("min_participants", e.target.value)} placeholder="Không bắt buộc" />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Ngày tổ chức</label>
+            <input className="adm-input" type="date" value={form.session_date} onChange={e => set("session_date", e.target.value)} />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Giờ tổ chức</label>
+            <input className="adm-input" type="time" value={form.session_time} onChange={e => set("session_time", e.target.value)} />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Địa điểm</label>
+            <input className="adm-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="Tên phòng học hoặc link online" />
+          </div>
+          <div className="adm-form-group">
+            <label className="adm-label">Số người tối đa</label>
+            <input className="adm-input" type="number" min="1" value={form.max_participants} onChange={e => set("max_participants", e.target.value)} placeholder="Không bắt buộc" />
           </div>
         </div>
 

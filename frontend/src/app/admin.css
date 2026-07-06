@@ -592,6 +592,7 @@ textarea {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
 .adm-topbar {
@@ -826,26 +827,22 @@ textarea {
   background: var(--rpg-panel);
   border: 1px solid var(--rpg-border);
   border-radius: 10px;
-  overflow: hidden;
-}
-
-.adm-table-wrap--scroll {
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-color: rgba(154, 170, 215, 0.55) rgba(255, 255, 255, 0.04);
   scrollbar-width: thin;
 }
 
-.adm-table-wrap--scroll::-webkit-scrollbar {
+.adm-table-wrap::-webkit-scrollbar {
   height: 10px;
 }
 
-.adm-table-wrap--scroll::-webkit-scrollbar-track {
+.adm-table-wrap::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 999px;
 }
 
-.adm-table-wrap--scroll::-webkit-scrollbar-thumb {
+.adm-table-wrap::-webkit-scrollbar-thumb {
   background: rgba(154, 170, 215, 0.45);
   border-radius: 999px;
 }
