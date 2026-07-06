@@ -1,10 +1,9 @@
 /**
- * import-policy-html.mjs
+ * Import the full L&D policy article from "Gigi Garena.html" into the
+ * `policies` table as one HTML entry per major section.
  *
- * Parses "Gigi Garena.html" (article 146) and imports the L&D policy content
- * into the `policies` table as HTML entries (one per major section).
- *
- * Usage: node server/scripts/import-policy-html.mjs
+ * Usage:
+ *   node server/scripts/import-policy-html.mjs
  */
 
 import fs from "node:fs/promises";
@@ -13,120 +12,100 @@ import { fileURLToPath } from "node:url";
 import mysql from "mysql2/promise";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const HTML_FILE = path.join(__dirname, "../../Gigi Garena.html");
+const ROOT = path.join(__dirname, "../..");
+const HTML_FILE = process.env.POLICY_HTML_FILE
+  ? path.resolve(process.env.POLICY_HTML_FILE)
+  : path.join(ROOT, "Gigi Garena.html");
+const CATEGORY = "Chính sách đào tạo";
+const dryRun = process.argv.includes("--dry-run");
+const writeSql = process.argv.includes("--write-sql");
 
-// ─── Load .env manually ───────────────────────────────────────────────────────
-
-const envPath = path.join(__dirname, "../../.env");
-const envText = await fs.readFile(envPath, "utf-8");
-const envVars = Object.fromEntries(
-  envText.split("\n")
-    .map(l => l.trim())
-    .filter(l => l && !l.startsWith("#"))
-    .map(l => l.split("=").map((p, i) => i === 0 ? p.trim() : l.slice(l.indexOf("=") + 1).trim()))
-    .filter(([k]) => k)
-);
-const DATABASE_URL = envVars["DATABASE_URL"];
-if (!DATABASE_URL) throw new Error("DATABASE_URL not found in .env");
-console.log(`🔗 Connecting to: ${DATABASE_URL.replace(/:([^:@]+)@/, ":***@")}`);
-
-// ─── DB connection (direct MySQL, bypass mock) ────────────────────────────────
-
-const pool = mysql.createPool({
-  uri: DATABASE_URL,
-  waitForConnections: true,
-  connectionLimit: 5,
-});
-
-async function dbQuery(sql, params = []) {
-  const [rows] = await pool.execute(sql, params);
-  return rows;
+function parseEnv(text) {
+  return Object.fromEntries(
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith("#"))
+      .map((line) => {
+        const eq = line.indexOf("=");
+        return eq === -1 ? [line, ""] : [line.slice(0, eq).trim(), line.slice(eq + 1).trim()];
+      })
+      .filter(([key]) => key),
+  );
 }
 
-// ─── 1. Read & extract article body ─────────────────────────────────────────
-
-const raw = await fs.readFile(HTML_FILE, "utf-8");
-
-function extractArticleBody(html) {
-  const startMarker = "CHÍNH SÁCH ĐÀO TẠO VÀ PHÁT TRIỂN";
-  const endMarker = "Bộ Phận Đào Tạo</span></p>";
-
-  const startIdx = html.indexOf(startMarker);
-  const endIdx = html.indexOf(endMarker);
-
-  if (startIdx === -1 || endIdx === -1) {
-    throw new Error("Could not find article markers in HTML file. Check the HTML structure.");
-  }
-
-  // Walk back from startMarker to find opening tag
-  let openIdx = startIdx;
-  while (openIdx > 0 && html[openIdx] !== "<") openIdx--;
-
-  return html.substring(openIdx, endIdx + endMarker.length);
+async function loadDatabaseUrl() {
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  const envPath = path.join(ROOT, ".env");
+  const envText = await fs.readFile(envPath, "utf-8");
+  return parseEnv(envText).DATABASE_URL;
 }
-
-// ─── 2. Fix image paths & clean browser extensions ──────────────────────────
 
 function fixImagePaths(html) {
-  // Fix local file references to web-accessible paths
   return html
     .replace(/src="\.\/Gigi Garena_files\/(.*?)"/g, 'src="/policy-images/$1"')
     .replace(/src="\.\/Gigi%20Garena_files\/(.*?)"/g, 'src="/policy-images/$1"');
 }
 
 function cleanHtml(html) {
-  let h = html;
-  // Remove style attributes that embed external fonts (just keep layout styles)
-  // Remove padding-left that references px offsets — images will center naturally
-  h = h.replace(/style="padding-left:\s*\d+px;?"/g, 'style="text-align:center"');
-  // Normalize image alignment
-  h = h.replace(/class="[^"]*aligncenter[^"]*"/g, 'class="policy-img-center"');
-  return h;
+  return html
+    .replace(/style="padding-left:\s*\d+px;?"/g, 'style="text-align:center"')
+    .replace(/class="[^"]*aligncenter[^"]*"/g, 'class="policy-img-center"');
 }
 
-// ─── 3. Split into logical sections ─────────────────────────────────────────
+function extractArticleBody(html) {
+  const startMarker = '<div class="body">';
+  const endMarker = '<span style="font-family: arial, helvetica, sans-serif; font-size: 10pt;">Bộ Phận Đào Tạo</span></p>';
+  const startIdx = html.indexOf(startMarker);
+  const endIdx = html.indexOf(endMarker, startIdx);
+
+  if (startIdx === -1 || endIdx === -1) {
+    throw new Error("Could not find the policy article body in Gigi Garena.html");
+  }
+
+  return html.substring(startIdx + startMarker.length, endIdx + endMarker.length);
+}
 
 function extractSection(html, startText, endText) {
   const startIdx = html.indexOf(startText);
   if (startIdx === -1) {
-    console.warn(`  ⚠ Section start not found: "${startText}"`);
-    return null;
+    throw new Error(`Could not find policy section start: ${startText}`);
   }
 
-  // Walk back to opening tag
-  let start = startIdx;
-  while (start > 0 && html[start] !== "<") start--;
+  const blockTags = ["h1", "h2", "h3", "h4", "p", "table", "ul", "ol", "div"];
+  const start = Math.max(
+    ...blockTags.map((tag) => html.lastIndexOf(`<${tag}`, startIdx)),
+  );
 
-  let end;
+  let end = html.length;
   if (endText) {
     end = html.indexOf(endText, startIdx);
     if (end === -1) {
-      console.warn(`  ⚠ Section end not found: "${endText}" — using end of body`);
-      end = html.length;
-    } else {
-      // Walk back to opening tag of endText's block
-      while (end > startIdx && html[end] !== "<") end--;
+      throw new Error(`Could not find policy section end: ${endText}`);
     }
-  } else {
-    end = html.length;
+    end = Math.max(
+      ...blockTags.map((tag) => html.lastIndexOf(`<${tag}`, end)),
+    );
   }
 
   return html.substring(start, end).trim();
 }
 
-// ─── 4. Main ─────────────────────────────────────────────────────────────────
-
-console.log("📄 Reading HTML file...");
-let body = extractArticleBody(raw);
-body = fixImagePaths(body);
-body = cleanHtml(body);
-console.log(`  Extracted ${body.length} chars of article body`);
-
 function wrap(content) {
   return `<div class="policy-html-content">${content}</div>`;
 }
 
-const CATEGORY = "Chính sách đào tạo";
+function sqlString(value) {
+  return String(value).replace(/'/g, "''");
+}
+
+const databaseUrl = await loadDatabaseUrl();
+if (!databaseUrl) throw new Error("DATABASE_URL not found in environment or .env");
+
+console.log(`Connecting to: ${databaseUrl.replace(/:([^:@]+)@/, ":***@")}`);
+
+const raw = await fs.readFile(HTML_FILE, "utf-8");
+const body = cleanHtml(fixImagePaths(extractArticleBody(raw)));
 
 const sections = [
   {
@@ -151,29 +130,62 @@ const sections = [
   },
 ];
 
-// ─── 5. Insert into DB ───────────────────────────────────────────────────────
-
-console.log(`\n🗑  Removing existing entries for category "${CATEGORY}"...`);
-await dbQuery("DELETE FROM policies WHERE category = ?", [CATEGORY]);
-
-let inserted = 0;
-for (const section of sections) {
-  if (!section.content) {
-    console.warn(`  ⚠ Skipping "${section.title}" (no content extracted)`);
-    continue;
-  }
-
-  const htmlContent = wrap(section.content);
-
-  await dbQuery(
-    `INSERT INTO policies (id, category, title, content, source_file, order_index, is_active)
-     VALUES (UUID(), ?, ?, ?, ?, ?, TRUE)`,
-    [CATEGORY, section.title, htmlContent, "Gigi Garena.html", section.order]
-  );
-
-  console.log(`  ✅ Inserted: "${section.title}" (${htmlContent.length} chars)`);
-  inserted++;
+if (dryRun || writeSql) {
+  sections.forEach((section) => {
+    const htmlContent = wrap(section.content);
+    console.log(`${section.order}. ${section.title}: ${htmlContent.length} chars`);
+  });
 }
 
-await pool.end();
-console.log(`\n🎉 Done! Inserted ${inserted} policy sections into DB.`);
+if (writeSql) {
+  const values = sections
+    .map((section) => {
+      const htmlContent = wrap(section.content);
+      return `(UUID(), '${sqlString(CATEGORY)}', '${sqlString(section.title)}', '${sqlString(htmlContent)}', 'Gigi Garena.html', ${section.order}, TRUE)`;
+    })
+    .join(",\n");
+  const legacyCategory = "ChÃ­nh sÃ¡ch Ä‘Ã o táº¡o";
+  const migration = `-- Import full L&D policy content from Gigi Garena article 146.\nDELETE FROM policies\nWHERE source_file = 'Gigi Garena.html'\n   OR category IN ('${sqlString(CATEGORY)}', '${sqlString(legacyCategory)}');\n\nINSERT INTO policies (id, category, title, content, source_file, order_index, is_active) VALUES\n${values};\n`;
+  await fs.writeFile(
+    path.join(ROOT, "server", "migrations", "016_policy_content_mysql.sql"),
+    migration,
+    "utf-8",
+  );
+  await fs.writeFile(
+    path.join(ROOT, "server", "scripts", "import-policy.sql"),
+    `-- ============================================================\n-- import-policy.sql\n-- Import full L&D policy content into DB.\n-- Usage: mysql -u root -p learning_journey < server/scripts/import-policy.sql\n-- ============================================================\n\n${migration}\nSELECT id, title, order_index, LENGTH(content) AS content_size\nFROM policies\nWHERE category = '${sqlString(CATEGORY)}'\nORDER BY order_index;\n`,
+    "utf-8",
+  );
+  console.log("Wrote server/migrations/016_policy_content_mysql.sql");
+  console.log("Wrote server/scripts/import-policy.sql");
+  process.exit(0);
+}
+
+if (dryRun) {
+  console.log("Dry run complete. No database changes were made.");
+  process.exit(0);
+}
+
+const pool = mysql.createPool({
+  uri: databaseUrl,
+  waitForConnections: true,
+  connectionLimit: 5,
+});
+
+try {
+  await pool.execute("DELETE FROM policies WHERE category = ?", [CATEGORY]);
+
+  for (const section of sections) {
+    const htmlContent = wrap(section.content);
+    await pool.execute(
+      `INSERT INTO policies (id, category, title, content, source_file, order_index, is_active)
+       VALUES (UUID(), ?, ?, ?, ?, ?, TRUE)`,
+      [CATEGORY, section.title, htmlContent, "Gigi Garena.html", section.order],
+    );
+    console.log(`Inserted ${section.title} (${htmlContent.length} chars)`);
+  }
+
+  console.log(`Done. Imported ${sections.length} policy sections.`);
+} finally {
+  await pool.end();
+}

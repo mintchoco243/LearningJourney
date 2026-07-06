@@ -1,9 +1,3 @@
--- ============================================================
--- import-policy.sql
--- Import full L&D policy content into DB.
--- Usage: mysql -u root -p learning_journey < server/scripts/import-policy.sql
--- ============================================================
-
 -- Import full L&D policy content from Gigi Garena article 146.
 DELETE FROM policies
 WHERE source_file = 'Gigi Garena.html'
@@ -192,8 +186,3 @@ INSERT INTO policies (id, category, title, content, source_file, order_index, is
 <p style="text-align: justify;"><span style="font-size: 10pt; font-family: arial, helvetica, sans-serif;">Nếu bạn có những câu hỏi khác liên quan, vui lòng liên hệ Bộ phận Đào tạo: thutrang.pham@garena.vn hoặc minhngoc.phamnguyen@garena.vn</span></p><p></p>
 <p style="text-align: center;"><span style="font-family: arial, helvetica, sans-serif; font-size: 10pt;">Best regards,</span><br>
 <span style="font-family: arial, helvetica, sans-serif; font-size: 10pt;">Bộ Phận Đào Tạo</span></p></div>', 'Gigi Garena.html', 4, TRUE);
-
-SELECT id, title, order_index, LENGTH(content) AS content_size
-FROM policies
-WHERE category = 'Chính sách đào tạo'
-ORDER BY order_index;
