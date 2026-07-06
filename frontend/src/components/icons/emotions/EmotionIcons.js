@@ -1,8 +1,8 @@
 import React from "react";
 
 // 1. Quá tệ: Mếu nhiều, lông mày buồn
-export const IconTerrible = ({ size = 24, color = "currentColor", ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+export const IconTerrible = ({ size = 24, color = "currentColor", style = {}, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...style }} {...props}>
     {/* Sad eyebrows */}
     <line x1="7" y1="10" x2="10" y2="8"></line>
     <line x1="17" y1="10" x2="14" y2="8"></line>
@@ -15,8 +15,8 @@ export const IconTerrible = ({ size = 24, color = "currentColor", ...props }) =>
 );
 
 // 2. Không hài lòng: Mếu nhẹ
-export const IconBad = ({ size = 24, color = "currentColor", ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+export const IconBad = ({ size = 24, color = "currentColor", style = {}, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...style }} {...props}>
     {/* Slight Frown */}
     <path d="M8 15 Q 12 13 16 15"></path>
     {/* Eyes */}
@@ -26,8 +26,8 @@ export const IconBad = ({ size = 24, color = "currentColor", ...props }) => (
 );
 
 // 3. Bình thường: Nét ngang
-export const IconNeutral = ({ size = 24, color = "currentColor", ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+export const IconNeutral = ({ size = 24, color = "currentColor", style = {}, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...style }} {...props}>
     {/* Flat mouth */}
     <line x1="8" y1="15" x2="16" y2="15"></line>
     {/* Eyes */}
@@ -37,8 +37,8 @@ export const IconNeutral = ({ size = 24, color = "currentColor", ...props }) => 
 );
 
 // 4. Hài lòng: Mỉm cười nhẹ
-export const IconGood = ({ size = 24, color = "currentColor", ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+export const IconGood = ({ size = 24, color = "currentColor", style = {}, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...style }} {...props}>
     {/* Slight smile */}
     <path d="M8 14 Q 12 16 16 14"></path>
     {/* Eyes */}
@@ -48,8 +48,8 @@ export const IconGood = ({ size = 24, color = "currentColor", ...props }) => (
 );
 
 // 5. Tuyệt vời: Cười to (miệng mở rông) và mắt cong vui vẻ
-export const IconExcellent = ({ size = 24, color = "currentColor", ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+export const IconExcellent = ({ size = 24, color = "currentColor", style = {}, ...props }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", ...style }} {...props}>
     {/* Big D-shaped smile (laughing) */}
     <path d="M7 14 C 7 19 17 19 17 14 Z" fill={color}></path>
     {/* Happy curved eyes ^^ */}
