@@ -10,15 +10,14 @@ export const RATING_FACES = [
   { value: 4, face: <IconGood size="1em" />, label: "Hài lòng", bg: "#94d66b" },
   { value: 5, face: <IconExcellent size="1em" />, label: "Tuyệt vời", bg: "#45b866" },
 ];
-
 export function FaceScale({ value, onChange, faces = RATING_FACES, compact = false }) {
   return React.createElement("div", {
     style: {
       display: "grid",
       gridTemplateColumns: "repeat(5, 1fr)",
-      gap: compact ? 8 : 12,
+      gap: 12,
       width: "100%",
-      maxWidth: compact ? 460 : 550,
+      maxWidth: 550,
       margin: "0",
       justifyItems: "stretch",
     },
@@ -35,8 +34,8 @@ export function FaceScale({ value, onChange, faces = RATING_FACES, compact = fal
           background: value === item.value ? "var(--ui-control-hover)" : "transparent",
           color: "var(--ui-text)",
           borderRadius: 8,
-          padding: compact ? "10px 6px" : "12px 8px",
-          minHeight: compact ? 52 : 64,
+          padding: "12px 8px",
+          minHeight: 64,
           cursor: "pointer",
           display: "flex",
           flexDirection: "column",
@@ -47,14 +46,14 @@ export function FaceScale({ value, onChange, faces = RATING_FACES, compact = fal
       },
         React.createElement("span", {
           style: {
-            width: compact ? 30 : 38,
-            height: compact ? 30 : 38,
+            width: 38,
+            height: 38,
             borderRadius: "50%",
             background: item.bg,
             display: "grid",
             placeItems: "center",
             color: "rgba(0,0,0,0.55)",
-            fontSize: compact ? 18 : 22,
+            fontSize: 22,
             fontWeight: 800,
           },
         }, item.face)

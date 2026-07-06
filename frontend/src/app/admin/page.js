@@ -57,7 +57,7 @@ function DevLoginButton() {
 
   return (
     <button className="adm-btn adm-btn--sec" onClick={login} disabled={loading}>
-      {loading ? "Dang dang nhap..." : "Dev login"}
+      {loading ? "Đang đăng nhập..." : "Dev login"}
     </button>
   );
 }
@@ -174,11 +174,11 @@ function DevLoginButton() {
     if (adminSession.status === "unauthenticated") {
       return (
         <AdminGateMessage
-          title="Can dang nhap"
-          message="Dang nhap bang tai khoan Garena de tiep tuc vao man admin."
+          title="Cần đăng nhập"
+          message="Đăng nhập bằng tài khoản Garena để tiếp tục vào màn admin."
           action={
             <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-              <a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Dang nhap Garena</a>
+              <a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Đăng nhập Garena</a>
               {process.env.NODE_ENV !== "production" && <DevLoginButton />}
             </div>
           }
@@ -188,18 +188,18 @@ function DevLoginButton() {
     if (adminSession.status === "forbidden") {
       return (
         <AdminGateMessage
-          title="Khong co quyen admin"
-          message="Tai khoan cua ban chua nam trong danh sach admin duoc phe duyet."
-          action={<button className="adm-btn" onClick={() => { window.location.href = "/"; }}>Ve trang chinh</button>}
+          title="Không có quyền admin"
+          message="Tài khoản của bạn chưa nằm trong danh sách admin được phê duyệt."
+          action={<button className="adm-btn" onClick={() => { window.location.href = "/"; }}>Về trang chính</button>}
         />
       );
     }
     if (adminSession.status === "error") {
       return (
         <AdminGateMessage
-          title="Khong kiem tra duoc quyen"
-          message="Thu tai lai trang hoac kiem tra backend dang chay."
-          action={<button className="adm-btn adm-btn--primary" onClick={() => window.location.reload()}>Tai lai</button>}
+          title="Không kiểm tra được quyền"
+          message="Thử tải lại trang hoặc kiểm tra backend đang chạy."
+          action={<button className="adm-btn adm-btn--primary" onClick={() => window.location.reload()}>Tải lại</button>}
         />
       );
     }

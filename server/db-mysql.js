@@ -10,6 +10,7 @@ export function mysqlPool() {
       waitForConnections: true,
       connectionLimit: 10,
       namedPlaceholders: false,
+      dateStrings: true,
     });
   }
   return pool;

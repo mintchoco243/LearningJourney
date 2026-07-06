@@ -216,7 +216,7 @@ const D = GLH_DATA;
         </div>
         {confirming ? (
           <div className="modal-bg" style={{ zIndex: 150, background: "rgba(13,17,23,0.72)" }} onClick={() => !submitting && setConfirming(false)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, padding: "22px 24px" }}>
               <h3 style={{ margin: "0 0 10px", color: "var(--ui-heading)", fontSize: 18 }}>Xác nhận gửi đánh giá</h3>
               <p style={{ margin: 0, color: "var(--ui-text)", fontSize: 14, lineHeight: 1.6 }}>Bạn muốn gửi đánh giá cho khóa học này?</p>
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 22, flexWrap: "wrap" }}>
@@ -553,18 +553,22 @@ const D = GLH_DATA;
                       message: "Bạn xác nhận đã hoàn thành khóa học này?",
                       confirmText: "Xác nhận hoàn thành",
                     }),
-                  }, "Đánh dấu đã hoàn thành") : null),
-            showRatingForm ? React.createElement(CourseRatingPopup, {
-              course: modalCourse,
-              onClose: () => setRatingFormCourseId(null),
-              onSubmitted: handleRatingSubmitted,
-            }) : null),
-          React.createElement(ConfirmPopup, {
-            dialog: confirmDialog,
-            busy: !!busyAction,
-            onCancel: () => setConfirmDialog(null),
-            onConfirm: handleConfirm,
-          }))));
+                  }, "Đánh dấu đã hoàn thành") : null)
+          )
+        )
+      ),
+      showRatingForm ? React.createElement(CourseRatingPopup, {
+        course: modalCourse,
+        onClose: () => setRatingFormCourseId(null),
+        onSubmitted: handleRatingSubmitted,
+      }) : null,
+      React.createElement(ConfirmPopup, {
+        dialog: confirmDialog,
+        busy: !!busyAction,
+        onCancel: () => setConfirmDialog(null),
+        onConfirm: handleConfirm,
+      })
+    );
   }
 
   export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };

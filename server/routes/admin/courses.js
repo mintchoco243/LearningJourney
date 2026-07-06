@@ -108,6 +108,9 @@ adminCoursesRouter.post("/", async (req, res, next) => {
     const normalizedRating = normalizeRating(rating);
     if (normalizedRating === null) return res.status(400).json({ error: "INVALID_RATING" });
 
+    const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
+    const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+
     await query(
       `INSERT INTO courses
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
@@ -118,11 +121,11 @@ adminCoursesRouter.post("/", async (req, res, next) => {
           $18, $19, $20, $21, $22, 0, $17)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
-        normalizedRating, skill_tags, rank_targets, role_targets, type, min_participants,
+        normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
-        session_date || null, session_time || null, location || null, max_participants || null,
+        session_date || null, session_time || null, location || null, cleanMax,
       ]
     );
 
@@ -154,6 +157,9 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
     const check = await query("SELECT id FROM courses WHERE id = $1", [id]);
     if (!check.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
 
+    const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
+    const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+
     await query(
       `UPDATE courses
        SET course_code = $2, title = $3, trainer = $4, trainer_type = $5, format = $6, duration_hours = $7,
@@ -166,11 +172,11 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
        WHERE id = $1`,
       [
         id, course_code || id, title, trainer, trainer_type || "internal", format, duration_hours,
-        normalizedRating, skill_tags, rank_targets, role_targets, type, min_participants,
+        normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
         registration_url, description, xp_reward,
         is_active === undefined ? true : is_active,
         status || "open", material_url || null,
-        session_date || null, session_time || null, location || null, max_participants || null,
+        session_date || null, session_time || null, location || null, cleanMax,
       ]
     );
 
