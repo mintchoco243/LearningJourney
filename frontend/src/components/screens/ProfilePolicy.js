@@ -19,6 +19,111 @@ const { CourseModal, CourseCard } = GLHParts;
 
 
 
+function parseRequestList(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+  if (typeof value !== "string") return [value];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return [value];
+  }
+}
+
+function requestStatusMeta(status) {
+  const normalized = String(status || "pending").toLowerCase();
+  if (normalized === "approved") return { label: "Đã duyệt", color: "#2BB6A3", bg: "rgba(43,182,163,.12)" };
+  if (normalized === "rejected") return { label: "Từ chối", color: "#E41E26", bg: "rgba(228,30,38,.12)" };
+  if (normalized === "in_progress" || normalized === "in_review") return { label: "Đang xử lý", color: "#F5A623", bg: "rgba(245,166,35,.14)" };
+  return { label: "Chờ duyệt", color: "#8A93A8", bg: "rgba(138,147,168,.14)" };
+}
+
+function requestTitle(request) {
+  const skills = parseRequestList(request.skills_needed).filter(Boolean).join(", ");
+  if (skills) return skills;
+  const topic = String(request.description || "").split("\n").find((line) => line.toLowerCase().startsWith("topic:"));
+  if (topic) return topic.replace(/^topic:\s*/i, "");
+  return request.description?.slice(0, 80) || "Yêu cầu hỗ trợ đào tạo";
+}
+
+function MyLdRequestsPanel() {
+  const [requests, setRequests] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ld-requests/mine", { credentials: "include" })
+      .then((res) => res.ok ? res.json() : { requests: [] })
+      .then((data) => {
+        if (!cancelled) setRequests(Array.isArray(data.requests) ? data.requests : []);
+      })
+      .catch(() => {
+        if (!cancelled) setRequests([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return React.createElement("div", { className: "u-card", style: { marginBottom: 24, padding: 18 } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: requests.length || loading ? 14 : 0 } },
+      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, minWidth: 0 } },
+        React.createElement("div", { style: { width: 34, height: 34, borderRadius: 8, background: "rgba(228,30,38,.1)", display: "grid", placeItems: "center", flex: "0 0 auto" } },
+          React.createElement(Icon, { name: "message-square", size: 16, color: "var(--glh-accent)" })),
+        React.createElement("div", { style: { minWidth: 0 } },
+          React.createElement("h3", { style: { margin: 0, fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Yêu cầu hỗ trợ đào tạo của tôi"),
+          React.createElement("div", { style: { marginTop: 3, fontSize: 12, color: "var(--ui-muted)" } },
+            loading ? "Đang tải trạng thái..." : `${requests.length} yêu cầu đã gửi`)
+        )
+      )
+    ),
+    loading ? React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)", padding: "8px 0" } }, "Đang tải...") :
+      requests.length === 0 ? React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)", lineHeight: 1.6 } },
+        "Bạn chưa gửi yêu cầu hỗ trợ đào tạo nào.")
+        : React.createElement("div", { style: { display: "grid", gap: 10 } },
+          requests.map((request) => {
+            const status = requestStatusMeta(request.status);
+            return React.createElement("div", {
+              key: request.id,
+              style: {
+                border: "1px solid var(--ui-box-border)",
+                borderRadius: 8,
+                background: "var(--ui-box)",
+                padding: "12px 14px",
+                display: "grid",
+                gap: 6,
+              },
+            },
+              React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 } },
+                React.createElement("div", { style: { minWidth: 0 } },
+                  React.createElement("div", { style: { fontSize: 14, fontWeight: 700, color: "var(--ui-heading)", overflowWrap: "anywhere" } }, requestTitle(request)),
+                  React.createElement("div", { style: { marginTop: 4, fontSize: 12, color: "var(--ui-muted)" } },
+                    request.created_at ? `Gửi ngày ${fmtDate(request.created_at)}` : "Đã gửi")
+                ),
+                React.createElement("span", {
+                  style: {
+                    flex: "0 0 auto",
+                    borderRadius: 999,
+                    padding: "4px 9px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: status.color,
+                    background: status.bg,
+                  },
+                }, status.label)
+              ),
+              request.admin_note ? React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", lineHeight: 1.55 } },
+                React.createElement("strong", { style: { color: "var(--ui-heading)" } }, "Ghi chú từ L&D: "),
+                request.admin_note
+              ) : null
+            );
+          })
+        )
+  );
+}
+
 /* ---------- Profile Screen ---------- */
 export function Profile(props) {
   const { user, actions } = useGame();
@@ -83,6 +188,8 @@ export function Profile(props) {
         React.createElement(Icon, { name: "arrow-left", size: 18 }),
         "Dashboard"
       ),
+
+      React.createElement(MyLdRequestsPanel, null),
 
       // Hero card - profile header
       React.createElement("div", { className: "dash-hero", style: { marginBottom: 40 } },
