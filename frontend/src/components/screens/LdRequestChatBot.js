@@ -120,6 +120,8 @@ export function LdRequestPopup(props) {
     format: "",
     format_other: "",
     timing: "",
+    weekly_hours: "",
+    preferred_trainers: "",
     scope: "individual",
     scope_other: "",
     notes: "",
@@ -167,6 +169,8 @@ export function LdRequestPopup(props) {
         `Goal: ${form.goal}`,
         form.timing ? `Preferred timing: ${form.timing}` : "",
         requestScope ? `Scope: ${requestScope}` : "",
+        form.weekly_hours ? `Weekly hours: ${form.weekly_hours}` : "",
+        form.preferred_trainers ? `Preferred trainers: ${form.preferred_trainers}` : "",
       ].filter(Boolean).join("\n");
       const res = await fetch("/api/ld-requests", {
         method: "POST",
@@ -177,6 +181,8 @@ export function LdRequestPopup(props) {
           description,
           skills_needed: [form.topic],
           preferred_formats: preferredFormat ? [preferredFormat] : [],
+          weekly_hours: form.weekly_hours,
+          preferred_trainers: form.preferred_trainers,
           other_notes: form.notes,
           topic: form.topic,
           goal: form.goal,
@@ -188,14 +194,14 @@ export function LdRequestPopup(props) {
       });
       if (!res.ok) {
         const error = await res.json().catch(() => ({}));
-        throw new Error(error.error || "Request failed");
+        throw new Error(error.error || "Không thể gửi yêu cầu");
       }
       setSubmitted(true);
       setTimeout(() => props.onClose(), 2000);
     } catch (e) {
       setSubmitError(e.name === "AbortError"
-        ? "Khong ket noi duoc API. Vui long thu lai sau."
-        : (e.message || "Request failed. Please try again."));
+        ? "Không kết nối được API. Vui lòng thử lại sau."
+        : (e.message || "Không thể gửi yêu cầu. Vui lòng thử lại."));
     } finally {
       clearTimeout(timeout);
       setSubmitting(false);
@@ -306,6 +312,26 @@ export function LdRequestPopup(props) {
               }
             }, t.label))
           )
+        ),
+
+        // Weekly hours
+        React.createElement(Field, { icon: "timer", label: "Thời lượng có thể dành cho việc học mỗi tuần" },
+          React.createElement("input", {
+            className: "u-input",
+            placeholder: "Ví dụ: 2 giờ/tuần, 1 buổi/tuần, linh hoạt theo lịch team...",
+            value: form.weekly_hours,
+            onChange: e => setForm(p => ({ ...p, weekly_hours: e.target.value })),
+          })
+        ),
+
+        // Preferred trainers
+        React.createElement(Field, { icon: "user-check", label: "Trainer / đơn vị đào tạo mong muốn" },
+          React.createElement("input", {
+            className: "u-input",
+            placeholder: "Ví dụ: L&D Team, Product Guild, chuyên gia bên ngoài, Coursera...",
+            value: form.preferred_trainers,
+            onChange: e => setForm(p => ({ ...p, preferred_trainers: e.target.value })),
+          })
         ),
 
         // Scope

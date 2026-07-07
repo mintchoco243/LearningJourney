@@ -43,6 +43,8 @@ ldRequestsRouter.post("/", async (req, res, next) => {
         : [];
     if (preferred_format) preferredFormats.push(preferred_format);
     const otherNotes = [legacyOtherNotes, notes].filter(Boolean).join("\n") || null;
+    const weeklyHours = weekly_hours ?? null;
+    const preferredTrainers = preferred_trainers ?? null;
 
     if (!description || !description.trim()) {
       return res.status(400).json({ error: "DESCRIPTION_REQUIRED" });
@@ -59,8 +61,8 @@ ldRequestsRouter.post("/", async (req, res, next) => {
         requestTopic && normalizedSkills.length === 0 ? [requestTopic] : normalizedSkills,
         description,
         preferredFormats,
-        weekly_hours,
-        preferred_trainers,
+        weeklyHours,
+        preferredTrainers,
         otherNotes,
         "pending",
       ]
