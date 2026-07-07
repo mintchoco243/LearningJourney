@@ -157,6 +157,8 @@ export function LdRequestPopup(props) {
     if (!form.goal.trim()) { alert("Vui lòng mô tả mục tiêu học tập"); return; }
     setSubmitting(true);
     setSubmitError("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     try {
       const preferredFormat = form.format === "other" ? form.format_other : form.format;
       const requestScope = form.scope === "other" ? form.scope_other : form.scope;
@@ -170,6 +172,7 @@ export function LdRequestPopup(props) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        signal: controller.signal,
         body: JSON.stringify({
           description,
           skills_needed: [form.topic],
@@ -183,12 +186,18 @@ export function LdRequestPopup(props) {
           notes: form.notes,
         }),
       });
-      if (!res.ok) throw new Error("Lỗi gửi yêu cầu");
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}));
+        throw new Error(error.error || "Request failed");
+      }
       setSubmitted(true);
       setTimeout(() => props.onClose(), 2000);
     } catch (e) {
-      setSubmitError(e.message || "Request failed. Please try again.");
+      setSubmitError(e.name === "AbortError"
+        ? "Khong ket noi duoc API. Vui long thu lai sau."
+        : (e.message || "Request failed. Please try again."));
     } finally {
+      clearTimeout(timeout);
       setSubmitting(false);
     }
   };
