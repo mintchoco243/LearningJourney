@@ -9,6 +9,88 @@ const D = GLH_DATA;
 const { Icon } = GLHUI;
 const { useGame } = GLHEngine;
 
+function renderInlineMarkdown(text, keyPrefix) {
+  const parts = [];
+  const pattern = /(\*\*[^*]+\*\*|\*[^*]+\*|__[^_]+__|_[^_]+_|\[[^\]]+\]\(https?:\/\/[^)\s]+\)|https?:\/\/[^\s]+)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+
+    const token = match[0];
+    const key = `${keyPrefix}-${parts.length}`;
+    if (token.startsWith("**") || token.startsWith("__")) {
+      parts.push(React.createElement("strong", { key }, token.slice(2, -2)));
+    } else if (token.startsWith("*") || token.startsWith("_")) {
+      parts.push(React.createElement("em", { key }, token.slice(1, -1)));
+    } else if (token.startsWith("[")) {
+      const link = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+      parts.push(React.createElement("a", { key, href: link[2], target: "_blank", rel: "noreferrer" }, link[1]));
+    } else {
+      parts.push(React.createElement("a", { key, href: token, target: "_blank", rel: "noreferrer" }, token));
+    }
+
+    lastIndex = pattern.lastIndex;
+  }
+
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
+
+function normalizeBotMarkdown(text) {
+  if (!text || /(^|\n)\s*[-*]\s+\S/.test(text)) return text;
+  const chunks = text.split(/\s+-\s+/).map((chunk) => chunk.trim()).filter(Boolean);
+  if (chunks.length < 3) return text;
+  return `${chunks[0]}\n${chunks.slice(1).map((chunk) => `- ${chunk}`).join("\n")}`;
+}
+
+function FormattedMessage({ text, role }) {
+  const normalized = role === "bot" ? normalizeBotMarkdown(text) : text;
+  const lines = normalized.split(/\r?\n/);
+  const nodes = [];
+  let listItems = [];
+
+  const flushList = () => {
+    if (!listItems.length) return;
+    const items = listItems;
+    listItems = [];
+    nodes.push(React.createElement("ul", { key: `ul-${nodes.length}` },
+      items.map((item, itemIdx) => React.createElement("li", { key: itemIdx },
+        renderInlineMarkdown(item, `li-${nodes.length}-${itemIdx}`)
+      ))
+    ));
+  };
+
+  lines.forEach((rawLine, idx) => {
+    const line = rawLine.trim();
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    const bullet = line.match(/^[-*]\s+(.+)$/);
+    if (bullet) {
+      listItems.push(bullet[1]);
+      return;
+    }
+
+    flushList();
+    const label = line.match(/^([^:]{2,28}):\s+(.+)$/);
+    nodes.push(React.createElement("p", { key: `p-${idx}` },
+      label
+        ? React.createElement(React.Fragment, null,
+            React.createElement("strong", null, label[1] + ": "),
+            renderInlineMarkdown(label[2], `p-${idx}`)
+          )
+        : renderInlineMarkdown(line, `p-${idx}`)
+    ));
+  });
+
+  flushList();
+  return React.createElement("div", { className: "chat-message-format" }, nodes);
+}
+
 const Field = ({ icon, label, required, children }) =>
   React.createElement("div", { style: { marginBottom: 22 } },
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 8 } },
@@ -43,6 +125,8 @@ export function LdRequestPopup(props) {
     notes: "",
   });
   const [submitted, setSubmitted] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState("");
 
   const formatOptions = [
     { id: "online", label: "Online (Zoom / Meet)" },
@@ -71,26 +155,42 @@ export function LdRequestPopup(props) {
   const handleSubmit = async () => {
     if (!form.topic.trim()) { alert("Vui lòng nhập tên khóa học / chủ đề muốn học"); return; }
     if (!form.goal.trim()) { alert("Vui lòng mô tả mục tiêu học tập"); return; }
+    setSubmitting(true);
+    setSubmitError("");
     try {
+      const preferredFormat = form.format === "other" ? form.format_other : form.format;
+      const requestScope = form.scope === "other" ? form.scope_other : form.scope;
+      const description = [
+        `Topic: ${form.topic}`,
+        `Goal: ${form.goal}`,
+        form.timing ? `Preferred timing: ${form.timing}` : "",
+        requestScope ? `Scope: ${requestScope}` : "",
+      ].filter(Boolean).join("\n");
       const res = await fetch("/api/ld-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
+          description,
+          skills_needed: [form.topic],
+          preferred_formats: preferredFormat ? [preferredFormat] : [],
+          other_notes: form.notes,
           topic: form.topic,
           goal: form.goal,
-          preferred_format: form.format === "other" ? form.format_other : form.format,
+          preferred_format: preferredFormat,
           preferred_timing: form.timing,
-          scope: form.scope === "other" ? form.scope_other : form.scope,
+          scope: requestScope,
           notes: form.notes,
         }),
       });
       if (!res.ok) throw new Error("Lỗi gửi yêu cầu");
+      setSubmitted(true);
+      setTimeout(() => props.onClose(), 2000);
     } catch (e) {
-      // continue to success UI even if API fails
+      setSubmitError(e.message || "Request failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitted(true);
-    setTimeout(() => props.onClose(), 2000);
   };
 
 
@@ -234,11 +334,24 @@ export function LdRequestPopup(props) {
         ),
 
         // Footer
+        submitError ? React.createElement("div", {
+          style: {
+            background: "rgba(228,30,38,.12)",
+            border: "1px solid rgba(228,30,38,.35)",
+            borderRadius: 8,
+            color: "#ff8f8f",
+            fontSize: 13,
+            lineHeight: 1.5,
+            marginBottom: 14,
+            padding: "10px 12px",
+          },
+        }, submitError) : null,
         React.createElement("div", { style: { display: "flex", gap: 12, justifyContent: "flex-end", paddingTop: 4 } },
           React.createElement("button", { className: "glh-btn glh-btn--ghost", onClick: props.onClose }, "Hủy"),
           React.createElement("button", {
             className: "glh-btn glh-btn--primary",
             onClick: handleSubmit,
+            disabled: submitting,
             style: { minWidth: 120 },
           },
             React.createElement(Icon, { name: "send", size: 15, color: "#fff" }), " Gửi yêu cầu"
@@ -424,6 +537,7 @@ export function ChatBot(props) {
               }
             },
               React.createElement("div", {
+                className: "chat-message-bubble",
                 style: {
                   padding: "10px 14px",
                   borderRadius: 8,
@@ -435,7 +549,7 @@ export function ChatBot(props) {
                   marginBottom: msg.hasQuickReplies ? 8 : 0,
                 }
               },
-                msg.text,
+                React.createElement(FormattedMessage, { text: msg.text, role: msg.role }),
                 msg.citations && msg.citations.length > 0 ? React.createElement("div", {
                   style: { marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(255,255,255,0.2)", fontSize: 11 }
                 },

@@ -1234,7 +1234,7 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
 .library-fab {
   position: fixed; bottom: 148px; right: 24px; z-index: 90;
   width: 56px; height: 56px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  display: none; align-items: center; justify-content: center;
   padding: 0;
   background: var(--garena-red); color: #fff;
   font-size: 13px; font-weight: 700; cursor: pointer;
@@ -1291,5 +1291,44 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
   .contact-footer__text {
     font-size: 12px;
   }
+}
+
+/* Chat message rich text */
+.chat-message-format {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.chat-message-format p {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.chat-message-format ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.chat-message-format li {
+  margin: 0;
+  padding-left: 2px;
+  color: inherit;
+}
+.chat-message-format strong {
+  font-weight: 700;
+  color: inherit;
+}
+.chat-message-format em {
+  font-style: italic;
+}
+.chat-message-format a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  border-bottom: 0;
 }
 

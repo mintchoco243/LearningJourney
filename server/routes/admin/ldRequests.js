@@ -17,8 +17,14 @@ adminLdRequestsRouter.get("/", async (req, res, next) => {
 
     const clauses = [];
     if (status) {
-      params.push(status);
-      clauses.push(`r.status = $${params.length}`);
+      if (status === "pending") {
+        clauses.push("r.status IN ('pending', 'new', 'in_review')");
+      } else if (status === "in_progress") {
+        clauses.push("r.status IN ('in_progress', 'in_review')");
+      } else {
+        params.push(status);
+        clauses.push(`r.status = $${params.length}`);
+      }
     }
     if (date) {
       params.push(date);

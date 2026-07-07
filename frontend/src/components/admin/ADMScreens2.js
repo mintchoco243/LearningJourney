@@ -35,10 +35,26 @@ const D = ADM_DATA;
     };
   }
 
+  function toArray(value) {
+    if (Array.isArray(value)) return value;
+    if (!value) return [];
+    if (typeof value !== "string") return [value];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch {
+      return [value];
+    }
+  }
+
+  function normalizeRequestStatus(status) {
+    if (status === "new") return "pending";
+    if (status === "in_review") return "in_progress";
+    return status || "pending";
+  }
+
   function mapRequest(r) {
-    const skills = r.skills_needed
-      ? (Array.isArray(r.skills_needed) ? r.skills_needed : (typeof r.skills_needed === "string" ? JSON.parse(r.skills_needed) : [])).join(", ")
-      : "";
+    const skills = toArray(r.skills_needed).join(", ");
     return {
       id: r.id,
       user_name: r.full_name || r.email || "—",
@@ -47,7 +63,7 @@ const D = ADM_DATA;
       title: skills || r.description?.slice(0, 60) || "L&D Request",
       reason: r.description || "",
       submitted_at: (r.created_at || "").slice(0, 10),
-      status: r.status || "pending",
+      status: normalizeRequestStatus(r.status),
       admin_note: r.admin_note || "",
     };
   }

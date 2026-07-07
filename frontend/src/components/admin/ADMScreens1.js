@@ -119,16 +119,14 @@ const COURSE_STATUSES = [
         }));
       }).catch(() => {});
       apiFetch("/admin/api/ld-requests?status=pending").then(data => {
-        if (data.requests?.length) {
-          setPendingReqs(data.requests.map(r => ({
-            id: r.id,
-            user_name: r.full_name || r.email,
-            dept: "",
-            title: r.description?.slice(0, 60) || "L&D Request",
-            submitted_at: (r.created_at || "").slice(0, 10),
-            status: "pending",
-          })));
-        }
+        setPendingReqs((data.requests || []).map(r => ({
+          id: r.id,
+          user_name: r.full_name || r.email,
+          dept: "",
+          title: r.description?.slice(0, 60) || "L&D Request",
+          submitted_at: (r.created_at || "").slice(0, 10),
+          status: "pending",
+        })));
       }).catch(() => {});
       apiFetch("/admin/api/analytics").then(data => setAnalytics(data)).catch(() => setAnalytics(null));
     }, []);
