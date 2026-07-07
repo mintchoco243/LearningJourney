@@ -189,8 +189,6 @@ export function Profile(props) {
         "Dashboard"
       ),
 
-      React.createElement(MyLdRequestsPanel, null),
-
       // Hero card - profile header
       React.createElement("div", { className: "dash-hero", style: { marginBottom: 40 } },
         React.createElement("div", { className: "dash-hero__avatar" },
@@ -206,6 +204,8 @@ export function Profile(props) {
         React.createElement("div", { style: { display: "flex", gap: 24 } },
           React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
           React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
+
+      React.createElement(MyLdRequestsPanel, null),
 
       // Onboarding profile (Filtered)
       React.createElement("div", { style: { marginBottom: 40 } },
