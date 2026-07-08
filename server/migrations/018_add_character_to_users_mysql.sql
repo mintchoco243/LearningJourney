@@ -1,1 +1,1 @@
-ALTER TABLE users ADD COLUMN IF NOT EXISTS `character` JSON;
+ALTER TABLE users ADD COLUMN `character` JSON;
