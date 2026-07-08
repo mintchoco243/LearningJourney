@@ -97,7 +97,7 @@ const Field = ({ icon, label, required, children }) =>
       React.createElement("div", { style: { width: 28, height: 28, borderRadius: 6, background: "rgba(228,30,38,0.1)", display: "flex", alignItems: "center", justifyContent: "center" } },
         React.createElement(Icon, { name: icon, size: 14, color: "var(--glh-accent)" })
       ),
-      React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, label),
+      React.createElement("span", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, label),
       required ? React.createElement("span", { style: { fontSize: 11, color: "var(--glh-accent)" } }, "*") : null
     ),
     children
@@ -215,7 +215,7 @@ export function LdRequestPopup(props) {
         React.createElement("div", { style: { width: 64, height: 64, borderRadius: "50%", background: "rgba(31,138,91,0.2)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" } },
           React.createElement(Icon, { name: "check", size: 32, color: "#5FD9C8" })
         ),
-        React.createElement("h2", { style: { margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "#fff" } }, "Đã gửi thành công!"),
+        React.createElement("h2", { style: { margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--ui-heading)" } }, "Đã gửi thành công!"),
         React.createElement("p", { style: { color: "var(--rpg-muted)", fontSize: 13, margin: 0 } }, "L&D team sẽ phản hồi bạn trong 2-3 ngày làm việc.")
       )
     );
@@ -225,34 +225,34 @@ export function LdRequestPopup(props) {
     React.createElement("div", {
       className: "modal",
       onClick: (e) => e.stopPropagation(),
-      style: { maxHeight: "85vh", overflowY: "auto", padding: 0, maxWidth: 560 }
+      style: { maxHeight: "85vh", overflow: "hidden", padding: 0, maxWidth: 560, display: "flex", flexDirection: "column" }
     },
       // Header
-      React.createElement("div", { style: { padding: "24px 24px 0" } },
+      React.createElement("div", { style: { padding: "24px 24px 0", flexShrink: 0 } },
         React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
           React.createElement("div", null,
-            React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "#fff" } }, "Gửi yêu cầu học tập"),
+            React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 20, fontWeight: 700, color: "var(--ui-heading)" } }, "Gửi yêu cầu học tập"),
             React.createElement("p", { style: { margin: 0, fontSize: 13, color: "var(--rpg-muted)" } }, "L&D team sẽ xem xét và phản hồi sớm")
           ),
           React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: "var(--rpg-muted)", cursor: "pointer", fontSize: 20, padding: 0, lineHeight: 1 } }, "✕")
         ),
         // User info strip
-        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(255,255,255,0.04)", borderRadius: 8, marginTop: 16, marginBottom: 0 } },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", background: "rgba(0,0,0,0.05)", borderRadius: 8, marginTop: 16, marginBottom: 0 } },
           React.createElement("div", { style: { width: 32, height: 32, borderRadius: "50%", background: "var(--glh-accent)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" } },
             displayName[0].toUpperCase()
           ),
           React.createElement("div", null,
-            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff" } }, displayName),
+            React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "var(--ui-heading)" } }, displayName),
             React.createElement("div", { style: { fontSize: 11, color: "var(--rpg-muted)" } }, displayEmail)
           )
         )
       ),
 
       // Divider
-      React.createElement("div", { style: { height: 1, background: "var(--rpg-border)", margin: "20px 0" } }),
+      React.createElement("div", { style: { height: 1, background: "var(--rpg-border)", margin: "20px 0", flexShrink: 0 } }),
 
       // Form fields
-      React.createElement("div", { style: { padding: "0 24px 24px" } },
+      React.createElement("div", { style: { padding: "0 24px 24px", overflowY: "auto", flex: 1 } },
 
         // Topic
         React.createElement(Field, { icon: "book-open", label: "Tên khóa học / Chủ đề muốn học", required: true },

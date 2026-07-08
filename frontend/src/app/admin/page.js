@@ -6,6 +6,7 @@ import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
 import { RequestsScreen } from '@/components/admin/ADMScreens2';
 import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen, IntegrationsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
+import { FaqsScreen } from '@/components/admin/ADMScreensFaqs';
 
 const { Sidebar } = ADMComponents;
 
@@ -75,6 +76,7 @@ function DevLoginButton() {
     requests:     { label: "L&D Requests" },
     policy:       { label: "Chính sách L&D" },
     testimonials: { label: "Testimonials" },
+    faqs:         { label: "Quản lý FAQs" },
     site_feedback:{ label: "Site Feedback" },
     bot_settings: { label: "Cấu hình Hệ thống" },
     accounts:     { label: "Admin Accounts" },
@@ -212,6 +214,7 @@ function DevLoginButton() {
       requests:     <RequestsScreen />,
       policy:       <PolicyScreen />,
       testimonials: <TestimonialsScreen />,
+      faqs:         <FaqsScreen />,
       site_feedback:<SiteFeedbackScreen />,
       bot_settings: <IntegrationsScreen />,
       accounts:     adminRole === "super_admin" ? <AccountsScreen /> : null,

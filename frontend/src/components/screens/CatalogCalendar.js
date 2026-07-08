@@ -165,12 +165,12 @@ function ctaColor(cta) {
           href: "https://gigi.garena.vn/form/46",
           target: "_blank",
           rel: "noopener noreferrer",
-          className: "glh-btn glh-btn--secondary",
-          style: { whiteSpace: "nowrap", textDecoration: "none" }
+          className: "glh-btn glh-btn--primary",
+          style: { whiteSpace: "nowrap", textDecoration: "none", fontSize: 13 }
         }, "Đăng ký hỗ trợ chi phí đào tạo"),
         React.createElement("button", {
           className: "glh-btn glh-btn--primary",
-          style: { whiteSpace: "nowrap" },
+          style: { whiteSpace: "nowrap", fontSize: 13 },
           onClick: () => props.onOpenLdRequest && props.onOpenLdRequest()
         }, "Gửi yêu cầu hỗ trợ đào tạo")),
 
@@ -329,9 +329,9 @@ function ctaColor(cta) {
     events.forEach((e) => { const d = new Date(e.start_date); const k = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); (evByDay[k] = evByDay[k] || []).push(e); });
 
     return React.createElement("div", { className: props.embedded ? undefined : "glh-container fade-screen", style: { padding: props.embedded ? "24px 0 0" : "28px clamp(16px,4vw,40px) 80px" } },
-      React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 } },
-        React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, "Lịch đào tạo 2026"),
-        React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4 } },
+      React.createElement("div", { style: { marginBottom: 12 } },
+        React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 10 } }, "Lịch sắp tới"),
+        React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4, width: "fit-content" } },
           [["quarter", "Theo quý"], ["month", "Theo tháng"]].map(([v, l]) => React.createElement("button", {
             key: v, onClick: () => setView(v),
             className: "appbar__link" + (view === v ? " is-active" : ""),
@@ -383,10 +383,14 @@ function ctaColor(cta) {
               const ctaText = getCourseCta(e, user)?.text || "Chi tiết";
               const titleInfo = `${e.title}\nThời gian: ${e.start_time || "N/A"}\nĐịa điểm: ${e.location || "Online"}\nTrạng thái: ${ctaText}`;
               return React.createElement("button", {
-                key: e.session_id || e.course_id, className: "cal-ev", style: { background: col.bg, color: col.color },
+                key: e.session_id || e.course_id, className: "cal-ev",
+                style: { background: col.bg, color: col.color, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 1 },
                 onClick: () => onOpen(e),
                 title: titleInfo
-              }, e.start_time ? `${e.start_time} · ${e.title}` : e.title);
+              },
+                React.createElement("span", { style: { lineHeight: 1.3, fontWeight: 600 } }, e.title),
+                (e.start_time || e.location) && React.createElement("span", { style: { fontSize: "0.82em", opacity: 0.72, lineHeight: 1.2 } },
+                  [e.start_time, e.location].filter(Boolean).join(" · ")));
             }));
         }))
     );

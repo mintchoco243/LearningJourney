@@ -5,12 +5,31 @@ import { GLHUI } from '@/components/GLHUI';
 
 const { Icon } = GLHUI;
 
+function FaqItem({ item }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  return React.createElement("div", {
+    style: {
+      background: "var(--ui-box)",
+      border: "1px solid var(--ui-box-border)",
+      borderRadius: 10,
+      overflow: "hidden",
+    }
+  },
+    React.createElement("button", {
+      onClick: () => setIsOpen(o => !o),
+      style: { width: "100%", background: "none", border: "none", padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, textAlign: "left", cursor: "pointer" }
+    },
+      React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: isOpen ? "var(--glh-accent)" : "var(--ui-heading)" } }, item.question),
+      React.createElement("span", { style: { flexShrink: 0, fontWeight: 700, fontSize: 18, color: isOpen ? "var(--glh-accent)" : "var(--ui-muted)" } }, isOpen ? "−" : "+")
+    ),
+    isOpen && React.createElement("div", { style: { padding: "0 20px 14px", fontSize: 14, lineHeight: 1.7, color: "var(--ui-muted)", borderTop: "1px solid var(--ui-box-border)" } }, item.answer)
+  );
+}
+
 export function FAQScreen(props) {
   const [faqs, setFaqs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [openTopics, setOpenTopics] = React.useState(new Set());
-  const [expandedId, setExpandedId] = React.useState(null);
 
   React.useEffect(() => {
     fetch("/api/faqs")
@@ -41,39 +60,14 @@ export function FAQScreen(props) {
   const filteredFaqs = React.useMemo(() => {
     if (!qLower) return faqs;
     return faqs.filter(item => {
-      const matchSearch = !qLower ||
+      return (
         (item.topic && item.topic.toLowerCase().includes(qLower)) ||
         (item.question && item.question.toLowerCase().includes(qLower)) ||
         (item.answer && item.answer.toLowerCase().includes(qLower)) ||
-        (item.keywords && item.keywords.toLowerCase().includes(qLower));
-      return matchSearch;
+        (item.keywords && item.keywords.toLowerCase().includes(qLower))
+      );
     });
   }, [faqs, qLower]);
-
-  const toggleTopic = t => {
-    setOpenTopics(prev => {
-      const next = new Set(prev);
-      if (next.has(t)) next.delete(t); else next.add(t);
-      return next;
-    });
-  };
-
-  const faqItem = item => {
-    const isOpen = expandedId === item.id;
-    return React.createElement("div", {
-      key: item.id || item._id,
-      style: { borderBottom: "1px solid var(--ui-box-border)" }
-    },
-      React.createElement("button", {
-        onClick: () => setExpandedId(isOpen ? null : item.id),
-        style: { width: "100%", background: "none", border: "none", padding: "14px 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, textAlign: "left", cursor: "pointer" }
-      },
-        React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: isOpen ? "var(--glh-accent)" : "var(--ui-heading)" } }, item.question),
-        React.createElement("span", { style: { flexShrink: 0, fontWeight: 700, fontSize: 18, color: isOpen ? "var(--glh-accent)" : "var(--ui-muted)" } }, isOpen ? "−" : "+")
-      ),
-      isOpen && React.createElement("div", { style: { paddingBottom: 14, fontSize: 14, lineHeight: 1.7, color: "var(--ui-muted)" } }, item.answer)
-    );
-  };
 
   return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
     React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 20, marginTop: 0 } }, "Câu hỏi thường gặp (FAQ)"),
@@ -103,46 +97,44 @@ export function FAQScreen(props) {
         ? React.createElement("div", null,
             React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)", marginBottom: 12 } }, "Tìm thấy " + filteredFaqs.length + " kết quả"),
             filteredFaqs.length === 0
-              ? React.createElement("div", { style: { padding: "40px 0", color: "var(--ui-muted)", fontSize: 14 } }, "Không tìm thấy nội dung phù hợp. Bạn có thể gửi câu hỏi cho L&D qua Seatalk.")
-              : React.createElement("div", { style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 10, padding: "0 20px" } },
-                  filteredFaqs.map(faqItem)
+              ? React.createElement("div", { style: { padding: "40px 0", color: "var(--ui-muted)", fontSize: 14 } }, "Không tìm thấy nội dung phù hợp. Bạn có thể liên hệ bộ phận Đào tạo qua Seatalk.")
+              : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                  filteredFaqs.map(item => React.createElement(FaqItem, { key: item.id || item._id, item }))
                 )
           )
         : topics.length === 0
-          ? React.createElement("div", { style: { padding: "40px 0", color: "var(--ui-muted)", fontSize: 14 } }, "Không tìm thấy nội dung phù hợp. Bạn có thể gửi câu hỏi cho L&D qua Seatalk.")
-          : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+          ? React.createElement("div", { style: { padding: "40px 0", color: "var(--ui-muted)", fontSize: 14 } }, "Không tìm thấy nội dung phù hợp. Bạn có thể liên hệ bộ phận Đào tạo qua Seatalk.")
+          : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20 } },
               topics.map(t => {
-                const isOpen = openTopics.has(t);
                 const items = faqs.filter(f => f.topic === t);
-                return React.createElement("div", {
-                  key: t,
-                  style: { background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 10, overflow: "hidden" }
-                },
-                  React.createElement("button", {
-                    onClick: () => toggleTopic(t),
-                    style: { width: "100%", background: "none", border: "none", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer", textAlign: "left" }
-                  },
-                    React.createElement("span", { style: { fontWeight: 700, fontSize: 15, color: "var(--ui-heading)" } }, t),
-                    React.createElement("span", { style: { fontWeight: 700, fontSize: 18, color: "var(--ui-muted)" } }, isOpen ? "−" : "+")
-                  ),
-                  isOpen && React.createElement("div", { style: { padding: "0 20px", borderTop: "1px solid var(--ui-box-border)" } },
-                    items.map(faqItem)
+                return React.createElement("div", { key: t },
+                  React.createElement("div", {
+                    style: {
+                      display: "inline-block",
+                      fontSize: 11, fontWeight: 700,
+                      letterSpacing: ".06em", textTransform: "uppercase",
+                      color: "var(--glh-accent)",
+                      background: "rgba(228,30,38,0.1)",
+                      border: "1px solid rgba(228,30,38,0.3)",
+                      borderRadius: 999,
+                      padding: "3px 12px",
+                      marginBottom: 10,
+                    }
+                  }, t + " · " + items.length),
+                  React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                    items.map(item => React.createElement(FaqItem, { key: item.id || item._id, item }))
                   )
                 );
               })
             ),
 
-    // Footer banner
+    // Footer
     React.createElement("div", {
-      style: { marginTop: 40, padding: 24, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 12, textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }
+      style: { marginTop: 40, padding: "20px 24px", background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 12 }
     },
-      React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: "var(--ui-heading)" } }, "Bạn vẫn còn thắc mắc khác?"),
-      React.createElement("div", { style: { fontSize: 13, color: "var(--ui-muted)", maxWidth: 460 } }, "Đội ngũ L&D luôn sẵn sàng hỗ trợ và giải đáp mọi thắc mắc về lộ trình cũng như quyền lợi đào tạo của bạn."),
-      React.createElement("a", {
-        href: "mailto:minhngoc.phamnguyen@garena.vn",
-        className: "glh-btn glh-btn--primary",
-        style: { textDecoration: "none" }
-      }, React.createElement(Icon, { name: "send", size: 15, color: "#fff" }), " Gửi thắc mắc cho L&D")
+      React.createElement("p", { style: { margin: 0, fontSize: 13, color: "var(--ui-muted)", lineHeight: 1.7 } },
+        "Bộ phận Đào tạo luôn sẵn sàng hỗ trợ và giải đáp mọi thắc mắc về quyền lợi đào tạo của bạn cũng như giúp bạn tìm kiếm những khóa học phù hợp với nhu cầu. Hãy liên hệ với chúng tôi nhé!"
+      )
     )
   );
 }

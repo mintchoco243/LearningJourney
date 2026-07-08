@@ -174,8 +174,8 @@ const D = GLH_DATA;
 
     return (
       <div className="modal-bg" style={{ zIndex: 130 }} onClick={onClose}>
-        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660, padding: 0, maxHeight: "88vh", overflow: "auto" }}>
-          <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--ui-box-border)" }}>
+        <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 660, padding: 0, maxHeight: "88vh", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "22px 24px 18px", borderBottom: "1px solid var(--ui-box-border)", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16 }}>
               <div>
                 <h3 style={{ margin: "0 0 5px", color: "var(--ui-heading)", fontSize: 19 }}>Đánh giá khóa học</h3>
@@ -186,7 +186,7 @@ const D = GLH_DATA;
               </button>
             </div>
           </div>
-          <div style={{ padding: "22px 28px 28px" }}>
+          <div style={{ padding: "22px 28px 28px", overflowY: "auto", flex: 1 }}>
             <div style={{ marginBottom: 28 }}>
               <div style={{ fontSize: 13, fontWeight: 800, color: "var(--ui-muted)", marginBottom: 14, textTransform: "uppercase", letterSpacing: ".05em" }}>1. Trải nghiệm tổng thể</div>
               <FaceScale value={ratings.overall} onChange={(value) => setRating("overall", value)} faces={RATING_FACES} />
@@ -301,7 +301,7 @@ const D = GLH_DATA;
         React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
           c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
           c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
-          cta && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text))));
+          cta && !["completed", "reserved", "ended"].includes(cta.key) && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text))));
   }
 
   /* ---------- Course modal ---------- */

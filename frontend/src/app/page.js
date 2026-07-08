@@ -326,13 +326,34 @@ function TweaksUI(props) {
     }));
 }
 
+function EmailChip({ email }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(email).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
+  return React.createElement("button", {
+    onClick: copy,
+    style: {
+      display: "inline-flex", alignItems: "center", gap: 5,
+      padding: "3px 10px", borderRadius: 999,
+      background: "rgba(228,30,38,0.1)", border: "1px solid rgba(228,30,38,0.25)",
+      color: copied ? "var(--garena-positive)" : "var(--glh-accent)",
+      fontSize: 12, fontWeight: 600, cursor: "pointer",
+      transition: "color 0.2s",
+    }
+  }, copied ? "Đã sao chép!" : email);
+}
+
 function ContactFooter() {
   return React.createElement("footer", { className: "contact-footer" },
     React.createElement("p", { className: "contact-footer__text" },
       "Mọi thắc mắc vui lòng liên hệ bộ phận People: ",
-      React.createElement("a", { href: "mailto:minhngoc.phamnguyen@garena.vn" }, "minhngoc.phamnguyen@garena.vn"),
+      React.createElement(EmailChip, { email: "minhngoc.phamnguyen@garena.vn" }),
       " hoặc ",
-      React.createElement("a", { href: "mailto:thutrang.pham@garena.vn" }, "thutrang.pham@garena.vn")
+      React.createElement(EmailChip, { email: "thutrang.pham@garena.vn" })
     )
   );
 }

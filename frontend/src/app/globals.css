@@ -623,6 +623,8 @@ img { max-width: 100%; }
 .glh-btn--primary { background: var(--glh-accent); color: #fff; box-shadow: 0 6px 22px -8px var(--glh-accent); }
 .glh-btn--primary:hover { filter: brightness(1.06); }
 .glh-btn--primary:active { filter: brightness(0.94); }
+.glh-btn--secondary { background: transparent; color: var(--glh-accent); border: 1px solid var(--glh-accent); }
+.glh-btn--secondary:hover { background: rgba(228,30,38,0.08); }
 .glh-btn--ghost { background: rgba(255,255,255,0.06); color: var(--rpg-text); border: 1px solid var(--rpg-border-strong); }
 .glh-btn--ghost:hover { background: rgba(255,255,255,0.12); }
 .glh-btn--lg { padding: 18px 40px; font-size: 17px; }

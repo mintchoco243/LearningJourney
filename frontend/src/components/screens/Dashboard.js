@@ -245,6 +245,7 @@ export function Dashboard(props) {
             rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
 
     // ── Lịch đào tạo ─────────────────────────────────────────────────────────
-    React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse })
+    React.createElement("div", { style: { marginTop: 40 } },
+      React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }))
   );
 }

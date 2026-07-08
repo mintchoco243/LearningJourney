@@ -84,8 +84,8 @@ const { useGame } = GLHEngine;
     }
 
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
-      React.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: 560, padding: 0 } },
-        React.createElement("div", { style: { padding: "24px 24px 0", borderBottom: "1px solid var(--ui-box-border)", paddingBottom: 20 } },
+      React.createElement("div", { className: "modal", onClick: (e) => e.stopPropagation(), style: { maxWidth: 560, padding: 0, maxHeight: "88vh", overflow: "hidden", display: "flex", flexDirection: "column" } },
+        React.createElement("div", { style: { padding: "24px 24px 20px", borderBottom: "1px solid var(--ui-box-border)", flexShrink: 0 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
             React.createElement("div", null,
               React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--ui-heading)" } }, "Đánh giá Garena Learning Hub"),
@@ -95,7 +95,7 @@ const { useGame } = GLHEngine;
           )
         ),
 
-        React.createElement("div", { style: { padding: "24px 32px 28px" } },
+        React.createElement("div", { style: { padding: "24px 32px 28px", overflowY: "auto", flex: 1 } },
           React.createElement("label", { style: { display: "flex", alignItems: "center", gap: 10, margin: "0 0 20px", color: "var(--ui-text)", fontSize: 13, fontWeight: 600 } },
             React.createElement("input", { type: "checkbox", checked: anonymous, onChange: (e) => setAnonymous(e.target.checked) }),
             "Gửi ẩn danh"

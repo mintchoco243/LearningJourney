@@ -55,6 +55,7 @@ const { Icon } = GLHUI;
     { id: "requests",     label: "L&D Requests",    icon: "message-square" },
     { id: "policy",       label: "Chính sách",      icon: "layers" },
     { id: "testimonials", label: "Testimonials",    icon: "star" },
+    { id: "faqs",         label: "FAQs",            icon: "help-circle" },
     { id: "site_feedback", label: "Site Feedback",  icon: "message-square" },
     { id: "bot_settings", label: "Cấu hình Hệ thống", icon: "sliders" },
     { id: "accounts",     label: "Admin Accounts",  icon: "shield", superOnly: true },
