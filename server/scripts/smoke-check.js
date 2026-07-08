@@ -44,7 +44,7 @@ if (/master course rows|Session rows live/i.test(adminCoursesSource + userCourse
 }
 
 for (const uiFile of [
-  path.join(root, "frontend", "src", "app", "page.js"),
+  path.join(root, "frontend", "src", "app", "[[...slug]]", "page.js"),
   path.join(root, "frontend", "src", "components", "admin", "ADMScreens1.js"),
   path.join(root, "frontend", "src", "components", "screens", "CatalogCalendar.js"),
   path.join(root, "frontend", "src", "lib", "mockApi.js"),

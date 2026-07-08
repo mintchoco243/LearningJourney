@@ -127,10 +127,10 @@ function MyLdRequestsPanel() {
 export function AvatarEditModal({ initialChar, onClose, onSave, crisp }) {
   const [c, setC] = React.useState(initialChar || { hair: "short", outfit: "red", accessory: "none", skin: "s1" });
   const set = (k, v) => setC((p) => Object.assign({}, p, { [k]: v }));
-  return React.createElement("div", { className: "glh-modal-backdrop", onClick: onClose, style: { zIndex: 9999 } },
-    React.createElement("div", { className: "glh-modal u-card", onClick: e => e.stopPropagation(), style: { width: "100%", maxWidth: 580, padding: 24, background: "var(--rpg-panel)", color: "var(--ui-heading)" } },
+  return React.createElement("div", { className: "modal-bg", onClick: onClose, style: { zIndex: 9999 } },
+    React.createElement("div", { className: "modal", onClick: e => e.stopPropagation(), style: { width: "100%", maxWidth: 580, padding: 24 } },
       React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } },
-        React.createElement("h3", { style: { margin: 0, fontSize: 18, fontWeight: 700 } }, "Chỉnh sửa Avatar"),
+        React.createElement("h3", { style: { margin: 0, fontSize: 18, fontWeight: 700, color: "var(--ui-heading)" } }, "Chỉnh sửa Avatar"),
         React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: "var(--ui-muted)", fontSize: 24, cursor: "pointer" } }, "×")
       ),
       React.createElement("div", { style: { display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" } },

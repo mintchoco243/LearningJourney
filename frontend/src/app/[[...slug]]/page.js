@@ -370,10 +370,37 @@ function AppInner() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const verifiedSessionRef = React.useRef(false);
 
+  // Helper to sync phase and tab based on pathname
+  const syncRouteState = React.useCallback((path = typeof window !== "undefined" ? window.location.pathname : "/") => {
+    if (path === "/library") {
+      setPhase("app");
+      setActiveTab("library");
+    } else if (path === "/policy") {
+      setPhase("policy");
+    } else if (path === "/qa") {
+      setPhase("qa");
+    } else if (path === "/profile") {
+      setPhase("profile");
+    } else if (path === "/store") {
+      setPhase("store");
+    } else {
+      setPhase("app");
+      setActiveTab("home");
+    }
+  }, []);
+
   // initial phase - now starts with login check
   const [phase, setPhase] = React.useState(() => {
     if (!user.email && !user.onboarded) return "login";
     if (!user.quiz_result) return "onboarding";
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/library") return "app";
+      if (path === "/policy") return "policy";
+      if (path === "/qa") return "qa";
+      if (path === "/profile") return "profile";
+      if (path === "/store") return "store";
+    }
     return "app";
   });
 
@@ -402,12 +429,23 @@ function AppInner() {
       .then((data) => {
         if (data && data.user && data.user.email) {
           actions.setUserProfile(data.user, data.enrollments, data.reservations);
-          setPhase(user.quiz_result ? "app" : "onboarding");
+          if (user.quiz_result || data.user.quiz_result) {
+            syncRouteState();
+          } else {
+            setPhase("onboarding");
+          }
         }
       })
       .catch(() => { });
-  }, [actions, user.email, user.onboarded, user.quiz_result]);
-  const [activeTab, setActiveTab] = React.useState("home");
+  }, [actions, user.email, user.onboarded, user.quiz_result, syncRouteState]);
+
+  const [activeTab, setActiveTab] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/library") return "library";
+    }
+    return "home";
+  });
 
   const [course, setCourse] = React.useState(null);
   const [ldRequest, setLdRequest] = React.useState(false);
@@ -416,6 +454,16 @@ function AppInner() {
   const [showTutorial, setShowTutorial] = React.useState(() => {
     try { if (typeof window !== "undefined") { return !localStorage.getItem("glh_tutorial_done"); } } catch (e) { } return false;
   });
+
+  // Listen to browser popstate (back/forward navigation)
+  React.useEffect(() => {
+    if (!user.email || !user.quiz_result) return;
+    const handlePopState = () => {
+      syncRouteState();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [user.email, user.quiz_result, syncRouteState]);
 
   React.useEffect(() => {
     if (phase === "login") return; // Chỉ loại trừ màn hình login, theo dõi toàn bộ phễu onboarding
@@ -433,13 +481,24 @@ function AppInner() {
   }, [activeTab]);
 
   const scrollTo = React.useCallback((id, section) => {
-    if (id === "store") { setPhase("store"); window.scrollTo(0, 0); return; }
-    if (id === "policy") { setPhase("policy"); window.scrollTo(0, 0); return; }
-    if (id === "qa") { setPhase("qa"); window.scrollTo(0, 0); return; }
-    if (id === "profile") { setPhase("profile"); window.scrollTo(0, 0); return; }
     if (section) pendingScroll.current = section;
-    setPhase("app");
-    setActiveTab(id);
+    
+    // 1. Update React state immediately
+    if (id === "home") {
+      setPhase("app");
+      setActiveTab("home");
+    } else if (id === "library") {
+      setPhase("app");
+      setActiveTab("library");
+    } else {
+      setPhase(id);
+    }
+
+    // 2. Push to browser history without Next.js unmount/remount
+    const targetUrl = id === "home" ? "/" : "/" + id;
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", targetUrl);
+    }
     window.scrollTo(0, 0);
   }, []);
 
@@ -454,12 +513,22 @@ function AppInner() {
   }, [t.accent, t.spriteScale, t.displayFont]);
 
   const crisp = t.crisp;
-  const goApp = () => { setPhase("app"); window.scrollTo(0, 0); };
+  const goApp = () => {
+    setPhase("app");
+    setActiveTab("home");
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", "/");
+    }
+    window.scrollTo(0, 0);
+  };
 
   if (!mounted) return null;
   let body;
   if (phase === "login") {
-    body = React.createElement(Login, { onLogin: (email) => { actions.setEmail(email); setPhase(user.quiz_result ? "app" : "onboarding"); } });
+    body = React.createElement(Login, { onLogin: (email) => {
+      actions.setEmail(email);
+      syncRouteState();
+    } });
   } else if (phase === "onboarding") {
     body = React.createElement(Onboarding, { crisp, onStart: (returning) => { returning ? goApp() : setPhase("character"); } });
   } else if (phase === "character") {
@@ -470,23 +539,23 @@ function AppInner() {
     body = React.createElement(Reveal, { crisp, onNext: () => goApp() });
   } else if (phase === "profile") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" },
-        React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } }))
+        React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); setActiveTab("home"); if (typeof window !== "undefined") { window.history.pushState(null, "", "/"); } window.scrollTo(0, 0); } }))
     );
   } else if (phase === "policy") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" },
-        React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } })));
+        React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); setActiveTab("home"); if (typeof window !== "undefined") { window.history.pushState(null, "", "/"); } window.scrollTo(0, 0); } })));
   } else if (phase === "qa") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" }, React.createElement(FAQScreen, null)));
   } else {
     // app - tab-based navigation
     const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
-    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
+    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } });
     let tabContent;
     if (activeTab === "home") {
       tabContent = React.createElement(Dashboard, {

@@ -7,18 +7,15 @@ const { Icon } = GLHUI;
 
 export function AboutModal({ onClose }) {
   return React.createElement("div", {
-    className: "glh-modal-backdrop",
+    className: "modal-bg",
     onClick: onClose,
-    style: { zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }
+    style: { zIndex: 99999 }
   },
     React.createElement("div", {
-      className: "glh-modal u-card",
+      className: "modal u-card",
       onClick: e => e.stopPropagation(),
       style: {
         width: "100%", maxWidth: 620, padding: 32,
-        background: "var(--rpg-panel)", color: "var(--ui-heading)",
-        borderRadius: 16, border: "1px solid var(--rpg-border)",
-        boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
         position: "relative"
       }
     },
