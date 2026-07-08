@@ -34,16 +34,11 @@ meRouter.get("/", async (req, res) => {
 });
 
 meRouter.put("/", async (req, res) => {
-  const { learning_formats, weekly_hours, preferred_trainers, learning_goals } = req.body;
+  const { learning_formats, weekly_hours, preferred_trainers, learning_goals, character } = req.body;
+  const charJson = character !== undefined ? JSON.stringify(character) : null;
   await query(
-    `UPDATE users
-     SET learning_formats = COALESCE($2, learning_formats),
-         weekly_hours = COALESCE($3, weekly_hours),
-         preferred_trainers = COALESCE($4, preferred_trainers),
-         learning_goals = COALESCE($5, learning_goals),
-         updated_at = NOW()
-     WHERE id = $1`,
-    [req.user.id, learning_formats, weekly_hours, preferred_trainers, learning_goals]
+    "UPDATE users SET learning_formats = COALESCE($2, learning_formats), weekly_hours = COALESCE($3, weekly_hours), preferred_trainers = COALESCE($4, preferred_trainers), learning_goals = COALESCE($5, learning_goals), `character` = COALESCE($6, `character`), updated_at = NOW() WHERE id = $1",
+    [req.user.id, learning_formats ?? null, weekly_hours ?? null, preferred_trainers ?? null, learning_goals ?? null, charJson]
   );
   const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0] });

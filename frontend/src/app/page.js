@@ -12,9 +12,11 @@ import { Quiz, Reveal } from '@/components/screens/QuizReveal';
 import { Profile, Policy } from '@/components/screens/ProfilePolicy';
 import { Store } from '@/components/screens/Store';
 import { Dashboard } from '@/components/screens/Dashboard';
-import { Catalog, Calendar } from '@/components/screens/CatalogCalendar';
+import { Catalog } from '@/components/screens/CatalogCalendar';
 import { LdRequestPopup, ChatBot } from '@/components/screens/LdRequestChatBot';
 import { RatingModal, Tutorial } from '@/components/screens/RatingTutorial';
+import { FAQScreen } from '@/components/screens/FAQScreen';
+import { AboutModal } from '@/components/screens/AboutModal';
 import { trackEvent, trackPageView } from '@/lib/analytics';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
@@ -121,7 +123,6 @@ function AppBar(props) {
     ["home", "Trang chủ", "home"],
     ["library", "Thư viện đào tạo", "book-open"],
     ["policy", "Chính sách đào tạo", "layers"],
-    ["store", "Kho đổi quà", "star"],
     ["qa", "FAQ", "help-circle"],
   ];
 
@@ -155,7 +156,7 @@ function AppBar(props) {
               "data-tour": "nav-" + id,
               onClick: () => handleNav(id),
               style: isStore ? { opacity: 0.45, display: "flex", alignItems: "center", gap: 5 }
-                : isHome ? { display: "flex", alignItems: "center" }
+                : isHome ? { display: "flex", alignItems: "center", marginLeft: -14 }
                   : {},
             },
               isHome ? React.createElement(React.Fragment, null,
@@ -166,12 +167,12 @@ function AppBar(props) {
             );
           })),
         React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flex: "0 0 auto" } },
-          // Tutorial button
+          // About button
           React.createElement("button", {
-            onClick: () => props.onOpenTutorial && props.onOpenTutorial(),
-            title: "Hướng dẫn sử dụng",
+            onClick: () => props.onOpenAbout && props.onOpenAbout(),
+            title: "Về Learning Hub",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "help-circle", size: 16, color: "var(--ui-heading)" })),
+          }, React.createElement(Icon, { name: "info", size: 16, color: "var(--ui-heading)" })),
           // Rating button
           React.createElement("button", {
             onClick: () => props.onOpenRating && props.onOpenRating(),
@@ -198,8 +199,7 @@ function AppBar(props) {
             React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
               React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })),
             React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
-              React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
-              React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")))
+              React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng")))
         )
       )
     ),
@@ -251,8 +251,8 @@ function AppBar(props) {
       React.createElement("div", { className: "app-sidebar__bottom" },
         React.createElement("div", { className: "app-sidebar__tools" },
           React.createElement("button", {
-            className: "tool-btn", onClick: () => props.onOpenTutorial && props.onOpenTutorial(), title: "Hướng dẫn"
-          }, React.createElement(Icon, { name: "help-circle", size: 18, color: "var(--rpg-muted)" })),
+            className: "tool-btn", onClick: () => props.onOpenAbout && props.onOpenAbout(), title: "Về Learning Hub"
+          }, React.createElement(Icon, { name: "info", size: 18, color: "var(--rpg-muted)" })),
           React.createElement("button", {
             className: "tool-btn", onClick: () => props.onOpenRating && props.onOpenRating(), title: "Đánh giá"
           }, React.createElement(Icon, { name: "star", size: 18, color: "var(--amber)" })),
@@ -266,8 +266,7 @@ function AppBar(props) {
             React.createElement(Avatar, { opts: opts, size: 36, crisp: props.crisp })
           ),
           React.createElement("div", { className: "profile-info" },
-            React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"),
-            React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")
+            React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng")
           ),
           React.createElement("button", {
             className: "logout-btn",
@@ -391,6 +390,7 @@ function AppInner() {
 
   const [course, setCourse] = React.useState(null);
   const [ldRequest, setLdRequest] = React.useState(false);
+  const [showAbout, setShowAbout] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [showTutorial, setShowTutorial] = React.useState(() => {
     try { if (typeof window !== "undefined") { return !localStorage.getItem("glh_tutorial_done"); } } catch (e) { } return false;
@@ -449,26 +449,23 @@ function AppInner() {
     body = React.createElement(Reveal, { crisp, onNext: () => goApp() });
   } else if (phase === "profile") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" },
-        React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); }, onReset: () => { setPhase("onboarding"); window.scrollTo(0, 0); } })));
-  } else if (phase === "store") {
-    body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "store", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-      React.createElement("main", { className: "app-main" }, React.createElement(Store, {})));
+        React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } }))
+    );
   } else if (phase === "policy") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" },
         React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); window.scrollTo(0, 0); } })));
   } else if (phase === "qa") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
-      React.createElement("main", { className: "app-main" }, React.createElement(FAQSection, null)));
+      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } }),
+      React.createElement("main", { className: "app-main" }, React.createElement(FAQScreen, null)));
   } else {
     // app - tab-based navigation
     const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
-    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
+    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); window.scrollTo(0, 0); } });
     let tabContent;
     if (activeTab === "home") {
       tabContent = React.createElement(Dashboard, {
@@ -479,9 +476,6 @@ function AppInner() {
       });
     } else if (activeTab === "library") {
       tabContent = React.createElement("div", null,
-        React.createElement("div", { id: "calendar-section" },
-          React.createElement(Calendar, utilCommon)),
-        React.createElement("div", { style: { height: 1, background: "var(--rpg-border)", margin: "20px clamp(16px,4vw,40px)" } }),
         React.createElement(Catalog, utilCommon),
         React.createElement("button", {
           className: "library-fab",
@@ -500,6 +494,7 @@ function AppInner() {
     course ? React.createElement(CourseModal, { course, onClose: () => setCourse(null) }) : null,
     ldRequest ? React.createElement(LdRequestPopup, { onClose: () => setLdRequest(false) }) : null,
     showRating ? React.createElement(RatingModal, { onClose: () => setShowRating(false) }) : null,
+    showAbout ? React.createElement(AboutModal, { onClose: () => setShowAbout(false) }) : null,
     showTutorial && phase === "app" ? React.createElement(Tutorial, { onClose: () => setShowTutorial(false) }) : null,
     !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(ChatBot, {
       hideOnGameWorld: true,

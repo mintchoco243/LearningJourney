@@ -40,8 +40,7 @@ const { Avatar } = GLHAvatar;
           React.createElement(Icon, { name: "arrow-right", size: 20, color: "#fff" })),
         returning
           ? React.createElement("div", { className: "ob-returning" },
-              "Chào mừng trở lại, ", React.createElement("b", { style: { color: "#fff" } }, D.CLASSES[user.quiz_result.class_id].name), ". ",
-              React.createElement("a", { onClick: () => { if (confirm("Bắt đầu lại từ đầu? Toàn bộ tiến độ sẽ bị xóa.")) actions.reset(); } }, "Bắt đầu lại"))
+              "Chào mừng trở lại, ", React.createElement("b", { style: { color: "#fff" } }, D.CLASSES[user.quiz_result.class_id].name), ".")
           : null
       )
     );

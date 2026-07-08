@@ -188,10 +188,19 @@ const D = GLH_DATA;
           completed_courses: completedCourses,
           completed_course_details: completedCourseDetails,
           registered_events: registeredEvents,
+          character: profile.character || user.character,
           onboarded: true,
         }));
       },
-      setCharacter(character) { persist(Object.assign({}, user, { character })); },
+      setCharacter(character) {
+        fetch("/api/me", {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ character })
+        });
+        persist(Object.assign({}, user, { character }));
+      },
       finishOnboarding() { persist(Object.assign({}, user, { onboarded: true })); },
       completeQuiz(result) {
         persist(Object.assign({}, user, {

@@ -236,16 +236,42 @@ const D = GLH_DATA;
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
     const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
+    const isRegistered = c.session_id && (user.registered_events || []).includes(c.session_id);
     const cta = getCourseCta(c, user);
-    const statusChipText = done ? "Đã hoàn thành" : isEnded ? "Đã kết thúc" : null;
+
+    let statusChipText = null;
+    let statusBg = "rgba(138,147,168,0.14)";
+    let statusColor = "var(--rpg-muted)";
+    let statusBorder = "1px solid rgba(138,147,168,0.22)";
+    let topBorderColor = "transparent";
+
+    if (done) {
+      statusChipText = "Đã hoàn thành";
+      statusBg = "rgba(16,185,129,0.14)";
+      statusColor = "#10B981";
+      statusBorder = "1px solid rgba(16,185,129,0.3)";
+      topBorderColor = "#10B981";
+    } else if (isRegistered) {
+      statusChipText = "Đã đăng ký";
+      statusBg = "rgba(59,130,246,0.14)";
+      statusColor = "#3B82F6";
+      statusBorder = "1px solid rgba(59,130,246,0.3)";
+      topBorderColor = "#3B82F6";
+    } else if (isEnded) {
+      statusChipText = "Đã kết thúc";
+      statusBg = "rgba(107,114,128,0.14)";
+      statusColor = "#6B7280";
+      statusBorder = "1px solid rgba(107,114,128,0.3)";
+      topBorderColor = "#6B7280";
+    }
+
     const desc = c.description_short || c.description;
     const timeText = scheduleTime(c);
-
     const rating = publicCourseRating(c);
 
     return React.createElement("button", {
       className: "u-card u-card--hover",
-      style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: done ? 0.72 : 1 },
+      style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: 1, borderTop: topBorderColor !== "transparent" ? `3px solid ${topBorderColor}` : undefined },
       onClick: () => {
         onClick && onClick(c);
       },
@@ -255,7 +281,7 @@ const D = GLH_DATA;
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
           React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
             FORMAT_LABEL[c.format] || c.format),
-          statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: "rgba(138,147,168,0.14)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(138,147,168,0.22)" } },
+          statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } },
             statusChipText)),
         rating ? React.createElement(Stars, { value: rating }) : null,
         // countdown (dashboard recommended only)
@@ -291,6 +317,7 @@ const D = GLH_DATA;
     const [busyAction, setBusyAction] = React.useState(null);
     const [reservedSessionId, setReservedSessionId] = React.useState(null);
     const [confirmDialog, setConfirmDialog] = React.useState(null);
+    const [showRegSuccess, setShowRegSuccess] = React.useState(false);
 
     React.useEffect(() => {
       if (!c) return;
@@ -399,6 +426,7 @@ const D = GLH_DATA;
       setBusyAction(null);
       if (ok) {
         setReservedSessionId(modalCourse.session_id);
+        setShowRegSuccess(true);
         trackEvent("course_reserve_success", {
           course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
           course_code: modalCourse.course_code || modalCourse.course_id,
@@ -570,6 +598,16 @@ const D = GLH_DATA;
         onClose: () => setRatingFormCourseId(null),
         onSubmitted: handleRatingSubmitted,
       }) : null,
+      showRegSuccess ? React.createElement("div", { className: "modal-bg", style: { zIndex: 9999, display: "grid", placeItems: "center", padding: 16 }, onClick: () => setShowRegSuccess(false) },
+        React.createElement("div", { className: "modal", style: { maxWidth: 460, padding: 32, textAlign: "center", background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 12, boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }, onClick: e => e.stopPropagation() },
+          React.createElement("div", { style: { width: 64, height: 64, borderRadius: "50%", background: "rgba(16,185,129,0.14)", color: "#10B981", display: "grid", placeItems: "center", margin: "0 auto 16px" } },
+            React.createElement(Icon, { name: "check-circle", size: 36, color: "#10B981" })),
+          React.createElement("h3", { style: { margin: "0 0 12px", fontSize: 20, fontWeight: 700, color: "var(--rpg-text)" } }, "Đăng ký thành công!"),
+          React.createElement("p", { style: { margin: "0 0 24px", fontSize: 14, color: "var(--rpg-muted)", lineHeight: 1.6 } },
+            "Bạn đã đăng ký thành công. Lịch trên Google Calendar sẽ được gửi tới mail của bạn trong tối đa 48h tới."),
+          React.createElement("button", { className: "u-btn u-btn--primary", style: { width: "100%", justifyContent: "center" }, onClick: () => setShowRegSuccess(false) }, "Đóng và tiếp tục")
+        )
+      ) : null,
       React.createElement(ConfirmPopup, {
         dialog: confirmDialog,
         busy: !!busyAction,

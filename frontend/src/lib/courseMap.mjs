@@ -102,6 +102,8 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     current_count: s.current_count ?? null,
     class_ids: listValue(s.class_ids || s.role_targets),
     rank_ids: listValue(s.rank_ids || s.rank_targets),
+    target_ranks: listValue(s.target_ranks || s.rank_ids || s.rank_targets),
+    trainer_type: String(s.trainer_type || s.course_source || (normalizeFormat(s.format) === "elearning" || s.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
     skill_tags: listValue(s.skill_tags),
     start_date: date,
     start_time: times[0] || null,
@@ -144,6 +146,8 @@ export function mapCourseToCard(c, today = new Date()) {
     skill_tags: listValue(c.skill_tags),
     class_ids: listValue(c.class_ids || c.role_targets),
     rank_ids: listValue(c.rank_ids || c.rank_targets),
+    target_ranks: listValue(c.target_ranks || c.rank_ids || c.rank_targets),
+    trainer_type: String(c.trainer_type || c.course_source || (normalizeFormat(c.format) === "elearning" || c.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
     url: c.registration_url || "#",
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
@@ -260,4 +264,38 @@ export function pickRecommended(courses) {
   return [...byCourse.values()]
     .sort((a, b) => (FIT_RANK[a.fit_tag] ?? 2) - (FIT_RANK[b.fit_tag] ?? 2))
     .slice(0, 6);
+}
+
+export function sortCoursesByStatusPriority(courses = [], user = {}) {
+  const completedIds = new Set(user.completed_courses || []);
+  const registeredIds = new Set(user.registered_events || []);
+  const today = new Date();
+
+  const getPriorityGroup = (course) => {
+    const rowId = course._id || course.id || course.course_row_id || course.course_id;
+    const sessionId = course.session_id || rowId;
+    const isCompleted = rowId && completedIds.has(rowId);
+    if (isCompleted) return 3; // Group 3: Khóa đã học
+
+    const date = course.start_date || (course.session_date ? String(course.session_date).split("T")[0] : null);
+    const status = effectiveLifecycle(course.course_status || course.status, date, today);
+
+    if (status === "ended" || status === "cancelled") {
+      return 4; // Group 4: Khóa đã kết thúc
+    }
+
+    const isRegistered = sessionId && registeredIds.has(sessionId);
+    if (isRegistered) return 1; // Group 1: Khóa sắp diễn ra đã đăng ký
+
+    return 2; // Group 2: Khóa sắp diễn ra chưa đăng ký
+  };
+
+  return [...(courses || [])].sort((a, b) => {
+    const gA = getPriorityGroup(a);
+    const gB = getPriorityGroup(b);
+    if (gA !== gB) return gA - gB;
+    const timeA = a.start_date ? new Date(a.start_date).getTime() : Number.POSITIVE_INFINITY;
+    const timeB = b.start_date ? new Date(b.start_date).getTime() : Number.POSITIVE_INFINITY;
+    return timeA - timeB;
+  });
 }

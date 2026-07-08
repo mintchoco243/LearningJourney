@@ -6,86 +6,15 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { CourseCard } from '../GLHParts';
-import { getUpcomingCourses, getRecommendedCourses } from '@/lib/mockApi';
-import { getCourseCta } from '@/lib/courseMap.mjs';
+import { AvatarEditModal } from './ProfilePolicy';
+import { Calendar } from './CatalogCalendar';
+import { getRecommendedCourses } from '@/lib/mockApi';
+import { sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
-const { FORMAT_LABEL, DOW_VI, MONTHS_VI } = GLHUI;
+const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
-
-const FORMAT_COLOR = {
-  offline: { bg: "rgba(228,30,38,0.18)", color: "#FF8A8E" },
-  online: { bg: "rgba(43,182,163,0.18)", color: "#2BB6A3" },
-  elearning: { bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
-};
-
-function ctaColor(cta) {
-  return ({
-    accent: "var(--glh-accent)",
-    warning: "#FF9E00",
-    purple: "#A38BFF",
-    success: "var(--garena-positive)",
-    muted: "var(--rpg-muted)",
-  })[cta?.tone] || "var(--rpg-muted)";
-}
-
-// ─── Upcoming item (grouped by month, same as Calendar ListView) ─────────────
-function UpcomingItem({ course, onOpen }) {
-  const { user } = useGame();
-  const { title, format, location, start_date, start_time, end_time } = course;
-  const cta = getCourseCta(course, user);
-  const dayNum = start_date ? new Date(start_date).getDate() : null;
-  const dow = start_date ? DOW_VI[(new Date(start_date).getDay() + 6) % 7] : null;
-  const countdown = course.countdown_days;
-  const countdownColor = countdown != null ? (countdown <= 5 ? "#E41E26" : countdown <= 14 ? "#FF9E00" : "var(--rpg-muted)") : null;
-  const timeMeta = [start_time && end_time ? `${start_time} – ${end_time}` : start_time, location].filter(Boolean);
-
-  return React.createElement("button", {
-    className: "u-card u-card--hover",
-    style: { textAlign: "left", padding: "14px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", width: "100%", background: "var(--rpg-panel)" },
-    onClick: () => onOpen(course),
-  },
-    // date block
-    dayNum && React.createElement("div", { style: { textAlign: "center", minWidth: 44, flexShrink: 0 } },
-      React.createElement("div", { style: { fontSize: 22, fontWeight: 700, color: "var(--ui-heading)", lineHeight: 1 } }, dayNum),
-      React.createElement("div", { style: { fontSize: 11, color: "var(--garena-grey)", textTransform: "uppercase", marginTop: 2 } }, dow)),
-
-    // content
-    React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-        React.createElement("div", { className: "u-h3", style: { fontSize: 15, margin: 0 } }, title),
-        React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "2px 8px", borderRadius: 999, background: (FORMAT_COLOR[format] || {}).bg || "rgba(255,255,255,0.07)", color: (FORMAT_COLOR[format] || {}).color || "var(--rpg-muted)", flexShrink: 0 } },
-          FORMAT_LABEL[format] || format)),
-      React.createElement("div", { style: { fontSize: 13, color: "var(--garena-grey)", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" } },
-        timeMeta.map((m, i) => React.createElement("span", { key: i }, m)))),
-
-    // right: CTA + countdown stacked
-    React.createElement("div", { style: { display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 } },
-      React.createElement("span", { style: { fontSize: 12, fontWeight: 800, whiteSpace: "nowrap", color: ctaColor(cta) } }, cta.text),
-      countdown != null && React.createElement("span", {
-        style: { fontSize: 11, fontWeight: 700, color: countdownColor },
-      }, countdown === 0 ? "Hôm nay" : `Còn ${countdown} ngày`)));
-}
-
-// Groups upcoming by month — same as Calendar ListView
-function UpcomingList({ courses, onOpen }) {
-  const groups = {};
-  courses.forEach(c => {
-    const d = new Date(c.start_date);
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    (groups[key] = groups[key] || []).push(c);
-  });
-  return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 24 } },
-    Object.keys(groups).map(key => {
-      const [yy, mm] = key.split("-").map(Number);
-      return React.createElement("div", { key },
-        React.createElement("h3", { style: { fontSize: 16, fontWeight: 700, color: "var(--garena-red)", marginBottom: 10, marginTop: 0 } },
-          `${MONTHS_VI[mm]} ${yy}`),
-        React.createElement("div", { style: { display: "grid", gap: 8 } },
-          groups[key].map(c => React.createElement(UpcomingItem, { key: c.session_id || c._id || c.course_id, course: c, onOpen }))));
-    }));
-}
 
 // ─── Stat box ─────────────────────────────────────────────────────────────────
 export function Stat({ value, label }) {
@@ -224,7 +153,7 @@ export function rankCompassCourses(courses, user, rank, cls) {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export function Dashboard(props) {
-  const { user } = useGame();
+  const { user, actions } = useGame();
   const qr       = user.quiz_result;
   const cls      = D.CLASSES[qr.class_id];
   const rank     = rankForUser(user);
@@ -237,18 +166,15 @@ export function Dashboard(props) {
   const totalHours  = Number(user.hours_total || 0);
   const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
 
-  const [upcoming, setUpcoming]       = React.useState([]);
+  const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommended, setRecommended] = React.useState([]);
 
   React.useEffect(() => {
-    Promise.all([getUpcomingCourses(), getRecommendedCourses()]).then(([up, rec]) => {
-      setUpcoming(up);
-      setRecommended(rec);
-    });
+    getRecommendedCourses().then(rec => setRecommended(rec));
   }, []);
 
   const rankCourses = React.useMemo(
-    () => rankCompassCourses(recommended, user, rank, cls),
+    () => sortCoursesByStatusPriority(rankCompassCourses(recommended, user, rank, cls), user),
     [recommended, user, rank, cls]
   );
   const progressTotal = rankCourses.length;
@@ -257,11 +183,38 @@ export function Dashboard(props) {
   const completedAllRankCourses = progressTotal > 0 && progressCompleted === progressTotal;
 
   return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
+    showAvatarEdit && React.createElement(AvatarEditModal, {
+      initialChar: user.character,
+      crisp: props.crisp,
+      onClose: () => setShowAvatarEdit(false),
+      onSave: c => actions.setCharacter(c)
+    }),
 
     // ── Hero ─────────────────────────────────────────────────────────────────
     React.createElement("div", { className: "dash-hero" },
-      React.createElement("div", { className: "dash-hero__avatar" },
-        React.createElement(Avatar, { opts: revealOpts, size: 80, crisp: props.crisp })),
+      React.createElement("div", { className: "dash-hero__avatar", style: { position: "relative" } },
+        React.createElement(Avatar, { opts: revealOpts, size: 80, crisp: props.crisp }),
+        React.createElement("button", {
+          onClick: () => setShowAvatarEdit(true),
+          title: "Chỉnh sửa avatar / Xem hồ sơ cá nhân",
+          className: "avatar-edit-btn",
+          style: {
+            position: "absolute",
+            bottom: -6,
+            right: -6,
+            background: "var(--glh-accent)",
+            border: "2px solid var(--rpg-panel)",
+            borderRadius: "50%",
+            width: 24,
+            height: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+          }
+        }, React.createElement(Icon, { name: "edit-3", size: 11, color: "#fff" }))
+      ),
       React.createElement("div", { style: { minWidth: 0 } },
         React.createElement("div", { className: "dash-rank" }, profileMeta),
         React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayName),
@@ -291,12 +244,7 @@ export function Dashboard(props) {
         : React.createElement("div", { className: "rec-grid" },
             rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
 
-    // ── Lịch sắp tới ─────────────────────────────────────────────────────────
-    upcoming.length > 0 && React.createElement(React.Fragment, null,
-      React.createElement(SectionRow, {
-        title: "Lịch sắp tới",
-        action: { label: "Xem tất cả →", onClick: () => props.onNav("library", "calendar-section") },
-      }),
-      React.createElement(UpcomingList, { courses: upcoming, onOpen: props.onOpenCourse }))
+    // ── Lịch đào tạo ─────────────────────────────────────────────────────────
+    React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse })
   );
 }

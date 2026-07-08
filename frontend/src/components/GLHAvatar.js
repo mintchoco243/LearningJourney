@@ -8,6 +8,11 @@ export const OUTFIT = {
     teal:   { base: "#2BB6A3", dark: "#1C8576", light: "#5FD9C8" },
     navy:   { base: "#3B6FB0", dark: "#284E80", light: "#6F9FD8" },
     amber:  { base: "#F5A623", dark: "#C47C0A", light: "#FFC65C" },
+    pink:   { base: "#EC4899", dark: "#BE185D", light: "#F472B6" },
+    emerald:{ base: "#10B981", dark: "#047857", light: "#34D399" },
+    orange: { base: "#F97316", dark: "#C2410C", light: "#FB923C" },
+    purple: { base: "#8B5CF6", dark: "#6D28D9", light: "#A78BFA" },
+    black:  { base: "#2D3748", dark: "#1A202C", light: "#4A5568" },
   };
   export const SKIN = {
     s1: { base: "#F2C9A0", dark: "#D9A678" },
@@ -47,11 +52,31 @@ export const OUTFIT = {
           r(28, 30, 7, 22, c.base, 4) +
           r(65, 30, 7, 22, c.base, 4)
         );
-      case "cap":
+      case "long":
         return (
-          r(28, 22, 44, 16, "#222831", 8) +  // cap starts at head top y:22
-          r(26, 36, 48, 7, "#222831", 3) +   // brim full-width symmetric
-          r(36, 24, 28, 6, "#3A4250", 3)
+          r(28, 22, 44, 18, c.base, 9) +
+          r(28, 30, 8, 32, c.base, 4) +  // left side long hair
+          r(64, 30, 8, 32, c.base, 4) +  // right side long hair
+          r(28, 34, 5, 26, c.dark, 3) +  // left shading
+          r(67, 34, 5, 26, c.dark, 3) +  // right shading
+          r(34, 24, 32, 7, c.light, 4)   // top highlight
+        );
+      case "curly":
+        return (
+          r(28, 20, 44, 20, c.base, 10) + // base curly
+          r(24, 28, 10, 18, c.base, 5) +  // left curls
+          r(66, 28, 10, 18, c.base, 5) +  // right curls
+          r(24, 32, 6, 12, c.dark, 3) +   // left curls shading
+          r(70, 32, 6, 12, c.dark, 3) +   // right curls shading
+          r(34, 16, 12, 12, c.base, 6) +
+          r(54, 16, 12, 12, c.base, 6) +
+          r(44, 14, 12, 12, c.dark, 6)
+        );
+      case "bald":
+        return (
+          r(32, 22, 36, 4, c.dark, 2) + // very subtle hair shade/line at top of head
+          r(29, 30, 4, 8, c.dark, 2) +  // sideburns shading
+          r(67, 30, 4, 8, c.dark, 2)
         );
       case "short":
       default:
@@ -84,6 +109,76 @@ export const OUTFIT = {
         return (
           r(31, 40, 38, 11, accent, 4).replace("/>", ` opacity="0.55"/>`) +
           r(31, 40, 38, 11, "none", 4).replace("/>", ` stroke="${accent}" stroke-width="2"/>`)
+        );
+      case "earrings":
+        return (
+          `<circle cx="30" cy="46" r="3" fill="none" stroke="#F5A623" stroke-width="2"/>` +
+          `<circle cx="70" cy="46" r="3" fill="none" stroke="#F5A623" stroke-width="2"/>`
+        );
+      case "cap":
+        return (
+          r(28, 22, 44, 16, "#222831", 8) +  // cap starts at head top y:22
+          r(26, 36, 48, 7, "#222831", 3) +   // brim full-width symmetric
+          r(36, 24, 28, 6, "#3A4250", 3)
+        );
+      case "controller":
+        return (
+          r(41, 77, 18, 11, "#2D3748", 4) + // main body
+          r(39, 81, 6, 8, "#2D3748", 2) +   // left grip extension
+          r(55, 81, 6, 8, "#2D3748", 2) +   // right grip extension
+          // D-pad (gray cross)
+          r(42.5, 81.5, 4, 1.5, "#A0AEC0") +
+          r(43.75, 80.25, 1.5, 4, "#A0AEC0") +
+          // Action buttons (red and green dots)
+          `<circle cx="52.5" cy="81" r="1.2" fill="#E53E3E"/>` +
+          `<circle cx="55.5" cy="83" r="1.2" fill="#38A169"/>`
+        );
+      case "sword":
+        return (
+          // Sword is held in the character's left hand (right side of screen)
+          r(68.5, 78, 3, 9, "#718096", 1) +  // handle (darker metal/leather)
+          r(63, 76, 14, 3, "#ECC94B", 1) +   // crossguard (gold)
+          `<circle cx="70" cy="87.5" r="2" fill="#ECC94B"/>` + // pommel (gold)
+          r(66.5, 30, 7, 46, "#E2E8F0", 1) + // blade (silver-white)
+          r(69.5, 30, 1, 46, "#CBD5E0") +    // central groove/line (light gray shadow)
+          `<polygon points="66.5,30 70,23 73.5,30" fill="#E2E8F0"/>` + // tip
+          `<polygon points="69.5,30 70,23 73.5,30" fill="#CBD5E0"/>`   // tip shadow split
+        );
+      case "keyboard":
+        return (
+          r(34, 75, 32, 12, "#1A202C", 2) + // keyboard frame
+          r(35.5, 76.5, 29, 9, "#4A5568", 1) + // plate
+          // keycaps grid pattern or simple key clusters
+          r(37, 78, 22, 2.2, "#EDF2F7", 0.5) + // upper row
+          r(39, 81.5, 20, 2.2, "#EDF2F7", 0.5) + // lower row
+          // colored accent keys
+          r(37, 78, 2.5, 2.2, "#E53E3E", 0.5) + // ESC key (red)
+          r(60, 81.5, 4, 2.2, "#3182CE", 0.5)    // Enter key (blue)
+        );
+      case "mouse":
+        return (
+          // Mouse is held/near the character's right hand (left side of screen)
+          r(25, 77, 9, 12, "#1A202C", 4) + // mouse body
+          r(25, 77, 4.2, 5, "#2D3748", 1.5) + // left button
+          r(29.8, 77, 4.2, 5, "#2D3748", 1.5) + // right button
+          r(29.2, 78.5, 0.6, 2, accent) + // glowing scroll wheel
+          r(24.5, 81, 0.5, 5, accent) + // glowing side strip left
+          r(34, 81, 0.5, 5, accent)    // glowing side strip right
+        );
+      case "laptop":
+        return (
+          // screen portion
+          r(32, 63, 36, 15, "#1A202C", 2) + // screen lid frame
+          r(33.5, 64.5, 33, 12, "#2D3748") + // display background
+          // coding screen text lines or chart mockups
+          r(36, 67, 10, 2, "#4FD1C5") + // teal code block/title
+          r(36, 70, 18, 1.5, "#E2E8F0") + // text line 1
+          r(36, 72.5, 14, 1.5, "#E2E8F0") + // text line 2
+          r(58, 67, 6, 8, "#3182CE") + // a small blue bar graph/chart
+          r(52, 69, 4, 6, "#DD6B20") + // a orange bar
+          // base keyboard portion
+          r(28, 77, 44, 9, "#4A5568", 1.5) + // bottom laptop body
+          r(45, 82, 10, 2.5, "#2D3748", 0.5) // trackpad
         );
       default:
         return "";

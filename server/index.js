@@ -28,6 +28,8 @@ import { adminTestimonialsRouter } from "./routes/admin/testimonials.js";
 import { adminAnalyticsRouter } from "./routes/admin/analytics.js";
 import { adminSettingsRouter } from "./routes/admin/settings.js";
 import { botRouter } from "./routes/bot.js";
+import { faqsRouter } from "./routes/faqs.js";
+import { adminFaqsRouter } from "./routes/admin/faqs.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -73,6 +75,7 @@ app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
 app.use("/api/policies", requireAuth, policiesRouter);
 app.use("/api/site-feedback", requireAuth, siteFeedbackRouter);
 app.use("/api/bot", requireAuth, botRouter);
+app.use("/api/faqs", requireAuth, faqsRouter);
 app.get("/admin/api/me", requireAuth, requireAdmin, (req, res) => {
   res.json({
     user: {
@@ -90,6 +93,7 @@ app.use("/admin/api/sessions", requireAuth, requireAdmin, adminSessionsRouter);
 app.use("/admin/api/users", requireAuth, requireAdmin, adminUsersRouter);
 app.use("/admin/api/ld-requests", requireAuth, requireAdmin, adminLdRequestsRouter);
 app.use("/admin/api/policies", requireAuth, requireAdmin, adminPoliciesRouter);
+app.use("/admin/api/faqs", requireAuth, requireAdmin, adminFaqsRouter);
 app.use("/admin/api/site-feedback", requireAuth, requireAdmin, adminSiteFeedbackRouter);
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsRouter);

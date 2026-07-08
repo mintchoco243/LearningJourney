@@ -6,7 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { GLHParts } from '../GLHParts';
 import { getCalendarEvents } from '@/lib/mockApi';
-import { getCourseCta, mapCourseToCard } from '@/lib/courseMap.mjs';
+import { getCourseCta, mapCourseToCard, sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
 import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
@@ -31,21 +31,19 @@ function ctaColor(cta) {
   })[cta?.tone] || "var(--ui-muted)";
 }
 
-  
-  
-  
-
   /* ---------------- Catalog ---------------- */
   export function Catalog(props) {
     const { user } = useGame();
     const [courses, setCourses] = React.useState([]);
     const [q, setQ] = React.useState("");
     const [fmtFilter,      setFmtFilter]      = React.useState("all");
-    const [cmFilter,       setCmFilter]       = React.useState("all"); // Chuyên môn
+    const [cmFilter,       setCmFilter]       = React.useState("all");
     const [trainerFilter,  setTrainerFilter]  = React.useState("all");
     const [durationFilter, setDurationFilter] = React.useState("all");
-    const [tagFilter,      setTagFilter]      = React.useState("all"); // skill TAGS chips
-    const [sortMode,       setSortMode]       = React.useState("newest");
+    const [tagFilter,      setTagFilter]      = React.useState("all");
+    const [rankFilter,     setRankFilter]     = React.useState("all");
+    const [sourceFilter,   setSourceFilter]   = React.useState("all");
+    const [sortMode,       setSortMode]       = React.useState("priority");
 
     React.useEffect(() => {
       fetch("/api/courses?limit=100", { credentials: "include" })
@@ -68,8 +66,19 @@ function ctaColor(cta) {
       { id: "medium", label: "1–2 giờ",  test: m => m >= 60 && m <= 120 },
       { id: "long",   label: "> 2 giờ",  test: m => m > 120 },
     ];
-    const activeFilterCount = [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter].filter(v => v !== "all").length;
-    const clearAll = () => { setFmtFilter("all"); setCmFilter("all"); setTrainerFilter("all"); setDurationFilter("all"); setTagFilter("all"); setQ(""); };
+    const rankOptions = [
+      { id: "Associate", label: "Associate" },
+      { id: "Senior Associate", label: "Senior Associate" },
+      { id: "Assistant Manager", label: "Assistant Manager" },
+      { id: "Manager", label: "Manager" },
+      { id: "Senior Manager", label: "Senior Manager" },
+    ];
+    const sourceOptions = [
+      { id: "internal", label: "Khóa nội bộ" },
+      { id: "external", label: "Khóa bên ngoài / Learning Budget Sponsor" },
+    ];
+    const activeFilterCount = [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sourceFilter].filter(v => v !== "all").length;
+    const clearAll = () => { setFmtFilter("all"); setCmFilter("all"); setTrainerFilter("all"); setDurationFilter("all"); setTagFilter("all"); setRankFilter("all"); setSourceFilter("all"); setQ(""); };
 
     let filtered = courses.filter(c => {
       if (fmtFilter !== "all" && c.format !== fmtFilter) return false;
@@ -77,6 +86,15 @@ function ctaColor(cta) {
       if (trainerFilter !== "all" && c.trainer !== trainerFilter) return false;
       if (durationFilter !== "all") { const opt = durationOptions.find(o => o.id === durationFilter); if (opt && !opt.test(c.duration_minutes)) return false; }
       if (tagFilter !== "all" && !(c.skill_tags || []).includes(tagFilter)) return false;
+      if (rankFilter !== "all") {
+        if (rankFilter === "my_rank") {
+          if (!isRecommended(c, user)) return false;
+        } else {
+          const ranks = c.target_ranks || c.rank_ids || [];
+          if (!ranks.includes(rankFilter)) return false;
+        }
+      }
+      if (sourceFilter !== "all" && c.trainer_type !== sourceFilter) return false;
       if (q.trim()) {
         const hay = [c.title, c.trainer, c.description, c.audience, ...(c.skill_tags || [])].join(" ").toLowerCase();
         if (!hay.includes(q.trim().toLowerCase())) return false;
@@ -84,6 +102,7 @@ function ctaColor(cta) {
       return true;
     });
 
+    if (sortMode === "priority" || sortMode === "newest") filtered = sortCoursesByStatusPriority(filtered, user);
     if (sortMode === "dur_asc")     filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
     if (sortMode === "dur_desc")    filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
     if (sortMode === "recommended") filtered = [...filtered].sort((a, b) => (isRecommended(b, user) ? 1 : 0) - (isRecommended(a, user) ? 1 : 0));
@@ -93,7 +112,7 @@ function ctaColor(cta) {
     React.useEffect(() => {
       const frame = requestAnimationFrame(() => setPage(1));
       return () => cancelAnimationFrame(frame);
-    }, [q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
+    }, [q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sourceFilter, sortMode]);
 
     React.useEffect(() => {
       const term = q.trim();
@@ -111,9 +130,11 @@ function ctaColor(cta) {
         trainer: trainerFilter,
         duration: durationFilter,
         tag: tagFilter,
+        rank: rankFilter,
+        source: sourceFilter,
         sort: sortMode,
       });
-    }, [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, sortMode]);
+    }, [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sourceFilter, sortMode]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -130,25 +151,39 @@ function ctaColor(cta) {
     const chip = (label, active, onClick, key) =>
       React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
 
-
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("h2", { style: { margin: "0 0 16px", fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } },
         "Kho khóa đào tạo"),
 
-      // Row 1: Search
-      React.createElement("div", { style: { position: "relative", marginBottom: 8 } },
-        React.createElement("div", { style: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } },
-          React.createElement(Icon, { name: "search", size: 15, color: "var(--garena-grey)" })),
-        React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: q, onChange: e => setQ(e.target.value), style: { paddingLeft: 40, width: "100%", boxSizing: "border-box" } })),
+      // Row 1: Search + CTA buttons
+      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 } },
+        React.createElement("div", { style: { position: "relative", flex: "1 1 260px", minWidth: 0 } },
+          React.createElement("div", { style: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } },
+            React.createElement(Icon, { name: "search", size: 15, color: "var(--garena-grey)" })),
+          React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: q, onChange: e => setQ(e.target.value), style: { paddingLeft: 40, width: "100%", boxSizing: "border-box" } })),
+        React.createElement("a", {
+          href: "https://gigi.garena.vn/form/46",
+          target: "_blank",
+          rel: "noopener noreferrer",
+          className: "glh-btn glh-btn--secondary",
+          style: { whiteSpace: "nowrap", textDecoration: "none" }
+        }, "Đăng ký hỗ trợ chi phí đào tạo"),
+        React.createElement("button", {
+          className: "glh-btn glh-btn--primary",
+          style: { whiteSpace: "nowrap" },
+          onClick: () => props.onOpenLdRequest && props.onOpenLdRequest()
+        }, "Gửi yêu cầu hỗ trợ đào tạo")),
 
       // Row 2: Dropdowns + Sort
       React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
         React.createElement(Sel, { placeholder: "Hình thức", value: fmtFilter, onChange: setFmtFilter, options: [{ id: "online", label: "Online" }, { id: "offline", label: "Offline" }, { id: "elearning", label: "E-learning" }] }),
         React.createElement(Sel, { placeholder: "Kỹ năng", value: tagFilter, onChange: setTagFilter, options: allSkillIds.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
+        React.createElement(Sel, { placeholder: "Tất cả rank", value: rankFilter, onChange: setRankFilter, options: rankOptions }),
+        React.createElement(Sel, { placeholder: "Tất cả nguồn", value: sourceFilter, onChange: setSourceFilter, options: sourceOptions }),
         React.createElement(Sel, { placeholder: "Trainer", value: trainerFilter, onChange: setTrainerFilter, options: allTrainers.map(t => ({ id: t, label: t })) }),
         React.createElement(Sel, { placeholder: "Thời lượng", value: durationFilter, onChange: setDurationFilter, options: durationOptions.map(d => ({ id: d.id, label: d.label })) }),
         React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
-        React.createElement(Sel, { noDefault: true, value: sortMode, onChange: setSortMode, options: [{ id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] }),
+        React.createElement(Sel, { noDefault: true, value: sortMode, onChange: setSortMode, options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] }),
         activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
 
       // Row 3: Chuyên môn chips (role/vai trò)
@@ -293,11 +328,11 @@ function ctaColor(cta) {
     const evByDay = {};
     events.forEach((e) => { const d = new Date(e.start_date); const k = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); (evByDay[k] = evByDay[k] || []).push(e); });
 
-    return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
+    return React.createElement("div", { className: props.embedded ? undefined : "glh-container fade-screen", style: { padding: props.embedded ? "24px 0 0" : "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 } },
         React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, "Lịch đào tạo 2026"),
         React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4 } },
-          [["quarter", "Năm"], ["month", "Tháng"]].map(([v, l]) => React.createElement("button", {
+          [["quarter", "Theo quý"], ["month", "Theo tháng"]].map(([v, l]) => React.createElement("button", {
             key: v, onClick: () => setView(v),
             className: "appbar__link" + (view === v ? " is-active" : ""),
             style: { borderRadius: 6 },
@@ -312,6 +347,7 @@ function ctaColor(cta) {
 
   function MonthView(props) {
     const { cursor, setCursor, evByDay, onOpen } = props;
+    const { user } = useGame();
     const { y, m } = cursor;
     const first = new Date(y, m, 1);
     const startDow = (first.getDay() + 6) % 7; // Monday-first
@@ -344,10 +380,13 @@ function ctaColor(cta) {
             React.createElement("div", { className: "cal-day", style: isToday ? { color: "var(--garena-red)" } : null }, d),
             dayEvents.map((e) => {
               const col = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "#cfd6e4" };
+              const ctaText = getCourseCta(e, user)?.text || "Chi tiết";
+              const titleInfo = `${e.title}\nThời gian: ${e.start_time || "N/A"}\nĐịa điểm: ${e.location || "Online"}\nTrạng thái: ${ctaText}`;
               return React.createElement("button", {
                 key: e.session_id || e.course_id, className: "cal-ev", style: { background: col.bg, color: col.color },
                 onClick: () => onOpen(e),
-              }, e.title);
+                title: titleInfo
+              }, e.start_time ? `${e.start_time} · ${e.title}` : e.title);
             }));
         }))
     );
@@ -404,5 +443,3 @@ function ctaColor(cta) {
             })));
       }));
   }
-
-  

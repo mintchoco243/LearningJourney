@@ -124,9 +124,66 @@ function MyLdRequestsPanel() {
   );
 }
 
+export function AvatarEditModal({ initialChar, onClose, onSave, crisp }) {
+  const [c, setC] = React.useState(initialChar || { hair: "short", outfit: "red", accessory: "none", skin: "s1" });
+  const set = (k, v) => setC((p) => Object.assign({}, p, { [k]: v }));
+  return React.createElement("div", { className: "glh-modal-backdrop", onClick: onClose, style: { zIndex: 9999 } },
+    React.createElement("div", { className: "glh-modal u-card", onClick: e => e.stopPropagation(), style: { width: "100%", maxWidth: 580, padding: 24, background: "var(--rpg-panel)", color: "var(--ui-heading)" } },
+      React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 } },
+        React.createElement("h3", { style: { margin: 0, fontSize: 18, fontWeight: 700 } }, "Chỉnh sửa Avatar"),
+        React.createElement("button", { onClick: onClose, style: { background: "none", border: "none", color: "var(--ui-muted)", fontSize: 24, cursor: "pointer" } }, "×")
+      ),
+      React.createElement("div", { style: { display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" } },
+        React.createElement("div", { style: { flexShrink: 0, margin: "0 auto" } },
+          React.createElement(Avatar, { opts: c, size: 140, crisp: crisp })
+        ),
+        React.createElement("div", { style: { flex: "1 1 240px" } },
+          React.createElement("div", { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 6 } }, "Kiểu tóc"),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+              D.CHAR_OPTIONS.hair.map(o => React.createElement("button", {
+                key: o.id, className: "u-chip" + (c.hair === o.id ? " is-active" : ""), onClick: () => set("hair", o.id), style: { padding: "4px 10px", fontSize: 12 }
+              }, o.name))
+            )
+          ),
+          React.createElement("div", { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 6 } }, "Tông da"),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+              D.CHAR_OPTIONS.skin.map(o => React.createElement("button", {
+                key: o.id, onClick: () => set("skin", o.id), style: { width: 30, height: 30, borderRadius: "50%", background: o.color, border: c.skin === o.id ? "3px solid var(--glh-accent)" : "2px solid var(--ui-box-border)", cursor: "pointer" }
+              }))
+            )
+          ),
+          React.createElement("div", { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 6 } }, "Màu trang phục"),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+              D.CHAR_OPTIONS.outfit.map(o => React.createElement("button", {
+                key: o.id, onClick: () => set("outfit", o.id), style: { width: 30, height: 30, borderRadius: "50%", background: o.color, border: c.outfit === o.id ? "3px solid var(--glh-accent)" : "2px solid var(--ui-box-border)", cursor: "pointer" }
+              }))
+            )
+          ),
+          React.createElement("div", { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 6 } }, "Phụ kiện"),
+            React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
+              D.CHAR_OPTIONS.accessory.map(o => React.createElement("button", {
+                key: o.id, className: "u-chip" + (c.accessory === o.id ? " is-active" : ""), onClick: () => set("accessory", o.id), style: { padding: "4px 10px", fontSize: 12 }
+              }, o.name))
+            )
+          )
+        )
+      ),
+      React.createElement("div", { style: { display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 } },
+        React.createElement("button", { className: "glh-btn glh-btn--ghost", onClick: onClose }, "Hủy"),
+        React.createElement("button", { className: "glh-btn glh-btn--primary", onClick: () => { onSave(c); onClose(); } }, "Lưu thay đổi")
+      )
+    )
+  );
+}
+
 /* ---------- Profile Screen ---------- */
 export function Profile(props) {
   const { user, actions } = useGame();
+  const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [recommended, setRecommended] = React.useState([]);
   const [calendarCourses, setCalendarCourses] = React.useState([]);
@@ -180,19 +237,37 @@ export function Profile(props) {
 
   return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 80 } },
     React.createElement("div", { className: "glh-container", style: { paddingTop: 24, paddingBottom: 80 } },
-      // Back button
-      React.createElement("button", {
-        onClick: props.onBack,
-        style: { background: "none", border: "none", color: "var(--glh-accent)", cursor: "pointer", marginBottom: 28, display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, padding: 0 },
-      },
-        React.createElement(Icon, { name: "arrow-left", size: 18 }),
-        "Dashboard"
-      ),
-
+      showAvatarEdit && React.createElement(AvatarEditModal, {
+        initialChar: user.character,
+        crisp: props.crisp,
+        onClose: () => setShowAvatarEdit(false),
+        onSave: (newChar) => actions && actions.setCharacter && actions.setCharacter(newChar)
+      }),
       // Hero card - profile header
       React.createElement("div", { className: "dash-hero", style: { marginBottom: 40 } },
-        React.createElement("div", { className: "dash-hero__avatar" },
-          React.createElement(Avatar, { opts: opts, size: 80, crisp: props.crisp })),
+        React.createElement("div", { className: "dash-hero__avatar", style: { position: "relative" } },
+          React.createElement(Avatar, { opts: opts, size: 80, crisp: props.crisp }),
+          React.createElement("button", {
+            onClick: () => setShowAvatarEdit(true),
+            title: "Chỉnh sửa avatar / Xem hồ sơ cá nhân",
+            className: "avatar-edit-btn",
+            style: {
+              position: "absolute",
+              bottom: -6,
+              right: -6,
+              background: "var(--glh-accent)",
+              border: "2px solid var(--rpg-panel)",
+              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
+            }
+          }, React.createElement(Icon, { name: "edit-3", size: 11, color: "#fff" }))
+        ),
         React.createElement("div", { style: { minWidth: 0 } },
           React.createElement("div", { className: "dash-rank" }, profileMeta),
           React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayNameDash),
@@ -477,14 +552,6 @@ export function Policy(props) {
   return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 40 } },
     React.createElement("style", null, POLICY_STYLES),
     React.createElement("div", { className: "glh-container", style: { padding: "28px clamp(16px,4vw,40px)" } },
-      React.createElement("button", {
-        onClick: props.onBack,
-        style: { background: "none", border: "none", color: "var(--glh-accent)", cursor: "pointer", marginBottom: 20, display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 600 },
-      },
-        React.createElement(Icon, { name: "arrow-left", size: 16 }),
-        "Quay lại"
-      ),
-
       React.createElement("h1", { className: "u-h2", style: { marginBottom: 8, fontSize: "clamp(22px,4vw,32px)" } }, "Chính sách & Hướng dẫn L&D"),
       React.createElement("p", { style: { color: "var(--ui-muted)", marginBottom: 32, fontSize: 14 } }, "Tìm hiểu về các hình thức hỗ trợ học tập tại Garena"),
 

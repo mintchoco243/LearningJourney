@@ -16,8 +16,9 @@ export default function RootLayout({ children }) {
     <html
       lang="vi"
       className="h-full antialiased"
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
       <GoogleAnalyticsLoader initialGaId={gaId} />
       {process.env.NODE_ENV === "development" && <Agentation />}
     </html>
