@@ -100,6 +100,25 @@ app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsR
 app.use("/admin/api/analytics", requireAuth, requireAdmin, adminAnalyticsRouter);
 app.use("/admin/api/settings", requireAuth, requireAdmin, adminSettingsRouter);
 
+// ponytail: dev-only DB inspector, remove after use
+if (config.devAuthEnabled) {
+  app.get("/dev/db", async (req, res) => {
+    try {
+      const { mysqlQuery } = await import("./db-mysql.js");
+      const tables = await mysqlQuery("SHOW TABLES");
+      const tableNames = tables.rows.map(r => Object.values(r)[0]);
+      const result = {};
+      for (const t of tableNames) {
+        const cols = await mysqlQuery(`SHOW COLUMNS FROM \`${t}\``);
+        result[t] = cols.rows.map(c => ({ field: c.Field, type: c.Type, null: c.Null, key: c.Key }));
+      }
+      res.json(result);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+}
+
 // Next.js (App Router, includes /admin) handles every remaining route.
 if (config.apiOnly) {
   app.use((req, res) => res.status(404).json({ error: "NOT_FOUND" }));
