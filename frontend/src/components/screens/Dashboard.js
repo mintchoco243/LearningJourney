@@ -77,19 +77,24 @@ function expandRankTokens(value) {
 }
 
 function userRankTokens(user, rank) {
-  if (user.db_rank) return expandRankTokens(user.db_rank);
-  return Array.from(new Set([
-    ...expandRankTokens(rank?.id),
-    ...expandRankTokens(rank?.name),
-    ...expandRankTokens(rank?.en),
-  ].filter(Boolean)));
+  if (!user.db_rank) return [];
+  return expandRankTokens(user.db_rank);
 }
 
 function courseMatchesRank(course, rankTokens) {
+  if (!rankTokens.length) return true;
   const targets = asList(course.rank_ids || course.rank_targets).flatMap(expandRankTokens);
   if (!targets.length) return false;
   if (targets.includes("all")) return true;
   return targets.some((target) => rankTokens.includes(target));
+}
+
+function courseMatchesRole(course, user) {
+  const userRoles = [user.db_role, user.db_team].map(normalizeText).filter(Boolean);
+  if (!userRoles.length) return true;
+  const targets = asList(course.class_ids || course.role_targets).map(normalizeText).filter(Boolean);
+  if (!targets.length || targets.includes("all")) return true;
+  return targets.some((target) => userRoles.includes(target) || userRoles.some((role) => target.includes(role) || role.includes(target)));
 }
 
 function isActiveCourse(course) {
@@ -138,7 +143,11 @@ export function rankCompassCourses(courses, user, rank, cls) {
   const rankTokens = userRankTokens(user, rank);
   return (courses || [])
     .map((course, index) => ({ course, index }))
-    .filter(({ course }) => isActiveCourse(course) && courseMatchesRank(course, rankTokens))
+    .filter(({ course }) =>
+      isActiveCourse(course) &&
+      courseMatchesRank(course, rankTokens) &&
+      courseMatchesRole(course, user)
+    )
     .sort((a, b) => {
       const roleDiff = roleFitScore(b.course, user, cls) - roleFitScore(a.course, user, cls);
       if (roleDiff) return roleDiff;

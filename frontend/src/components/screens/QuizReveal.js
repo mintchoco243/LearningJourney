@@ -144,8 +144,6 @@ const { Avatar } = GLHAvatar;
     const cls = D.CLASSES[qr.class_id] || D.CLASSES.explorer;
     const rank = rankForUser(user);
     const avatarOpts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
-    const rankObj = D.RANKS.find((r) => r.id === qr.rank_id);
-    const rankAnswer = user.db_rank || (rankObj ? rankObj.name : "Chưa cập nhật");
     const displayName = user.full_name ? user.full_name.split(" ").pop() : (user.email ? user.email.split("@")[0] : "Bạn");
     const fullName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
     const emptyText = "Chưa cập nhật";
@@ -168,13 +166,13 @@ const { Avatar } = GLHAvatar;
     const weeklyHours = user.weekly_hours || quizExt.availability;
     const trainerPrefs = asList(user.preferred_trainers).length ? asList(user.preferred_trainers) : asList(quizExt.trainers);
     const summaryItems = [
-      { icon: "bar-chart-2", label: "Rank", value: rankAnswer },
-      { icon: "briefcase", label: "Role", value: user.db_role || emptyText },
+      user.db_rank ? { icon: "bar-chart-2", label: "Rank", value: user.db_rank } : null,
+      user.db_role ? { icon: "briefcase", label: "Role", value: user.db_role } : null,
       { icon: "building-2", label: "Team", value: user.db_team || emptyText },
       { icon: "clock", label: "Thời gian học", value: weeklyHours ? (availabilityLabel[weeklyHours] || weeklyHours) : emptyText },
       { icon: "book-open", label: "Hình thức học", value: learningStyles.length ? learningStyles.join(", ") : emptyText },
       { icon: "user-check", label: "Trainer yêu thích", value: trainerPrefs.length ? trainerPrefs.join(", ") : emptyText },
-    ];
+    ].filter(Boolean);
     const statItems = [
       { label: "Giờ học", value: Number(user.hours_total || 0) + "h" },
       { label: "Buổi đã học", value: Number(user.completed_sessions_count || 0) },
@@ -199,9 +197,9 @@ const { Avatar } = GLHAvatar;
           React.createElement("div", { style: { minWidth: 0 } },
             React.createElement("div", { style: { fontSize: 18, fontWeight: 800, color: "#fff", marginBottom: 4 } }, fullName),
             React.createElement("div", { style: { fontSize: 13, color: "var(--rpg-muted)", marginBottom: 10, overflowWrap: "anywhere" } }, user.email || emptyText),
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } },
-              React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(228,30,38,0.18)", border: "1px solid rgba(228,30,38,0.35)", borderRadius: 999, padding: "5px 9px" } }, rankAnswer),
-              React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(255,158,0,0.16)", border: "1px solid rgba(255,158,0,0.35)", borderRadius: 999, padding: "5px 9px" } }, user.db_team || user.db_role || "Learning Hub")
+            (user.db_rank || user.db_role) && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } },
+              user.db_rank && React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(228,30,38,0.18)", border: "1px solid rgba(228,30,38,0.35)", borderRadius: 999, padding: "5px 9px" } }, user.db_rank),
+              user.db_role && React.createElement("span", { style: { fontSize: 11, fontWeight: 800, color: "#fff", background: "rgba(255,158,0,0.16)", border: "1px solid rgba(255,158,0,0.35)", borderRadius: 999, padding: "5px 9px" } }, user.db_role)
             )
           )
         ),
