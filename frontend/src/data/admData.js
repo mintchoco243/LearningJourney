@@ -91,7 +91,7 @@ export const ADMIN_STATS = {
     {
       id: "cat-3", category: "Quy trình nội bộ", order_index: 3,
       entries: [
-        { id: "POL-006", title: "Quy trình submit L&D Request",               order_index: 1, is_active: true,  updated_at: "2026-05-30", preview: "Mọi yêu cầu đào tạo ngoài danh mục đều phải submit qua Garena Learning Hub, section L&D Request..." },
+        { id: "POL-006", title: "Quy trình submit L&D Request",               order_index: 1, is_active: true,  updated_at: "2026-05-30", preview: "Mọi yêu cầu đào tạo ngoài danh mục đều phải submit qua Garena Learning Compass, section L&D Request..." },
         { id: "POL-007", title: "Quy trình xét duyệt nội bộ",                order_index: 2, is_active: true,  updated_at: "2026-05-30", preview: "Team L&D sẽ review request trong vòng 5 ngày làm việc. Request cần có approval của Line Manager..." },
       ],
     },

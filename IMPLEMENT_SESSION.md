@@ -1,4 +1,4 @@
-# Learning Hub — Implementation Session Guide
+# Learning Compass — Implementation Session Guide
 
 ## Tech stack nhanh
 - **Frontend**: Next.js app ở `frontend/`, viết React không có JSX (toàn `React.createElement(...)`), CSS custom properties theming
@@ -28,8 +28,8 @@
 **File**: `frontend/src/app/page.js`
 
 **1a. Xoá job title** (2 vị trí):
-- Dòng 203: xoá `React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")`
-- Dòng 271: xoá `React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Hub")`
+- Dòng 203: xoá `React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Compass")`
+- Dòng 271: xoá `React.createElement("div", { className: "lv" }, user.db_team || user.db_role || "Learning Compass")`
 - Chỉ giữ avatar + tên (`nm`), không giữ `.lv`
 
 **1b. Verify alignment bằng browser**:
@@ -48,7 +48,7 @@
 **Thêm** phần thân mới với `maxHeight: "80vh", overflowY: "auto"` — 4 khối nội dung **verbatim**:
 
 ```
-1. "Learning Hub là gì?"
+1. "Learning Compass là gì?"
    → "Nơi tập trung các khóa học, lịch đào tạo, chính sách học tập và các kênh request hỗ trợ đào tạo tại Garena."
 
 2. "Dành cho ai?"
@@ -70,7 +70,7 @@
    • Nếu chưa tìm thấy khoá phù hợp, hãy "Gửi yêu cầu học tập" hoặc đăng ký hỗ trợ chi phí đào tạo.
 ```
 
-**Giữ nguyên**: header (logo + "Về Garena Learning Hub"), nút đóng `×`, footer nút "Đã hiểu".
+**Giữ nguyên**: header (logo + "Về Garena Learning Compass"), nút đóng `×`, footer nút "Đã hiểu".
 
 **Test sau sửa**: mở từ cả appbar desktop và sidebar mobile, xác nhận modal hiển thị đúng, không tràn.
 

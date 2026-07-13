@@ -230,7 +230,7 @@ function DevLoginButton() {
           {/* Topbar */}
           <div className="adm-topbar">
             <span className="adm-topbar__breadcrumb">
-              Garena Learning Hub · Admin &nbsp;/&nbsp; <strong>{meta.label}</strong>
+              Garena Learning Compass · Admin &nbsp;/&nbsp; <strong>{meta.label}</strong>
             </span>
             <span style={{ color: "var(--rpg-muted)", fontSize: 13 }}>
               {adminSession.user?.email} · {adminRole}

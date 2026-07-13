@@ -3,7 +3,7 @@ import { Agentation } from "agentation";
 import { GoogleAnalyticsLoader } from "@/components/GoogleAnalyticsLoader";
 
 export const metadata = {
-  title: "Garena Learning Hub",
+  title: "Garena Learning Compass",
   description: "Hành trình phát triển kỹ năng tại Garena",
   icons: {
     icon: "/20ad908d-4854-41c4-9251-365e0cf2f557.png",

@@ -30,13 +30,13 @@ export function AboutModal({ onClose }) {
       React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, marginBottom: 20 } },
         React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 40, width: 40, objectFit: "contain" } }),
         React.createElement("div", null,
-          React.createElement("h3", { style: { margin: 0, fontSize: 22, fontWeight: 800, color: "var(--ui-heading)" } }, "Về Garena Learning Hub"),
+          React.createElement("h3", { style: { margin: 0, fontSize: 22, fontWeight: 800, color: "var(--ui-heading)" } }, "Về Garena Learning Compass"),
           React.createElement("div", { style: { fontSize: 13, color: "var(--glh-accent)", fontWeight: 700 } }, "Nền tảng đào tạo nội bộ · Garena Vietnam L&D")
         )
       ),
       React.createElement("div", { style: { maxHeight: "80vh", overflowY: "auto", fontSize: 14, lineHeight: 1.7, color: "var(--ui-heading)", marginBottom: 24, display: "flex", flexDirection: "column", gap: 18 } },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, "Learning Hub là gì?"),
+          React.createElement("div", { style: { fontWeight: 700, marginBottom: 4 } }, "Learning Compass là gì?"),
           React.createElement("p", { style: { margin: 0, color: "var(--ui-muted)" } }, "Nơi tập trung các khóa học, lịch đào tạo, chính sách học tập và các kênh request hỗ trợ đào tạo tại Garena.")
         ),
         React.createElement("div", null,

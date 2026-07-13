@@ -161,7 +161,7 @@ function AppBar(props) {
             },
               isHome ? React.createElement(React.Fragment, null,
                 React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, display: "block" } }),
-                React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", marginLeft: 8 } }, "Garena Learning Hub"))
+                React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", marginLeft: 8 } }, "Garena Learning Compass"))
                 : isStore ? React.createElement(React.Fragment, null, label, React.createElement(Icon, { name: "lock", size: 11, color: "currentColor", style: { marginTop: 1 } }))
                   : label
             );
@@ -170,7 +170,7 @@ function AppBar(props) {
           // About button
           React.createElement("button", {
             onClick: () => props.onOpenAbout && props.onOpenAbout(),
-            title: "Về Learning Hub",
+            title: "Về Learning Compass",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
           }, React.createElement(Icon, { name: "info", size: 16, color: "var(--ui-heading)" })),
           // Rating button
@@ -211,7 +211,7 @@ function AppBar(props) {
       ),
       React.createElement("div", { className: "mobile-header__logo" },
         React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24 } }),
-        React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, marginLeft: 8 } }, "Learning Hub")
+        React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 13, marginLeft: 8 } }, "Learning Compass")
       )
     ),
 
@@ -242,7 +242,7 @@ function AppBar(props) {
             style: isStore ? { opacity: 0.6 } : {}
           },
             isHome ? React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, width: 24, objectFit: "contain" } }) : React.createElement(Icon, { name: icon, size: 18, color: isActive ? "#fff" : "var(--rpg-muted)" }),
-            isHome ? React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 14 } }, "Garena Learning Hub") : React.createElement("span", null, label),
+            isHome ? React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 14 } }, "Garena Learning Compass") : React.createElement("span", null, label),
             isStore && React.createElement(Icon, { name: "lock", size: 12, color: "var(--rpg-muted)", style: { marginLeft: "auto" } })
           );
         })
@@ -251,7 +251,7 @@ function AppBar(props) {
       React.createElement("div", { className: "app-sidebar__bottom" },
         React.createElement("div", { className: "app-sidebar__tools" },
           React.createElement("button", {
-            className: "tool-btn", onClick: () => props.onOpenAbout && props.onOpenAbout(), title: "Về Learning Hub"
+            className: "tool-btn", onClick: () => props.onOpenAbout && props.onOpenAbout(), title: "Về Learning Compass"
           }, React.createElement(Icon, { name: "info", size: 18, color: "var(--rpg-muted)" })),
           React.createElement("button", {
             className: "tool-btn", onClick: () => props.onOpenRating && props.onOpenRating(), title: "Đánh giá"

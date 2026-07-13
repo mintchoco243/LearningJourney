@@ -1,8 +1,8 @@
 # Prompt & Implementation Plan cho Codex / Antigravity
 
-## Learning Hub - Update theo feedback chị Vanh
+## Learning Compass - Update theo feedback chị Vanh
 
-Bạn hãy update Learning Hub theo các yêu cầu bên dưới.  
+Bạn hãy update Learning Compass theo các yêu cầu bên dưới.  
 Mục tiêu là sửa UI/UX và logic hiển thị theo feedback của chị Vanh, tận dụng các field/data hiện có nếu đã có sẵn.
 
 ---
@@ -30,7 +30,7 @@ Mục tiêu là sửa UI/UX và logic hiển thị theo feedback của chị Van
 
 Yêu cầu:
 
-- Căn button “Garena Learning Hub” trên header thẳng hàng với lề trái của content bên dưới.
+- Căn button “Garena Learning Compass” trên header thẳng hàng với lề trái của content bên dưới.
 - Kiểm tra lại container width/margin giữa header và main content.
 - Cân đối lại khoảng cách giữa các phần trên appbar:
   - Logo/home
@@ -68,7 +68,7 @@ About this site nên hiển thị bằng modal ngắn gọn.
 
 Nội dung modal gồm 4 block:
 
-### Learning Hub là gì?
+### Learning Compass là gì?
 
 Nơi tập trung các khóa học, lịch đào tạo, chính sách học tập và các kênh request hỗ trợ đào tạo tại Garena.
 
@@ -114,7 +114,7 @@ Lý do:
 
 - Header không đủ không gian cho title dài như “Marketing Generalist”.
 - Data source title/job chưa rõ.
-- Title/job không phải action chính của user khi dùng Learning Hub.
+- Title/job không phải action chính của user khi dùng Learning Compass.
 
 Acceptance criteria:
 

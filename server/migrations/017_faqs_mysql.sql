@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS faqs (
 
 -- Seed initial FAQ items if table is empty
 INSERT INTO faqs (id, topic, question, answer, keywords, status, display_order)
-SELECT 'faq-001', 'Đăng ký & Lịch học', 'Làm sao để đăng ký một khóa học trên Learning Hub?',
+SELECT 'faq-001', 'Đăng ký & Lịch học', 'Làm sao để đăng ký một khóa học trên Learning Compass?',
   'Bạn chỉ cần vào Thư viện đào tạo (Course Catalog), chọn khóa học phù hợp, ấn "Xem chi tiết" và chọn "Đăng ký tham gia". Lịch học sẽ được tự động đồng bộ gửi tới Google Calendar qua email Garena của bạn trong tối đa 48h tới.',
   'đăng ký, lịch học, calendar, tham gia, thư viện', 'Published', 1
 WHERE NOT EXISTS (SELECT 1 FROM faqs WHERE id = 'faq-001');

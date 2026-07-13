@@ -46,7 +46,7 @@ const { useGame } = GLHEngine;
       React.createElement(Starfield),
       React.createElement("div", { className: "ob-wrap", style: { maxWidth: 380 } },
         React.createElement("img", { className: "ob-logo", src: ((typeof window !== "undefined" && window.__resources) && (typeof window !== "undefined" && window.__resources).logo) || "assets/logo_horizontal.png", alt: "Garena", style: { marginBottom: 12 } }),
-        React.createElement("div", { className: "ob-eyebrow", style: { marginBottom: 24 } }, "Learning Hub"),
+        React.createElement("div", { className: "ob-eyebrow", style: { marginBottom: 24 } }, "Learning Compass"),
 
         React.createElement("h1", { className: "ob-title", style: { marginBottom: 8, fontSize: "clamp(28px, 5vw, 40px)", whiteSpace: "nowrap" } },
           "Chào mừng bạn"),

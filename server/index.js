@@ -119,7 +119,7 @@ for (const warning of assertRuntimeConfig()) {
 
 function startServer() {
   app.listen(config.port, () => {
-    console.log(`Garena Learning Hub listening on :${config.port}`);
+    console.log(`Garena Learning Compass listening on :${config.port}`);
   });
 }
 

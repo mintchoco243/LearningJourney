@@ -78,7 +78,7 @@ const { useGame } = GLHEngine;
         React.createElement("div", { className: "modal", style: { textAlign: "center", padding: 48 } },
           React.createElement("div", { style: { fontSize: 42, marginBottom: 16, color: "var(--garena-positive)" } }, "✓"),
           React.createElement("h2", { style: { margin: "0 0 8px", fontSize: 20, fontWeight: 700, color: "var(--ui-heading)" } }, "Cảm ơn bạn!"),
-          React.createElement("p", { style: { color: "var(--ui-muted)", fontSize: 13, margin: 0 } }, "Đánh giá của bạn đã được gửi đến admin Learning Hub.")
+          React.createElement("p", { style: { color: "var(--ui-muted)", fontSize: 13, margin: 0 } }, "Đánh giá của bạn đã được gửi đến admin Learning Compass.")
         )
       );
     }
@@ -88,7 +88,7 @@ const { useGame } = GLHEngine;
         React.createElement("div", { style: { padding: "24px 24px 20px", borderBottom: "1px solid var(--ui-box-border)", flexShrink: 0 } },
           React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
             React.createElement("div", null,
-              React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--ui-heading)" } }, "Đánh giá Garena Learning Hub"),
+              React.createElement("h2", { style: { margin: "0 0 4px", fontSize: 18, fontWeight: 700, color: "var(--ui-heading)" } }, "Đánh giá Garena Learning Compass"),
               React.createElement("p", { style: { margin: 0, fontSize: 12, color: "var(--ui-muted)" } }, "Ý kiến của bạn rất có giá trị với chúng tôi")
             ),
             React.createElement("button", { onClick: props.onClose, style: { background: "none", border: "none", color: "var(--ui-muted)", cursor: "pointer", fontSize: 20, padding: 0 } }, "×")
