@@ -27,7 +27,7 @@ function SectionRow({ title, action }) {
   return React.createElement("div", {
     style: { display: "flex", alignItems: "center", justifyContent: "space-between", margin: "36px 0 16px", gap: 16 },
   },
-    React.createElement("h2", { style: { margin: 0, fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } }, title),
+    React.createElement("h2", { className: "u-h3", style: { margin: 0 } }, title),
     action && React.createElement("button", { className: "u-btn u-btn--ghost", style: { fontSize: 13 }, onClick: action.onClick }, action.label));
 }
 

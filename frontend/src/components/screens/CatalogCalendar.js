@@ -495,7 +495,7 @@ function ctaColor(cta) {
 
     return React.createElement("div", { className: props.embedded ? undefined : "glh-container fade-screen", style: { padding: props.embedded ? "24px 0 0" : "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("div", { style: { marginBottom: 12 } },
-        React.createElement("div", { style: { fontSize: 16, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 10 } }, "Lịch sắp tới"),
+        React.createElement("h2", { className: "u-h3", style: { margin: "0 0 10px" } }, "Lịch sắp tới"),
         React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4, width: "fit-content" } },
           [["quarter", "Theo quý"], ["month", "Theo tháng"]].map(([v, l]) => React.createElement("button", {
             key: v, onClick: () => setView(v),
