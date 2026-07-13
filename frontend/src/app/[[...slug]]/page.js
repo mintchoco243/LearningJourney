@@ -241,7 +241,7 @@ function AppBar(props) {
             onClick: () => handleNav(id),
             style: isStore ? { opacity: 0.6 } : {}
           },
-            isHome ? React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, width: 24, objectFit: "contain" } }) : React.createElement(Icon, { name: icon, size: 18, color: isActive ? "#fff" : "var(--rpg-muted)" }),
+            isHome ? React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 24, width: 24, objectFit: "contain" } }) : React.createElement(Icon, { name: icon, size: 18, color: "currentColor" }),
             isHome ? React.createElement("span", { className: "glh-brand-text", style: { fontWeight: 700, fontSize: 14 } }, "Garena Learning Compass") : React.createElement("span", null, label),
             isStore && React.createElement(Icon, { name: "lock", size: 12, color: "var(--rpg-muted)", style: { marginLeft: "auto" } })
           );

@@ -60,6 +60,7 @@
 | `rating_min` | number | `4`   |
 | `duration_max` | number | `8`   |
 | `type` | string | `open\|scheduled\|waitlist` |
+| `join_method` | string | `upcoming_scheduled\|interest\|sponsor\|self_learning\|ended` |
 | `sort` | string | `relevant\|rating\|popular\|newest` |
 | `page` | number | `1`   |
 | `limit` | number | `20`  |

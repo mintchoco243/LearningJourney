@@ -73,6 +73,50 @@ const testCourses = [
     location: "Google Meet",
     max_participants: null,
   },
+  {
+    id: "00000000-0000-4000-8000-000000000104",
+    course_code: "MOCK-SCHEDULED",
+    title: "Mock: Test filter co lich sap toi",
+    trainer: "Mock L&D",
+    format: "offline",
+    duration_hours: 2,
+    skill_tags: ["leadership"],
+    rank_targets: ["rank_02"],
+    role_targets: ["strategist"],
+    type: "scheduled",
+    min_participants: 8,
+    registration_url: "#",
+    description: "Mock course for testing the upcoming scheduled join-method filter.",
+    xp_reward: 40,
+    status: "open",
+    material_url: null,
+    session_date: "2026-08-20",
+    session_time: "09:00-11:00",
+    location: "HCM Office",
+    max_participants: 24,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000105",
+    course_code: "MOCK-SELF-LEARN",
+    title: "Mock: Test filter tu hoc",
+    trainer: "Mock L&D",
+    format: "elearning",
+    duration_hours: 0.75,
+    skill_tags: ["ai"],
+    rank_targets: ["rank_02"],
+    role_targets: ["strategist"],
+    type: "elearning",
+    min_participants: null,
+    registration_url: "https://learning.garena.vn/mock-self-learn",
+    description: "Mock course for testing the self-learning join-method filter.",
+    xp_reward: 25,
+    status: "open",
+    material_url: null,
+    session_date: null,
+    session_time: null,
+    location: null,
+    max_participants: null,
+  },
 ];
 
 for (const course of testCourses) {
@@ -134,7 +178,7 @@ for (const course of testCourses) {
 }
 
 const seeded = await query(
-  "SELECT COUNT(*) AS count FROM courses WHERE id IN ($1, $2, $3)",
+  `SELECT COUNT(*) AS count FROM courses WHERE id IN (${testCourses.map((_, index) => `$${index + 1}`).join(", ")})`,
   testCourses.map((course) => course.id),
 );
 const seededCount = Number(seeded.rows[0]?.count || 0);
@@ -144,4 +188,4 @@ if (seededCount !== testCourses.length) {
 }
 
 await pool.end();
-console.log(`Seeded ${testCourses.length} popup test courses.`);
+console.log(`Seeded ${testCourses.length} test courses.`);

@@ -40,6 +40,29 @@ function cleanOptionalText(value) {
   return String(value || "").trim() || null;
 }
 
+function listValue(value) {
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (value == null || value === "") return [];
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (!text) return [];
+    try {
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) return parsed.filter(Boolean);
+    } catch {}
+    return text.split(",").map((item) => item.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function uniqueTargets(rows, column) {
+  return [...new Set(rows
+    .flatMap((row) => listValue(row[column]))
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && value.toLowerCase() !== "all"))]
+    .sort((a, b) => a.localeCompare(b));
+}
+
 coursesRouter.get("/", async (req, res, next) => {
   try {
     const page = Math.max(Number(req.query.page || 1), 1);
@@ -64,6 +87,22 @@ coursesRouter.get("/", async (req, res, next) => {
         : `c.${column} = $${params.length}`);
     }
 
+    const joinMethod = String(req.query.join_method || "").trim();
+    if (joinMethod === "upcoming_scheduled") {
+      filters.push("c.type = 'scheduled'");
+      filters.push("c.session_date IS NOT NULL");
+      filters.push("c.session_date >= CURRENT_DATE");
+      filters.push("c.status NOT IN ('cancelled', 'full')");
+    } else if (joinMethod === "interest") {
+      filters.push("c.type = 'interest'");
+    } else if (joinMethod === "sponsor") {
+      filters.push("(c.type = 'external' OR c.trainer_type = 'external')");
+    } else if (joinMethod === "self_learning") {
+      filters.push("c.type IN ('elearning', 'material_only')");
+    } else if (joinMethod === "ended") {
+      filters.push("(c.status = 'ended' OR (c.session_date IS NOT NULL AND c.session_date < CURRENT_DATE AND c.status <> 'cancelled'))");
+    }
+
     const result = await query(
       `SELECT c.*,
               (e.id IS NOT NULL) AS is_enrolled,
@@ -86,6 +125,22 @@ coursesRouter.get("/", async (req, res, next) => {
     const user = userResult.rows[0] || {};
     const courses = await attachPublicCourseRatings(result.rows);
     res.json({ courses: courses.map((course) => ({ ...course, fit_tag: fitTag(course, user) })), page, limit });
+  } catch (err) {
+    next(err);
+  }
+});
+
+coursesRouter.get("/options", async (req, res, next) => {
+  try {
+    const result = await query(
+      `SELECT rank_targets, role_targets
+       FROM courses
+       WHERE is_active = TRUE AND status <> 'draft'`
+    );
+    res.json({
+      ranks: uniqueTargets(result.rows, "rank_targets"),
+      roles: uniqueTargets(result.rows, "role_targets"),
+    });
   } catch (err) {
     next(err);
   }
