@@ -32,6 +32,209 @@ const targetMatchesFilter = (targets, selected) => {
   return !list.length || list.some(isAllTarget) || list.includes(selected);
 };
 
+export const COURSE_DURATION_OPTIONS = [
+  { id: "short",  label: "< 1 giờ",  test: m => m < 60 },
+  { id: "medium", label: "1-2 giờ",  test: m => m >= 60 && m <= 120 },
+  { id: "long",   label: "> 2 giờ",  test: m => m > 120 },
+];
+
+export const COURSE_JOIN_OPTIONS = [
+  { id: "upcoming_scheduled", label: "Có lịch sắp tới" },
+  { id: "interest", label: "Đặt chỗ trước", isNew: true },
+  { id: "sponsor", label: "Hỗ trợ Learning Budget Sponsor" },
+  { id: "self_learning", label: "Tự học qua video / tài liệu" },
+  { id: "ended", label: "Đã kết thúc" },
+];
+
+export function defaultCourseFilters() {
+  return {
+    q: "",
+    fmtFilter: "all",
+    cmFilter: "all",
+    trainerFilter: "all",
+    durationFilter: "all",
+    tagFilter: "all",
+    rankFilter: "all",
+    joinFilter: "all",
+    sortMode: "priority",
+  };
+}
+
+export function getCourseFilterOptions(courses, targetOptions = {}) {
+  return {
+    trainers: [...new Set((courses || []).map(c => c.trainer).filter(Boolean))].sort(),
+    skills: [...new Set((courses || []).flatMap(c => c.skill_tags || []))],
+    ranks: targetOptions.ranks?.length ? targetOptions.ranks : uniqueTargetOptions((courses || []).flatMap(c => c.target_ranks || c.rank_ids || [])),
+    roles: targetOptions.roles?.length ? targetOptions.roles : uniqueTargetOptions((courses || []).flatMap(c => c.class_ids || [])),
+  };
+}
+
+export function filterCourses(courses, filters, user) {
+  const f = Object.assign(defaultCourseFilters(), filters);
+  return (courses || []).filter(c => {
+    if (f.fmtFilter !== "all" && c.format !== f.fmtFilter) return false;
+    if (f.cmFilter !== "all" && !targetMatchesFilter(c.class_ids, f.cmFilter)) return false;
+    if (f.trainerFilter !== "all" && c.trainer !== f.trainerFilter) return false;
+    if (f.durationFilter !== "all") {
+      const opt = COURSE_DURATION_OPTIONS.find(o => o.id === f.durationFilter);
+      if (opt && !opt.test(c.duration_minutes)) return false;
+    }
+    if (f.tagFilter !== "all" && !(c.skill_tags || []).includes(f.tagFilter)) return false;
+    if (f.rankFilter !== "all") {
+      if (f.rankFilter === "my_rank") {
+        if (!isRecommended(c, user)) return false;
+      } else {
+        const ranks = c.target_ranks || c.rank_ids || [];
+        if (!targetMatchesFilter(ranks, f.rankFilter)) return false;
+      }
+    }
+    if (f.joinFilter === "upcoming_scheduled" && !(c.type === "scheduled" && c.course_status === "upcoming_open")) return false;
+    if (f.joinFilter === "interest" && c.type !== "interest") return false;
+    if (f.joinFilter === "sponsor" && !(c.type === "external" || c.trainer_type === "external")) return false;
+    if (f.joinFilter === "self_learning" && !["elearning", "material_only"].includes(c.type)) return false;
+    if (f.joinFilter === "ended" && c.course_status !== "ended") return false;
+    if (f.q.trim()) {
+      const hay = [c.title, c.trainer, c.description, c.audience, ...(c.skill_tags || [])].join(" ").toLowerCase();
+      if (!hay.includes(f.q.trim().toLowerCase())) return false;
+    }
+    return true;
+  });
+}
+
+function SearchableSelect({ placeholder, value, onChange, options, noDefault, minWidth = 110, maxWidth = 180 }) {
+  const [open, setOpen] = React.useState(false);
+  const [term, setTerm] = React.useState("");
+  const wrapRef = React.useRef(null);
+  const allOptions = noDefault ? options : [{ id: "all", label: placeholder }, ...options];
+  const selected = allOptions.find(o => o.id === value);
+  const visible = allOptions.filter(o => !term.trim() || String(o.label).toLowerCase().includes(term.trim().toLowerCase()));
+
+  React.useEffect(() => {
+    if (!open) return;
+    const close = (event) => {
+      if (wrapRef.current && !wrapRef.current.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  const pick = (id) => {
+    onChange(id);
+    setOpen(false);
+    setTerm("");
+  };
+
+  return React.createElement("div", { ref: wrapRef, style: { position: "relative", flex: "1 1 auto", minWidth, maxWidth } },
+    React.createElement("button", {
+      type: "button",
+      className: "glh-filter-sel" + (!noDefault && value && value !== "all" ? " is-active" : ""),
+      onClick: () => setOpen(v => !v),
+      style: { width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left" },
+    },
+      React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, selected ? selected.label : placeholder),
+      React.createElement(Icon, { name: "chevron-down", size: 14, color: "var(--ui-muted)" })),
+    open && React.createElement("div", {
+      style: {
+        position: "absolute",
+        zIndex: 30,
+        top: "calc(100% + 6px)",
+        left: 0,
+        right: 0,
+        background: "var(--rpg-panel)",
+        border: "1px solid var(--rpg-border)",
+        borderRadius: 8,
+        boxShadow: "0 16px 40px rgba(0,0,0,.24)",
+        padding: 6,
+      },
+    },
+      React.createElement("input", {
+        className: "u-input",
+        value: term,
+        onChange: e => setTerm(e.target.value),
+        autoFocus: true,
+        placeholder: "Gõ để tìm...",
+        style: { width: "100%", boxSizing: "border-box", height: 34, marginBottom: 4, fontSize: 12, padding: "7px 9px" },
+      }),
+      React.createElement("div", { style: { maxHeight: 230, overflowY: "auto" } },
+        visible.length ? visible.map(option => React.createElement("button", {
+          key: option.id,
+          type: "button",
+          onClick: () => pick(option.id),
+          style: {
+            width: "100%",
+            border: 0,
+            background: value === option.id ? "rgba(228,30,38,.12)" : "transparent",
+            color: "var(--ui-heading)",
+            borderRadius: 6,
+            padding: "8px 10px",
+            textAlign: "left",
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+          },
+        },
+          React.createElement("span", null, option.label),
+          option.isNew && React.createElement("span", {
+            style: {
+              flexShrink: 0,
+              borderRadius: 999,
+              padding: "2px 6px",
+              background: "var(--glh-accent)",
+              color: "#fff",
+              fontSize: 9,
+              lineHeight: 1,
+              fontWeight: 900,
+              letterSpacing: 0,
+            },
+          }, "NEW"))) : React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, padding: "8px 10px" } }, "Không có kết quả"))));
+}
+
+export function CourseSearchFilters({ filters, setFilters, options, activeFilterCount, onOpenLdRequest, showActions = true }) {
+  const setOne = (key) => (value) => setFilters(prev => Object.assign({}, prev, { [key]: value }));
+  const clearAll = () => setFilters(prev => Object.assign({}, prev, defaultCourseFilters()));
+  const chip = (label, active, onClick, key) =>
+    React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
+
+  return React.createElement(React.Fragment, null,
+    React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 } },
+      React.createElement("div", { style: { position: "relative", flex: "1 1 260px", minWidth: 0 } },
+        React.createElement("div", { style: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } },
+          React.createElement(Icon, { name: "search", size: 15, color: "var(--garena-grey)" })),
+        React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: filters.q, onChange: e => setOne("q")(e.target.value), style: { paddingLeft: 40, width: "100%", boxSizing: "border-box" } })),
+      showActions && React.createElement("a", {
+        href: "https://gigi.garena.vn/form/46",
+        target: "_blank",
+        rel: "noopener noreferrer",
+        className: "glh-btn glh-btn--primary",
+        style: { whiteSpace: "nowrap", textDecoration: "none", fontSize: 13 }
+      }, "Đăng ký hỗ trợ chi phí đào tạo"),
+      showActions && React.createElement("button", {
+        className: "glh-btn glh-btn--primary",
+        style: { whiteSpace: "nowrap", fontSize: 13 },
+        onClick: () => onOpenLdRequest && onOpenLdRequest()
+      }, "Gửi yêu cầu hỗ trợ đào tạo")),
+    React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
+      React.createElement(SearchableSelect, { placeholder: "Hình thức", value: filters.fmtFilter, onChange: setOne("fmtFilter"), options: [{ id: "online", label: "Online" }, { id: "offline", label: "Offline" }, { id: "elearning", label: "E-learning" }] }),
+      React.createElement(SearchableSelect, { placeholder: "Kỹ năng", value: filters.tagFilter, onChange: setOne("tagFilter"), options: options.skills.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
+      React.createElement(SearchableSelect, { placeholder: "Tất cả rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }),
+      React.createElement(SearchableSelect, { placeholder: "Cách tham gia", value: filters.joinFilter, onChange: setOne("joinFilter"), options: COURSE_JOIN_OPTIONS, minWidth: 170, maxWidth: 230 }),
+      React.createElement(SearchableSelect, { placeholder: "Trainer", value: filters.trainerFilter, onChange: setOne("trainerFilter"), options: options.trainers.map(t => ({ id: t, label: t })) }),
+      React.createElement(SearchableSelect, { placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: COURSE_DURATION_OPTIONS.map(d => ({ id: d.id, label: d.label })) }),
+      React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 } },
+        React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
+        React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
+      ),
+      activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
+      React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
+      chip("Tất cả", filters.cmFilter === "all", () => setOne("cmFilter")("all")),
+      options.roles.map(r => chip(r.label, filters.cmFilter === r.id, () => setOne("cmFilter")(filters.cmFilter === r.id ? "all" : r.id), r.id))));
+}
+
 function ctaColor(cta) {
   return ({
     accent: "var(--glh-accent)",
@@ -54,7 +257,6 @@ function ctaColor(cta) {
     const [tagFilter,      setTagFilter]      = React.useState("all");
     const [rankFilter,     setRankFilter]     = React.useState("all");
     const [joinFilter,     setJoinFilter]     = React.useState("all");
-    const [joinMenuOpen,   setJoinMenuOpen]   = React.useState(false);
     const [sortMode,       setSortMode]       = React.useState("priority");
     const [targetOptions,  setTargetOptions]  = React.useState({ ranks: [], roles: [] });
 
@@ -88,50 +290,10 @@ function ctaColor(cta) {
         });
     }, []);
 
-    const allTrainers = [...new Set(courses.map(c => c.trainer))].sort();
-    const allSkillIds = [...new Set(courses.flatMap(c => c.skill_tags || []))];
-    const rankOptions = targetOptions.ranks.length ? targetOptions.ranks : uniqueTargetOptions(courses.flatMap(c => c.target_ranks || c.rank_ids || []));
-    const roleOptions = targetOptions.roles.length ? targetOptions.roles : uniqueTargetOptions(courses.flatMap(c => c.class_ids || []));
-    const durationOptions = [
-      { id: "short",  label: "< 1 giờ",  test: m => m < 60 },
-      { id: "medium", label: "1–2 giờ",  test: m => m >= 60 && m <= 120 },
-      { id: "long",   label: "> 2 giờ",  test: m => m > 120 },
-    ];
-    const joinOptions = [
-      { id: "upcoming_scheduled", label: "Có lịch sắp tới" },
-      { id: "interest", label: "Đặt chỗ trước", isNew: true },
-      { id: "sponsor", label: "Hỗ trợ Learning Budget Sponsor" },
-      { id: "self_learning", label: "Tự học qua video / tài liệu" },
-      { id: "ended", label: "Đã kết thúc" },
-    ];
+    const filterOptions = getCourseFilterOptions(courses, targetOptions);
     const activeFilterCount = [fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter].filter(v => v !== "all").length;
-    const clearAll = () => { setFmtFilter("all"); setCmFilter("all"); setTrainerFilter("all"); setDurationFilter("all"); setTagFilter("all"); setRankFilter("all"); setJoinFilter("all"); setQ(""); };
 
-    let filtered = courses.filter(c => {
-      if (fmtFilter !== "all" && c.format !== fmtFilter) return false;
-      if (cmFilter !== "all" && !targetMatchesFilter(c.class_ids, cmFilter)) return false;
-      if (trainerFilter !== "all" && c.trainer !== trainerFilter) return false;
-      if (durationFilter !== "all") { const opt = durationOptions.find(o => o.id === durationFilter); if (opt && !opt.test(c.duration_minutes)) return false; }
-      if (tagFilter !== "all" && !(c.skill_tags || []).includes(tagFilter)) return false;
-      if (rankFilter !== "all") {
-        if (rankFilter === "my_rank") {
-          if (!isRecommended(c, user)) return false;
-        } else {
-          const ranks = c.target_ranks || c.rank_ids || [];
-          if (!targetMatchesFilter(ranks, rankFilter)) return false;
-        }
-      }
-      if (joinFilter === "upcoming_scheduled" && !(c.type === "scheduled" && c.course_status === "upcoming_open")) return false;
-      if (joinFilter === "interest" && c.type !== "interest") return false;
-      if (joinFilter === "sponsor" && !(c.type === "external" || c.trainer_type === "external")) return false;
-      if (joinFilter === "self_learning" && !["elearning", "material_only"].includes(c.type)) return false;
-      if (joinFilter === "ended" && c.course_status !== "ended") return false;
-      if (q.trim()) {
-        const hay = [c.title, c.trainer, c.description, c.audience, ...(c.skill_tags || [])].join(" ").toLowerCase();
-        if (!hay.includes(q.trim().toLowerCase())) return false;
-      }
-      return true;
-    });
+    let filtered = filterCourses(courses, { q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter, sortMode }, user);
 
     if (sortMode === "priority" || sortMode === "newest") filtered = sortCoursesByStatusPriority(filtered, user);
     if (sortMode === "dur_asc")     filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
@@ -170,143 +332,31 @@ function ctaColor(cta) {
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    const Sel = ({ placeholder, value, onChange, options, noDefault }) =>
-      React.createElement("select", {
-        value, onChange: e => onChange(e.target.value),
-        className: "glh-filter-sel",
-        style: { flex: "1 1 auto", minWidth: 110, maxWidth: 180 },
-      },
-        !noDefault && React.createElement("option", { value: "all" }, placeholder),
-        options.map(o => React.createElement("option", { key: o.id, value: o.id }, o.label)));
-
-    const chip = (label, active, onClick, key) =>
-      React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
-
-    const JoinFilter = () => {
-      const selected = joinOptions.find(o => o.id === joinFilter);
-      const selectOption = (id) => {
-        setJoinFilter(id);
-        setJoinMenuOpen(false);
-      };
-      return React.createElement("div", { style: { position: "relative", flex: "1 1 auto", minWidth: 170, maxWidth: 230 } },
-        React.createElement("button", {
-          type: "button",
-          className: "glh-filter-sel",
-          onClick: () => setJoinMenuOpen(open => !open),
-          style: { width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left" },
-        },
-          React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } },
-            selected ? selected.label : "Cách tham gia"),
-          React.createElement(Icon, { name: "chevron-down", size: 14, color: "var(--ui-muted)" })),
-        joinMenuOpen && React.createElement("div", {
-          style: {
-            position: "absolute",
-            zIndex: 30,
-            top: "calc(100% + 6px)",
-            left: 0,
-            right: 0,
-            background: "var(--rpg-panel)",
-            border: "1px solid var(--rpg-border)",
-            borderRadius: 8,
-            boxShadow: "0 16px 40px rgba(0,0,0,.24)",
-            padding: 4,
-          },
-        },
-          React.createElement("button", {
-            type: "button",
-            onClick: () => selectOption("all"),
-            style: {
-              width: "100%",
-              border: 0,
-              background: joinFilter === "all" ? "rgba(228,30,38,.12)" : "transparent",
-              color: "var(--ui-heading)",
-              borderRadius: 6,
-              padding: "8px 10px",
-              textAlign: "left",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-            },
-          }, "Cách tham gia"),
-          joinOptions.map(option => React.createElement("button", {
-            key: option.id,
-            type: "button",
-            onClick: () => selectOption(option.id),
-            style: {
-              width: "100%",
-              border: 0,
-              background: joinFilter === option.id ? "rgba(228,30,38,.12)" : "transparent",
-              color: "var(--ui-heading)",
-              borderRadius: 6,
-              padding: "8px 10px",
-              textAlign: "left",
-              cursor: "pointer",
-              fontSize: 12,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 8,
-            },
-          },
-            React.createElement("span", null, option.label),
-            option.isNew && React.createElement("span", {
-              style: {
-                flexShrink: 0,
-                borderRadius: 999,
-                padding: "2px 6px",
-                background: "var(--glh-accent)",
-                color: "#fff",
-                fontSize: 9,
-                lineHeight: 1,
-                fontWeight: 900,
-                letterSpacing: 0,
-              },
-            }, "NEW")))));
+    const setFilters = (updater) => {
+      const current = { q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter, sortMode };
+      const next = typeof updater === "function" ? updater(current) : updater;
+      setQ(next.q);
+      setFmtFilter(next.fmtFilter);
+      setCmFilter(next.cmFilter);
+      setTrainerFilter(next.trainerFilter);
+      setDurationFilter(next.durationFilter);
+      setTagFilter(next.tagFilter);
+      setRankFilter(next.rankFilter);
+      setJoinFilter(next.joinFilter);
+      setSortMode(next.sortMode);
     };
 
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("h2", { style: { margin: "0 0 16px", fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } },
         "Kho khóa đào tạo"),
 
-      // Row 1: Search + CTA buttons
-      React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 } },
-        React.createElement("div", { style: { position: "relative", flex: "1 1 260px", minWidth: 0 } },
-          React.createElement("div", { style: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } },
-            React.createElement(Icon, { name: "search", size: 15, color: "var(--garena-grey)" })),
-          React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: q, onChange: e => setQ(e.target.value), style: { paddingLeft: 40, width: "100%", boxSizing: "border-box" } })),
-        React.createElement("a", {
-          href: "https://gigi.garena.vn/form/46",
-          target: "_blank",
-          rel: "noopener noreferrer",
-          className: "glh-btn glh-btn--primary",
-          style: { whiteSpace: "nowrap", textDecoration: "none", fontSize: 13 }
-        }, "Đăng ký hỗ trợ chi phí đào tạo"),
-        React.createElement("button", {
-          className: "glh-btn glh-btn--primary",
-          style: { whiteSpace: "nowrap", fontSize: 13 },
-          onClick: () => props.onOpenLdRequest && props.onOpenLdRequest()
-        }, "Gửi yêu cầu hỗ trợ đào tạo")),
-
-      // Row 2: Dropdowns + Sort
-      React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
-        React.createElement(Sel, { placeholder: "Hình thức", value: fmtFilter, onChange: setFmtFilter, options: [{ id: "online", label: "Online" }, { id: "offline", label: "Offline" }, { id: "elearning", label: "E-learning" }] }),
-        React.createElement(Sel, { placeholder: "Kỹ năng", value: tagFilter, onChange: setTagFilter, options: allSkillIds.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
-        React.createElement(Sel, { placeholder: "Tất cả rank", value: rankFilter, onChange: setRankFilter, options: rankOptions }),
-        React.createElement(JoinFilter),
-        React.createElement(Sel, { placeholder: "Trainer", value: trainerFilter, onChange: setTrainerFilter, options: allTrainers.map(t => ({ id: t, label: t })) }),
-        React.createElement(Sel, { placeholder: "Thời lượng", value: durationFilter, onChange: setDurationFilter, options: durationOptions.map(d => ({ id: d.id, label: d.label })) }),
-        React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 } },
-          React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
-          React.createElement(Sel, { noDefault: true, value: sortMode, onChange: setSortMode, options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
-        ),
-        activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
-
-      // Row 3: Chuyên môn chips (role/vai trò)
-      React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
-        React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
-        chip("Tất cả", cmFilter === "all", () => setCmFilter("all")),
-        roleOptions.map(r => chip(r.label, cmFilter === r.id, () => setCmFilter(cmFilter === r.id ? "all" : r.id), r.id))),
+      React.createElement(CourseSearchFilters, {
+        filters: { q, fmtFilter, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter, sortMode },
+        setFilters,
+        options: filterOptions,
+        activeFilterCount,
+        onOpenLdRequest: props.onOpenLdRequest,
+      }),
 
       // Result count
       React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", marginBottom: 16 } },

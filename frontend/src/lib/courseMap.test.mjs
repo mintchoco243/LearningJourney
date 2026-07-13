@@ -64,7 +64,9 @@ assert.equal(mapCourseToCard({ id: "row-004", rating: "4.9", has_featured_testim
 // course -> card: ended status carries material_url through for the "Xem tài liệu" CTA
 const endedCard = mapCourseToCard({ id: "LC-003", title: "Old", status: "ended", material_url: "https://docs.example/lc-003" });
 assert.equal(endedCard.course_status, "ended");
+assert.equal(endedCard.status, "ended");
 assert.equal(endedCard.material_url, "https://docs.example/lc-003");
+assert.equal(mapCourseToCard({ id: "LC-003B", status: "ended", materials_url: "https://docs.example/lc-003b" }).material_url, "https://docs.example/lc-003b");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, "ended");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "2026-07-15", material_url: "https://docs.example" }, TODAY).course_status, "upcoming_open");
 
@@ -82,6 +84,18 @@ assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", stat
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "material");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "complete");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", format: "video", status: "ended", registration_url: "https://learn.example", material_url: "https://docs.example" }, TODAY)).key, "learn");
+{
+  const externalLinked = mapCourseToCard({
+    id: "LC-009D",
+    course_source: "external",
+    status: "open",
+    session_date: "2026-07-20",
+    registration_url: "https://vendor.example/register",
+  }, TODAY);
+  const externalCta = getCourseCta(externalLinked);
+  assert.equal(externalCta.key, "external_register");
+  assert.equal(externalCta.action, "url");
+}
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5

@@ -18,6 +18,11 @@ const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 const displayCourseCode = (row) => row.course_code || row.code || row.id;
 const courseRowId = (row) => row.id || row._id || row.course_row_id || row.course_id || displayCourseCode(row);
 const courseType = (row) => String(row.type || "").trim().toLowerCase();
+const isExternalCourse = (row) => {
+  const type = courseType(row);
+  const source = String(row.course_source || row.trainer_type || "").trim().toLowerCase();
+  return type === "external" || source === "external" || row.trainer === "External";
+};
 
 function listValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -96,7 +101,8 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     rating: publicCourseRating(s),
     featured_testimonial_count: Number(s.featured_testimonial_count || 0),
     has_featured_testimonial: hasFeaturedTestimonial(s),
-    material_url: s.material_url || null,
+    status: sessionStatus,
+    material_url: s.material_url || s.materials_url || null,
     min_participants: s.min_participants ?? null,
     max_participants: s.max_participants ?? null,
     current_count: s.current_count ?? null,
@@ -159,7 +165,8 @@ export function mapCourseToCard(c, today = new Date()) {
     location: c.location || null,
     max_participants: c.max_participants ?? null,
     current_count: c.current_count ?? null,
-    material_url: c.material_url || null,
+    status,
+    material_url: c.material_url || c.materials_url || null,
     min_participants: c.min_participants ?? null,
     audience: c.audience || "Mọi cấp độ",
     rating: publicCourseRating(c),
@@ -170,7 +177,7 @@ export function mapCourseToCard(c, today = new Date()) {
 
 export function getCourseCta(course, user = {}) {
   const c = course || {};
-  const type = courseType(c) || (c.format === "elearning" ? "elearning" : "scheduled");
+  const type = isExternalCourse(c) ? "external" : (courseType(c) || (c.format === "elearning" ? "elearning" : "scheduled"));
   const rowId = c._id || c.id || c.course_row_id;
   const completed = rowId
     ? (user.completed_courses || []).includes(rowId)

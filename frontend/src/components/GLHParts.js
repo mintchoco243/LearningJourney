@@ -268,12 +268,45 @@ const D = GLH_DATA;
     const desc = c.description_short || c.description;
     const timeText = scheduleTime(c);
     const rating = publicCourseRating(c);
+    const canOpenDirectUrl = cta?.action === "url" && cta.key === "external_register" && c.url && c.url !== "#";
+    const openDirectUrl = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      window.open(c.url, "_blank", "noreferrer");
+      trackEvent("course_register_click", {
+        course_id: c._id || c.id || c.course_row_id || c.course_id,
+        course_code: c.course_code || c.course_id,
+        course_title: c.title,
+        action: cta.key,
+      });
+    };
+    const cardCta = cta && !["completed", "reserved", "ended"].includes(cta.key)
+      ? (canOpenDirectUrl
+        ? React.createElement("span", {
+            role: "link",
+            tabIndex: 0,
+            onClick: openDirectUrl,
+            onKeyDown: (event) => {
+              if (event.key === "Enter" || event.key === " ") openDirectUrl(event);
+            },
+            style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta), cursor: "pointer" },
+          }, cta.text)
+        : React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text))
+      : null;
 
-    return React.createElement("button", {
+    return React.createElement("div", {
+      role: "button",
+      tabIndex: 0,
       className: "u-card u-card--hover",
       style: { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: 1, borderTop: topBorderColor !== "transparent" ? `3px solid ${topBorderColor}` : undefined },
       onClick: () => {
         onClick && onClick(c);
+      },
+      onKeyDown: (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onClick && onClick(c);
+        }
       },
     },
       React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
@@ -301,7 +334,7 @@ const D = GLH_DATA;
         React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
           c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
           c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
-          cta && !["completed", "reserved", "ended"].includes(cta.key) && React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text))));
+          cardCta)));
   }
 
   /* ---------- Course modal ---------- */
@@ -464,6 +497,16 @@ const D = GLH_DATA;
         return;
       }
       if (cta.action === "url" && modalCourse.url && modalCourse.url !== "#") {
+        if (cta.key === "external_register") {
+          trackEvent("course_register_click", {
+            course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
+            course_code: modalCourse.course_code || modalCourse.course_id,
+            course_title: modalCourse.title,
+            action: cta.key,
+          });
+          window.open(modalCourse.url, "_blank", "noreferrer");
+          return;
+        }
         if (cta.key === "register" || cta.key === "external_register") {
           trackEvent("course_register_click", {
             course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,

@@ -7,13 +7,13 @@ import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { CourseCard } from '../GLHParts';
 import { AvatarEditModal } from './ProfilePolicy';
-import { Calendar } from './CatalogCalendar';
+import { Calendar, CourseSearchFilters, defaultCourseFilters, filterCourses, getCourseFilterOptions } from './CatalogCalendar';
 import { getRecommendedCourses } from '@/lib/mockApi';
 import { sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
 const { Icon } = GLHUI;
-const { useGame, rankForUser } = GLHEngine;
+const { useGame, rankForUser, isRecommended } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
 // ─── Stat box ─────────────────────────────────────────────────────────────────
@@ -101,6 +101,18 @@ function isActiveCourse(course) {
   return course.course_status !== "cancelled" && course.session_status !== "cancelled";
 }
 
+function courseLifecycleStatus(course) {
+  return String(course.status || course.course_status || "").trim().toLowerCase();
+}
+
+function isEndedCourse(course) {
+  return courseLifecycleStatus(course) === "ended";
+}
+
+function hasCourseMaterial(course) {
+  return Boolean(String(course.material_url || course.materials_url || "").trim());
+}
+
 export function isCompletedCourse(course, user) {
   const rowId = course._id || course.id || course.course_row_id || course.course_id;
   return rowId ? (user.completed_courses || []).includes(rowId) : false;
@@ -177,15 +189,42 @@ export function Dashboard(props) {
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommended, setRecommended] = React.useState([]);
+  const [courseFilters, setCourseFilters] = React.useState(defaultCourseFilters);
 
   React.useEffect(() => {
     getRecommendedCourses().then(rec => setRecommended(rec));
   }, []);
 
-  const rankCourses = React.useMemo(
+  const allRankCourses = React.useMemo(
     () => sortCoursesByStatusPriority(rankCompassCourses(recommended, user, rank, cls), user),
     [recommended, user, rank, cls]
   );
+  const rankCourses = React.useMemo(
+    () => allRankCourses.filter((course) => !isEndedCourse(course)),
+    [allRankCourses]
+  );
+  const endedMaterialCourses = React.useMemo(
+    () => allRankCourses.filter((course) => isEndedCourse(course) && hasCourseMaterial(course)),
+    [allRankCourses]
+  );
+  const activeFilterCount = [
+    courseFilters.fmtFilter,
+    courseFilters.cmFilter,
+    courseFilters.trainerFilter,
+    courseFilters.durationFilter,
+    courseFilters.tagFilter,
+    courseFilters.rankFilter,
+    courseFilters.joinFilter,
+  ].filter(v => v !== "all").length;
+  const hasCourseSearch = activeFilterCount > 0 || courseFilters.q.trim();
+  const dashboardFilterOptions = React.useMemo(() => getCourseFilterOptions(recommended), [recommended]);
+  let dashboardCourses = hasCourseSearch
+    ? filterCourses(recommended, courseFilters, user)
+    : rankCourses;
+  if (courseFilters.sortMode === "priority" || courseFilters.sortMode === "newest") dashboardCourses = sortCoursesByStatusPriority(dashboardCourses, user);
+  if (courseFilters.sortMode === "dur_asc") dashboardCourses = [...dashboardCourses].sort((a, b) => a.duration_minutes - b.duration_minutes);
+  if (courseFilters.sortMode === "dur_desc") dashboardCourses = [...dashboardCourses].sort((a, b) => b.duration_minutes - a.duration_minutes);
+  if (courseFilters.sortMode === "recommended") dashboardCourses = [...dashboardCourses].sort((a, b) => (isRecommended(b, user) ? 1 : 0) - (isRecommended(a, user) ? 1 : 0));
   const progressTotal = rankCourses.length;
   const progressCompleted = rankCourses.filter((course) => isCompletedCourse(course, user)).length;
   const progressPercent = progressTotal ? Math.round((progressCompleted / progressTotal) * 100) : 0;
@@ -237,23 +276,43 @@ export function Dashboard(props) {
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
 
-    // ── Gợi ý cho rank của bạn ───────────────────────────────────────────────
+    // Course search on dashboard
+    React.createElement("div", { style: { marginTop: 28 } },
+      React.createElement(CourseSearchFilters, {
+        filters: courseFilters,
+        setFilters: setCourseFilters,
+        options: dashboardFilterOptions,
+        activeFilterCount,
+        onOpenLdRequest: props.onOpenLdRequest,
+      })),
+
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
-        title: "Gợi ý cho rank của bạn",
+        title: hasCourseSearch ? "Kết quả tìm khóa học" : "Gợi ý cho rank của bạn",
         action: progressTotal > 0 ? { label: "Xem tất cả →", onClick: () => props.onNav("library") } : null,
       }),
-      completedAllRankCourses && React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, lineHeight: 1.6, margin: "-6px 0 16px" } },
-        React.createElement("div", { style: { color: "var(--ui-heading)", fontWeight: 700 } }, "Bạn đã hoàn thành các khóa gợi ý cho rank này 🎯"),
+      !hasCourseSearch && completedAllRankCourses && React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, lineHeight: 1.6, margin: "-6px 0 16px" } },
+        React.createElement("div", { style: { color: "var(--ui-heading)", fontWeight: 700 } }, "Bạn đã hoàn thành các khóa gợi ý cho rank này."),
         React.createElement("div", null, "Khám phá thêm các khóa học khác khi bạn sẵn sàng.")),
-      progressTotal === 0
+      dashboardCourses.length === 0
         ? React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--rpg-panel)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" } },
-            React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có khóa gợi ý cho rank này."),
+            React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, hasCourseSearch ? "Không tìm thấy khóa học phù hợp." : "Chưa có khóa gợi ý cho rank này."),
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))
         : React.createElement("div", { className: "rec-grid" },
-            rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+            dashboardCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
 
-    // ── Lịch đào tạo ─────────────────────────────────────────────────────────
+    React.createElement(React.Fragment, null,
+      React.createElement(SectionRow, {
+        title: "Tham khảo tài liệu các khóa đã kết thúc",
+        action: endedMaterialCourses.length > 0 ? { label: "Xem tất cả →", onClick: () => props.onNav("library") } : null,
+      }),
+      endedMaterialCourses.length === 0
+        ? React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--rpg-panel)" } },
+            React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có tài liệu từ các khóa đã kết thúc."))
+        : React.createElement("div", { className: "rec-grid" },
+            endedMaterialCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+
+    // Training calendar
     React.createElement("div", { style: { marginTop: 40 } },
       React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }))
   );
