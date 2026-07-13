@@ -5,7 +5,6 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHUI } from '@/components/GLHUI';
 import { GLHAvatar } from '@/components/GLHAvatar';
 import { GLHParts } from '@/components/GLHParts';
-import { GLH_DATA } from '@/data/glhData';
 import { Login } from '@/components/screens/Login';
 import { Onboarding, CharacterCreation } from '@/components/screens/Onboarding';
 import { Quiz, Reveal } from '@/components/screens/QuizReveal';
@@ -26,7 +25,6 @@ const { useGame, rankForUser } = GLHEngine;
 const { Icon } = GLHUI;
 const { Avatar } = GLHAvatar;
 const { CourseModal } = GLHParts;
-const D = GLH_DATA;
 
 
 
@@ -108,9 +106,8 @@ function FAQSection() {
 /* ---------- App bar (Sidebar) ---------- */
 function AppBar(props) {
   const { user } = useGame();
-  const cls = D.CLASSES[user.quiz_result.class_id] || D.CLASSES["ENG"];
   const rank = rankForUser(user);
-  const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+  const opts = Object.assign({}, user.character, { rank: rank.level });
 
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
@@ -438,7 +435,7 @@ function AppInner() {
       .then((data) => {
         if (data && data.user && data.user.email) {
           actions.setUserProfile(data.user, data.enrollments, data.reservations);
-          if (user.quiz_result || data.user.quiz_result) {
+          if (user.quiz_result || data.user.quiz_result || data.user.onboarding_done) {
             syncRouteState();
           } else {
             setPhase("onboarding");
@@ -567,8 +564,25 @@ function AppInner() {
   let body;
   if (phase === "login") {
     body = React.createElement(Login, { onLogin: (email) => {
-      actions.setEmail(email);
-      syncRouteState();
+      fetch("/api/me", { credentials: "include" })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data && data.user) {
+            actions.setUserProfile(data.user, data.enrollments, data.reservations);
+            if (data.user.onboarding_done) {
+              syncRouteState();
+            } else {
+              setPhase("onboarding");
+            }
+          } else {
+            actions.setEmail(email);
+            setPhase("onboarding");
+          }
+        })
+        .catch(() => {
+          actions.setEmail(email);
+          setPhase("onboarding");
+        });
     } });
   } else if (phase === "onboarding") {
     body = React.createElement(Onboarding, { crisp, onStart: (returning) => { returning ? goApp() : setPhase("character"); } });

@@ -9,7 +9,7 @@ import { trackEvent } from '@/lib/analytics';
 import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 
 const { Icon, fmtDate, fmtDuration } = GLHUI;
-const { useGame, isRecommended } = GLHEngine;
+const { useGame } = GLHEngine;
 const D = GLH_DATA;
 
 
@@ -308,7 +308,7 @@ const D = GLH_DATA;
     const cardBody = React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
         // join method chip + status
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
-          React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
+          React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "none", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
             fc.label),
           statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } },
             statusChipText)),
@@ -394,7 +394,6 @@ const D = GLH_DATA;
     const completedNow = completedCourseId === courseActionId;
     const uncompletedNow = uncompletedCourseId === courseActionId;
     const done = !uncompletedNow && (completedNow || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id)));
-    const rec = isRecommended(c, user);
     const testimonialList = testimonials || [];
     const featuredTestimonialRating = testimonialList.find((item) => item?.is_featured && item.rating)?.rating;
     const rating = publicCourseRating(c) || (featuredTestimonialRating ? Number(featuredTestimonialRating) : null);
@@ -572,7 +571,6 @@ const D = GLH_DATA;
           React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } },
             React.createElement("span", { className: "u-pill", style: { background: modalJoinMeta?.bg || "rgba(255,255,255,0.12)", color: modalJoinMeta?.color || "#fff" } }, modalJoinMeta?.label || "Chi tiết"),
             statusChipText ? React.createElement("span", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0, textTransform: "none", padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.07)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(255,255,255,0.12)" } }, statusChipText) : null,
-            rec ? React.createElement("span", { className: "u-pill u-pill--match" }, "Phù hợp với bạn") : null,
             rating ? React.createElement(Stars, { value: rating }) : null),
           React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.2, color: "#fff" } }, c.title)),
         React.createElement("div", { style: { padding: "24px 28px 28px" } },

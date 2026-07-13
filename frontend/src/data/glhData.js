@@ -1,79 +1,5 @@
 
-/* ---------- Classes (Role × Personality) ---------- */
-  // Class accent colours live in the dark "game world" only.
-  // The clean utility screens always use Garena Red for CTAs.
-  export const CLASSES = {
-    strategist: {
-      id: "strategist",
-      name: "Chiến Lược Gia",
-      en: "The Strategist",
-      tagline: "Nhìn xa, tính kỹ, ra quyết định.",
-      description:
-        "Bạn nhìn thấy bức tranh lớn trước khi người khác kịp nhận ra. Dữ liệu là vũ khí, và mỗi nước đi đều có lý do. Hành trình của bạn là biến tầm nhìn thành lộ trình.",
-      roles: "Marketing · Business Dev · PM",
-      color: "#7C5CFF",
-      colorSoft: "#A38BFF",
-      glyph: "compass",
-    },
-    builder: {
-      id: "builder",
-      name: "Người Kiến Tạo",
-      en: "The Builder",
-      tagline: "Dựng nên thứ chưa từng tồn tại.",
-      description:
-        "Bạn biến ý tưởng thành hệ thống chạy được. Tỉ mỉ, kiên nhẫn, và luôn muốn hiểu mọi thứ vận hành ra sao. Mỗi khóa học là một viên gạch trong công trình của bạn.",
-      roles: "Engineering · Data · Tech",
-      color: "#F2683C",
-      colorSoft: "#FF9166",
-      glyph: "hammer",
-    },
-    connector: {
-      id: "connector",
-      name: "Người Kết Nối",
-      en: "The Connector",
-      tagline: "Sức mạnh nằm ở mối quan hệ.",
-      description:
-        "Bạn khiến mọi người làm việc tốt hơn khi ở cạnh nhau. Đồng cảm, lắng nghe, và gắn kết là siêu năng lực của bạn. Hành trình của bạn là nâng cả đội đi lên.",
-      roles: "HR · L&D · Comms · Ops",
-      color: "#2BB6A3",
-      colorSoft: "#5FD9C8",
-      glyph: "link",
-    },
-    operator: {
-      id: "operator",
-      name: "Người Vận Hành",
-      en: "The Operator",
-      tagline: "Mọi thứ chạy đúng, mọi lúc.",
-      description:
-        "Bạn là cột sống của tổ chức — quy trình rõ ràng, đáng tin cậy, không bỏ sót chi tiết. Khi bạn ở đó, mọi người yên tâm. Hành trình của bạn là làm chủ sự ổn định.",
-      roles: "Game Ops · CS · Finance",
-      color: "#3B6FB0",
-      colorSoft: "#6F9FD8",
-      glyph: "gear",
-    },
-    explorer: {
-      id: "explorer",
-      name: "Người Khám Phá",
-      en: "The Explorer",
-      tagline: "Thử trước, học từ điều mới.",
-      description:
-        "Bạn không sợ vùng đất chưa ai đặt chân. Tò mò, thử nghiệm, và học nhanh là cách bạn tiến lên. Hành trình của bạn là mở ra những con đường chưa từng có.",
-      roles: "Design · Creative · Research",
-      color: "#F5A623",
-      colorSoft: "#FFC65C",
-      glyph: "spark",
-    },
-  };
-
-  /* ---------- Personality types (from quiz) ---------- */
-  export const PERSONALITIES = {
-    analyst: { id: "analyst", name: "Người Phân Tích", en: "The Analyst", desc: "Bạn tin vào dữ liệu và logic. Trước khi hành động, bạn muốn hiểu tại sao." },
-    collaborator: { id: "collaborator", name: "Người Đồng Hành", en: "The Collaborator", desc: "Bạn học và làm tốt nhất cùng người khác. Kết nối là cách bạn tiến bộ." },
-    explorer: { id: "explorer", name: "Người Tiên Phong", en: "The Pioneer", desc: "Bạn lao vào thử nghiệm. Sai thì sửa, miễn là được khám phá điều mới." },
-    achiever: { id: "achiever", name: "Người Chinh Phục", en: "The Achiever", desc: "Bạn đặt mục tiêu và đi tới cùng. Quy trình và kỷ luật là bạn đồng hành." },
-  };
-
-  /* ---------- Ranks (5-tier ladder) ----------
+/* ---------- Ranks (5-tier ladder) ----------
      XP thresholds are cumulative — reaching required_xp promotes the player. */
   export const RANKS = [
     { id: "rank_01", name: "Tân Binh", en: "Initiate", level: 1, required_xp: 0, description: "Vừa đặt chân vào hành trình. Mọi cánh cửa đang mở." },
@@ -135,40 +61,6 @@
     { event_id:"EV-008", title:"Vận Hành Xuất Sắc — Hội Thảo",    type:"workshop", skill_tags:["ops_excellence"],       class_ids:["operator"],                                              start_date:"2026-08-18", time:"09:00–12:00", location:"Phòng Saigon, Tầng 10", host:"Game Ops",           audience:"Ops Lead",         url:"#" },
     { event_id:"EV-009", title:"Chiến Lược & Ra Quyết Định",       type:"workshop", skill_tags:["strategy"],             class_ids:["strategist","operator","connector"],                     start_date:"2026-09-08", time:"09:00–16:00", location:"Tầng 12, Garena VN HQ",    host:"BD Leadership",     audience:"Manager",          url:"#" },
     { event_id:"EV-010", title:"Facilitation Skills Lab",           type:"workshop", skill_tags:["facilitation"],        class_ids:["connector"],                                             start_date:"2026-09-22", time:"13:30–17:00", location:"Phòng Hanoi, Tầng 11",  host:"L&D Team",          audience:"Trainer nội bộ",  url:"#" },
-  ];
-
-  /* ---------- Placement quiz — 3 bước (Role, Rank, Mục tiêu) ---------- */
-  export const QUIZ = [
-    {
-      id:"q1", group:"Vai trò", icon:"building",
-      text:"Bạn đang làm việc ở bộ phận nào?",
-      options:[
-        { label:"Marketing / Esports / Brand", cls:"strategist", pers:"explorer" },
-        { label:"Engineering / Data / Tech", cls:"builder", pers:"analyst" },
-        { label:"Operations / Finance / Legal", cls:"operator", pers:"achiever" },
-        { label:"HR / L&D / People", cls:"connector", pers:"collaborator" },
-      ],
-    },
-    {
-      id:"q2", group:"Cấp bậc", icon:"chart",
-      text:"Bạn đang ở cấp bậc nào trong công ty?",
-      options:[
-        { label:"Fresher / dưới 1 năm", rank:1, pers:"explorer" },
-        { label:"Junior (1–3 năm)", rank:2, pers:"achiever" },
-        { label:"Senior (3–6 năm)", rank:3, pers:"analyst" },
-        { label:"Lead / Manager (6+ năm)", rank:4, pers:"collaborator" },
-      ],
-    },
-    {
-      id:"q3", group:"Mục tiêu", icon:"target",
-      text:"Trong 1 năm tới, điều bạn muốn phát triển nhất là gì?",
-      options:[
-        { label:"Giỏi hơn trong chuyên môn hiện tại", cls:"builder", pers:"achiever" },
-        { label:"Mở rộng sang kỹ năng mới", cls:"explorer", pers:"explorer" },
-        { label:"Hiểu rõ hơn toàn bộ business", cls:"strategist", pers:"analyst" },
-        { label:"Phát triển kỹ năng lãnh đạo", cls:"connector", pers:"collaborator" },
-      ],
-    },
   ];
 
   /* ---------- XP rules ---------- */
@@ -265,8 +157,8 @@
   };
 
   export const GLH_DATA = {
-    CLASSES, PERSONALITIES, RANKS, SKILLS, SKILL_EDGES,
-    COURSES, CALENDAR, QUIZ, XP, CHAR_OPTIONS,
+    RANKS, SKILLS, SKILL_EDGES,
+    COURSES, CALENDAR, XP, CHAR_OPTIONS,
     SKILL_META, COURSE_META,
   };
 

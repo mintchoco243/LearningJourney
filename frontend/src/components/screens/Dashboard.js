@@ -4,14 +4,12 @@ import React from "react";
 import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
-import { GLH_DATA } from '@/data/glhData';
 import { CourseCard } from '../GLHParts';
 import { AvatarEditModal } from './ProfilePolicy';
 import { Calendar } from './CatalogCalendar';
 import { getRecommendedCourses } from '@/lib/mockApi';
 import { sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
 
-const D = GLH_DATA;
 const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
@@ -119,8 +117,8 @@ export function isCompletedCourse(course, user) {
   return rowId ? (user.completed_courses || []).includes(rowId) : false;
 }
 
-function roleFitScore(course, user, cls) {
-  const userRoles = [user.db_team, user.db_role, cls?.id].map(normalizeText).filter(Boolean);
+function roleFitScore(course, user) {
+  const userRoles = [user.db_team, user.db_role].map(normalizeText).filter(Boolean);
   const targets = asList(course.class_ids || course.role_targets).map(normalizeText).filter(Boolean);
   if (!userRoles.length || !targets.length) return 0;
   if (targets.includes("all")) return 1;
@@ -152,7 +150,30 @@ function upcomingTime(course) {
   return Number.isFinite(time) && time >= Date.now() - 86400000 ? time : Number.POSITIVE_INFINITY;
 }
 
-export function rankCompassCourses(courses, user, rank, cls) {
+function courseFitTier(course, rankTokens, user) {
+  const rankTargets = asList(course.rank_ids || course.rank_targets).flatMap(expandRankTokens);
+  const rankIsAll = rankTargets.includes("all");
+  const rankSpecificMatch = !rankIsAll && rankTargets.some((target) => rankTokens.includes(target));
+
+  const userRoles = [user.db_role, user.db_team].map(normalizeText).filter(Boolean);
+  const roleTargets = asList(course.class_ids || course.role_targets).map(normalizeText).filter(Boolean);
+  const roleIsAll = roleTargets.includes("all");
+  const roleSpecificMatch = !roleIsAll && roleTargets.some((target) =>
+    userRoles.includes(target) || userRoles.some((role) => target.includes(role) || role.includes(target))
+  );
+
+  return rankSpecificMatch && roleSpecificMatch ? 0 : 1; // 0 = fit chuẩn rank & role, 1 = "all"/chung
+}
+
+function endedCourseDate(course) {
+  const raw = course.start_date || (course.session_date ? String(course.session_date).split("T")[0] : null);
+  const time = raw ? new Date(raw).getTime() : NaN;
+  return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY;
+}
+
+const MAX_ENDED_MATERIAL_COURSES = 6;
+
+export function rankCompassCourses(courses, user, rank) {
   const rankTokens = userRankTokens(user, rank);
   return (courses || [])
     .map((course, index) => ({ course, index }))
@@ -162,7 +183,7 @@ export function rankCompassCourses(courses, user, rank, cls) {
       courseMatchesRole(course, user)
     )
     .sort((a, b) => {
-      const roleDiff = roleFitScore(b.course, user, cls) - roleFitScore(a.course, user, cls);
+      const roleDiff = roleFitScore(b.course, user) - roleFitScore(a.course, user);
       if (roleDiff) return roleDiff;
       const dateDiff = upcomingTime(a.course) - upcomingTime(b.course);
       if (dateDiff) return dateDiff;
@@ -177,11 +198,10 @@ export function rankCompassCourses(courses, user, rank, cls) {
 export function Dashboard(props) {
   const { user, actions } = useGame();
   const qr       = user.quiz_result;
-  const cls      = D.CLASSES[qr.class_id];
   const rank     = rankForUser(user);
-  const revealOpts  = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+  const revealOpts  = Object.assign({}, user.character, { rank: rank.level });
   const displayName = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
-  const roleLabel   = user.db_team || user.db_role || cls.name;
+  const roleLabel   = user.db_team || user.db_role;
   const rankLabel   = user.db_rank || rank.name;
   const profileMeta = [roleLabel, rankLabel].filter(Boolean).join(" · ");
   const hasSurvey   = !!(qr._answers?.length > 0);
@@ -196,17 +216,24 @@ export function Dashboard(props) {
   }, []);
 
   const allRankCourses = React.useMemo(
-    () => sortCoursesByStatusPriority(rankCompassCourses(recommended, user, rank, cls), user),
-    [recommended, user, rank, cls]
+    () => sortCoursesByStatusPriority(rankCompassCourses(recommended, user, rank), user),
+    [recommended, user, rank]
   );
   const rankCourses = React.useMemo(
     () => allRankCourses.filter((course) => !isEndedCourse(course)),
     [allRankCourses]
   );
-  const endedMaterialCourses = React.useMemo(
-    () => allRankCourses.filter((course) => isEndedCourse(course) && hasCourseMaterial(course)),
-    [allRankCourses]
-  );
+  const endedMaterialCourses = React.useMemo(() => {
+    const rankTokens = userRankTokens(user, rank);
+    return allRankCourses
+      .filter((course) => isEndedCourse(course) && hasCourseMaterial(course))
+      .sort((a, b) => {
+        const tierDiff = courseFitTier(a, rankTokens, user) - courseFitTier(b, rankTokens, user);
+        if (tierDiff) return tierDiff;
+        return endedCourseDate(b) - endedCourseDate(a);
+      })
+      .slice(0, MAX_ENDED_MATERIAL_COURSES);
+  }, [allRankCourses, user, rank]);
   const progressTotal = rankCourses.length;
   const progressCompleted = rankCourses.filter((course) => isCompletedCourse(course, user)).length;
   const progressPercent = progressTotal ? Math.round((progressCompleted / progressTotal) * 100) : 0;

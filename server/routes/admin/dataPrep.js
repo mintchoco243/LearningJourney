@@ -87,7 +87,6 @@ const specs = {
       "rank",
       "role",
       "team",
-      "class_archetype",
       "learning_formats",
       "weekly_hours",
       "preferred_trainers",
@@ -610,14 +609,13 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
           createdUserIds.push(userId);
           await client.query(
             `INSERT INTO users
-               (id, email, full_name, rank, role, team, class_archetype, learning_formats, weekly_hours, preferred_trainers, learning_goals)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+               (id, email, full_name, rank, role, team, learning_formats, weekly_hours, preferred_trainers, learning_goals)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              ON DUPLICATE KEY UPDATE
                full_name = VALUES(full_name),
                rank = VALUES(rank),
                role = VALUES(role),
                team = VALUES(team),
-               class_archetype = VALUES(class_archetype),
                learning_formats = VALUES(learning_formats),
                weekly_hours = VALUES(weekly_hours),
                preferred_trainers = VALUES(preferred_trainers),
@@ -630,7 +628,6 @@ adminDataPrepRouter.post("/:type/promote", async (req, res, next) => {
               row.rank || null,
               row.role || null,
               row.team || null,
-              row.class_archetype || null,
               toJsonArray(row.learning_formats),
               row.weekly_hours || null,
               toJsonArray(row.preferred_trainers),

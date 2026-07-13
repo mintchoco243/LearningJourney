@@ -26,7 +26,6 @@
 {
   "rank": "Associate",
   "role": "Marketing",
-  "class_archetype": "Strategist",
   "learning_formats": ["Video", "Workshop"],
   "weekly_hours": "1-2h",
   "preferred_trainers": ["Nguyễn Văn A"],

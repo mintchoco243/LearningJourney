@@ -45,18 +45,20 @@ meRouter.put("/", async (req, res) => {
 });
 
 meRouter.post("/onboarding", async (req, res) => {
-  const { learning_formats, weekly_hours, preferred_trainers } = req.body;
+  const { learning_formats, weekly_hours, preferred_trainers, rank, role } = req.body;
 
   await query(
     `UPDATE users
      SET learning_formats = COALESCE($2, JSON_ARRAY()),
          weekly_hours = $3,
          preferred_trainers = COALESCE($4, JSON_ARRAY()),
+         rank = COALESCE($5, rank),
+         role = COALESCE($6, role),
          onboarding_done = TRUE,
          xp_total = GREATEST(xp_total, 50),
          updated_at = NOW()
      WHERE id = $1`,
-    [req.user.id, learning_formats, weekly_hours, preferred_trainers]
+    [req.user.id, learning_formats, weekly_hours, preferred_trainers, rank, role]
   );
   const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0], xp_earned: 50 });

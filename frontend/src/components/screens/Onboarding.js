@@ -39,8 +39,7 @@ const { Avatar } = GLHAvatar;
           returning ? "Tiếp tục hành trình" : "Bắt đầu hành trình",
           React.createElement(Icon, { name: "arrow-right", size: 20, color: "#fff" })),
         returning
-          ? React.createElement("div", { className: "ob-returning" },
-              "Chào mừng trở lại, ", React.createElement("b", { style: { color: "#fff" } }, D.CLASSES[user.quiz_result.class_id].name), ".")
+          ? React.createElement("div", { className: "ob-returning" }, "Chào mừng trở lại!")
           : null
       )
     );

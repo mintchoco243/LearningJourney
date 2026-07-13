@@ -16,6 +16,16 @@ const { useGame } = GLHEngine;
     const [loading, setLoading] = React.useState(false);
     const [devEmail, setDevEmail] = React.useState("");
     const [showDev, setShowDev] = React.useState(false);
+    const [isLocal, setIsLocal] = React.useState(false);
+
+    React.useEffect(() => {
+      if (typeof window !== "undefined") {
+        const checkLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+        if (checkLocal) {
+          setTimeout(() => setIsLocal(true), 0);
+        }
+      }
+    }, []);
 
     const handleGoogleLogin = () => {
       setError("");
@@ -66,7 +76,7 @@ const { useGame } = GLHEngine;
           )
         ),
 
-        showDev ? React.createElement("div", { style: { marginTop: 12 } },
+        isLocal ? (showDev ? React.createElement("div", { style: { marginTop: 12 } },
           React.createElement("input", {
             type: "email",
             placeholder: "email@garena.vn",
@@ -86,7 +96,7 @@ const { useGame } = GLHEngine;
             onClick: () => setShowDev(true),
             style: { background: "none", border: "none", color: "var(--rpg-muted)", fontSize: 11, cursor: "pointer", opacity: 0.4 },
           }, "dev")
-        ),
+        )) : null,
 
         error ? React.createElement("div", { style: { color: "var(--glh-accent)", fontSize: 13, marginTop: 8, marginBottom: 0, textAlign: "center" } },
           "⚠ " + error) : null

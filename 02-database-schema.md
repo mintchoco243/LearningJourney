@@ -27,7 +27,6 @@ CREATE TABLE users (
   avatar_url         TEXT,
   rank               VARCHAR(100),                       -- từ quiz
   role               VARCHAR(100),                       -- từ quiz
-  class_archetype    VARCHAR(50),                        -- từ quiz: Strategist|Builder|Connector|Operator|Explorer
   learning_formats   TEXT[]        DEFAULT '{}',         -- ['Video','Workshop','Coaching','Reading']
   weekly_hours       VARCHAR(20),                        -- '<1h' | '1-2h' | '3h+'
   preferred_trainers TEXT[]        DEFAULT '{}',         -- tối đa 3 tên, gõ tự do

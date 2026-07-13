@@ -194,16 +194,15 @@ export function Profile(props) {
   }, []);
 
   const qr = user.quiz_result;
-  const cls = qr ? D.CLASSES[qr.class_id] : D.CLASSES["ENG"];
   const rank = rankForUser(user);
   const rankCourses = React.useMemo(
-    () => rankCompassCourses(recommended, user, rank, cls),
-    [recommended, user, rank, cls]
+    () => rankCompassCourses(recommended, user, rank),
+    [recommended, user, rank]
   );
 
   if (!qr) return null;
 
-  const opts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+  const opts = Object.assign({}, user.character, { rank: rank.level });
 
   const completedCoursesFromApi = (user.completed_course_details || [])
     .map((course) => course?._id || course?.course_row_id ? course : mapCourseToCard(course))
@@ -218,14 +217,14 @@ export function Profile(props) {
   const quizExt = qr.quiz_extended || {};
 
   const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
-  const roleLabel = user.db_role || (qr._answers && qr._answers[0] ? qr._answers[0].label : cls.name);
+  const roleLabel = user.db_role || (qr._answers && qr._answers[0] ? qr._answers[0].label : null);
   const teamLabel = user.db_team || null;
   const rankLabel = dbRank ? dbRank.name : (user.db_rank || (qr._answers && qr._answers[1] ? qr._answers[1].label : rank.name));
   const goalLabel = qr._answers && qr._answers[2] ? qr._answers[2].label : null;
 
   // Dash-hero stats and meta
   const displayNameDash = user.full_name || (user.email ? user.email.split("@")[0] : "bạn");
-  const roleLabelDash = user.db_team || user.db_role || cls.name;
+  const roleLabelDash = user.db_team || user.db_role;
   const rankLabelDash = user.db_rank || rank.name;
   const profileMeta = [roleLabelDash, rankLabelDash].filter(Boolean).join(" · ");
   const totalHours = Number(user.hours_total || 0);

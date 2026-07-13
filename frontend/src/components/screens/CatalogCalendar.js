@@ -11,7 +11,7 @@ import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
 const { Icon, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
-const { useGame, isRecommended } = GLHEngine;
+const { useGame } = GLHEngine;
 const { CourseCard } = GLHParts;
 
 const FORMAT_COLOR = {
@@ -71,12 +71,8 @@ export function filterCourses(courses, filters, user) {
     }
     if (f.tagFilter !== "all" && !(c.skill_tags || []).includes(f.tagFilter)) return false;
     if (f.rankFilter !== "all") {
-      if (f.rankFilter === "my_rank") {
-        if (!isRecommended(c, user)) return false;
-      } else {
-        const ranks = c.target_ranks || c.rank_ids || [];
-        if (!targetMatchesFilter(ranks, f.rankFilter)) return false;
-      }
+      const ranks = c.target_ranks || c.rank_ids || [];
+      if (!targetMatchesFilter(ranks, f.rankFilter)) return false;
     }
     if (f.joinFilter !== "all" && getCourseJoinMeta(c).id !== f.joinFilter) return false;
     if (f.q.trim()) {
@@ -211,7 +207,7 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
       React.createElement(SearchableSelect, { placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: COURSE_DURATION_OPTIONS.map(d => ({ id: d.id, label: d.label })) }),
       React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 } },
         React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
-        React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "recommended", label: "Gợi ý cho tôi" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
+        React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
       ),
       activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
@@ -282,7 +278,6 @@ function ctaColor(cta) {
     if (sortMode === "priority" || sortMode === "newest") filtered = sortCoursesByStatusPriority(filtered, user);
     if (sortMode === "dur_asc")     filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
     if (sortMode === "dur_desc")    filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
-    if (sortMode === "recommended") filtered = [...filtered].sort((a, b) => (isRecommended(b, user) ? 1 : 0) - (isRecommended(a, user) ? 1 : 0));
 
     const [page, setPage] = React.useState(1);
     const PAGE_SIZE = 9;
@@ -585,7 +580,7 @@ function ctaColor(cta) {
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
                   React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
                     React.createElement("div", { className: "u-h3", style: { fontSize: 15, margin: 0 } }, e.title),
-                    React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "uppercase", padding: "2px 8px", borderRadius: 999, background: fc.bg, color: fc.color, flexShrink: 0 } },
+                    React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "none", padding: "2px 8px", borderRadius: 999, background: fc.bg, color: fc.color, flexShrink: 0 } },
                       FORMAT_LABEL[e.format] || e.format)),
                   React.createElement("div", { style: { fontSize: 13, color: "var(--garena-grey)", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" } },
                     timeMeta.map((m, i) => React.createElement("span", { key: i }, m)))),

@@ -19,7 +19,7 @@ const D = GLH_DATA;
     weekly_hours: "",
     preferred_trainers: [],
     character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
-    quiz_result: null, // { class_id, rank_id, personality, completed_at }
+    quiz_result: null, // { rank_id, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
     xp: 0,
     hours_total: 0,
@@ -50,39 +50,6 @@ const D = GLH_DATA;
     return D.RANKS.find((r) => r.id === (user.db_rank || user.quiz_result?.rank_id)) || D.RANKS[0];
   }
 
-  /* ---------- quiz scoring ---------- */
-  // answers: array of chosen option objects (in question order)
-  function scoreQuiz(answers) {
-    const clsTally = {};
-    const persTally = {};
-    let rankSum = 0, rankCount = 0;
-    answers.forEach((opt) => {
-      if (!opt) return;
-      if (opt.cls) clsTally[opt.cls] = (clsTally[opt.cls] || 0) + 1;
-      if (opt.pers) persTally[opt.pers] = (persTally[opt.pers] || 0) + 1;
-      if (opt.rank) { rankSum += opt.rank; rankCount += 1; }
-    });
-    const topKey = (t, fallback) => {
-      let best = fallback, bestN = -1;
-      Object.keys(t).forEach((k) => { if (t[k] > bestN) { bestN = t[k]; best = k; } });
-      return best;
-    };
-    const class_id = topKey(clsTally, "explorer");
-    const personality = topKey(persTally, "explorer");
-    // average rank weight -> starting rank index (cap so beginners don't start at master)
-    const avg = rankCount ? rankSum / rankCount : 1;
-    let ri = Math.round(avg) - 1;            // 0-based
-    ri = Math.max(0, Math.min(D.RANKS.length - 2, ri)); // never start at final rank
-    const rank = D.RANKS[ri];
-    return {
-      class_id,
-      personality,
-      rank_id: rank.id,
-      start_xp: D.XP.quiz_complete,
-      completed_at: new Date().toISOString(),
-    };
-  }
-
   /* ---------- skills / constellation ---------- */
   // A skill is COMPLETED if the user finished a related course OR it was unlocked.
   // It is CURRENT if it belongs to the user's current rank tier frontier.
@@ -110,31 +77,6 @@ const D = GLH_DATA;
       status[s.id] = reachable ? "current" : "locked";
     });
     return status;
-  }
-
-  /* ---------- recommendations ---------- */
-  function recommendCourses(user, limit) {
-    if (!user.quiz_result) return D.COURSES.slice(0, limit || 3);
-    const cls = user.quiz_result.class_id;
-    const curRank = rankForUser(user);
-    const done = new Set(user.completed_courses || []);
-    const scored = D.COURSES
-      .filter((c) => !done.has(c.course_id))
-      .map((c) => {
-        let score = 0;
-        if ((c.class_ids || []).includes(cls)) score += 3;
-        if ((c.rank_ids || []).includes(curRank.id)) score += 2;
-        return { c, score };
-      })
-      .sort((a, b) => b.score - a.score);
-    return scored.slice(0, limit || 3).map((x) => x.c);
-  }
-  function isRecommended(course, user) {
-    if (!user.quiz_result) return false;
-    const cls = user.quiz_result.class_id;
-    const curRank = rankForUser(user);
-    return (course.class_ids || []).includes(cls) &&
-      (course.rank_ids || []).includes(curRank.id);
   }
 
   function upcomingEvents(limit) {
@@ -173,6 +115,17 @@ const D = GLH_DATA;
         const enrollmentHours = hasEnrollmentSnapshot
           ? enrollments.reduce((sum, item) => sum + Number(item.hours_earned || 0), 0)
           : user.hours_total;
+        const quiz_result = profile.onboarding_done ? {
+          rank_id: profile.rank || "rank_01",
+          completed_at: profile.updated_at || new Date().toISOString(),
+        } : user.quiz_result;
+
+        const quiz_extended = profile.onboarding_done ? {
+          learning_style: profile.learning_formats || [],
+          availability: profile.weekly_hours || "",
+          trainers: profile.preferred_trainers || [],
+        } : user.quiz_extended;
+
         persist(Object.assign({}, user, {
           email: profile.email || user.email,
           full_name: profile.full_name || user.full_name,
@@ -190,6 +143,8 @@ const D = GLH_DATA;
           registered_events: registeredEvents,
           character: profile.character || user.character,
           onboarded: true,
+          quiz_result,
+          quiz_extended,
         }));
       },
       setCharacter(character) {
@@ -333,6 +288,6 @@ const D = GLH_DATA;
   export const GLHEngine = {
     DEFAULT_USER, load, save, clearUser,
     rankForUser,
-    scoreQuiz, skillStatus, recommendCourses, isRecommended, upcomingEvents,
+    skillStatus, upcomingEvents,
     GameProvider, useGame,
   };

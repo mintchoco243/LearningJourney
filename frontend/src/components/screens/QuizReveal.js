@@ -39,8 +39,6 @@ const { Avatar } = GLHAvatar;
     const finishExtended = () => {
       const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
       const result = {
-        class_id: "explorer",
-        personality: "explorer",
         rank_id: user.db_rank || "rank_01",
         start_xp: dbRank ? dbRank.required_xp + 50 : 50,
         completed_at: new Date().toISOString(),
@@ -56,6 +54,8 @@ const { Avatar } = GLHAvatar;
           learning_formats: step4 || [],
           weekly_hours: step5 || null,
           preferred_trainers: step6 || [],
+          rank: result.rank_id,
+          role: user.db_role || null,
         }),
       }).catch(() => {});
       props.onComplete();
@@ -141,9 +141,8 @@ const { Avatar } = GLHAvatar;
     const { user } = useGame();
     const qr = user.quiz_result || {};
     const quizExt = qr.quiz_extended || {};
-    const cls = D.CLASSES[qr.class_id] || D.CLASSES.explorer;
     const rank = rankForUser(user);
-    const avatarOpts = Object.assign({}, user.character, { classColor: cls.color, rank: rank.level });
+    const avatarOpts = Object.assign({}, user.character, { rank: rank.level });
     const displayName = user.full_name ? user.full_name.split(" ").pop() : (user.email ? user.email.split("@")[0] : "Bạn");
     const fullName = user.full_name || (user.email ? user.email.split("@")[0] : "Người dùng");
     const emptyText = "Chưa cập nhật";
@@ -243,7 +242,7 @@ const { Avatar } = GLHAvatar;
         ),
 
         React.createElement("div", { className: "rv-rise", style: { animationDelay: ".7s", textAlign: "center" } },
-          React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: () => { trackEvent("onboarding_complete", { class_id: user.quiz_result?.class_id || "explorer" }); props.onNext(); }, style: { width: "100%" } },
+          React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: () => { trackEvent("onboarding_complete", {}); props.onNext(); }, style: { width: "100%" } },
             "Vào trang học tập", React.createElement(Icon, { name: "arrow-right", size: 18, color: "#fff" })
           )
         )
