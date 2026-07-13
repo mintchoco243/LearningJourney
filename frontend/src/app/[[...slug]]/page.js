@@ -18,6 +18,7 @@ import { RatingModal, Tutorial } from '@/components/screens/RatingTutorial';
 import { FAQScreen } from '@/components/screens/FAQScreen';
 import { AboutModal } from '@/components/screens/AboutModal';
 import { trackEvent, trackPageView } from '@/lib/analytics';
+import { mapCourseToCard } from '@/lib/courseMap.mjs';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
@@ -370,6 +371,29 @@ function AppInner() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const verifiedSessionRef = React.useRef(false);
 
+  // initial phase - now starts with login check
+  const [phase, setPhase] = React.useState(() => {
+    if (!user.email && !user.onboarded) return "login";
+    if (!user.quiz_result) return "onboarding";
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/library") return "app";
+      if (path === "/policy") return "policy";
+      if (path === "/qa") return "qa";
+      if (path === "/profile") return "profile";
+      if (path === "/store") return "store";
+    }
+    return "app";
+  });
+
+  const [activeTab, setActiveTab] = React.useState(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path === "/library") return "library";
+    }
+    return "home";
+  });
+
   // Helper to sync phase and tab based on pathname
   const syncRouteState = React.useCallback((path = typeof window !== "undefined" ? window.location.pathname : "/") => {
     if (path === "/library") {
@@ -387,22 +411,7 @@ function AppInner() {
       setPhase("app");
       setActiveTab("home");
     }
-  }, []);
-
-  // initial phase - now starts with login check
-  const [phase, setPhase] = React.useState(() => {
-    if (!user.email && !user.onboarded) return "login";
-    if (!user.quiz_result) return "onboarding";
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path === "/library") return "app";
-      if (path === "/policy") return "policy";
-      if (path === "/qa") return "qa";
-      if (path === "/profile") return "profile";
-      if (path === "/store") return "store";
-    }
-    return "app";
-  });
+  }, [setPhase, setActiveTab]);
 
   // On mount: verify server session without destroying local learning progress.
   React.useEffect(() => {
@@ -439,18 +448,12 @@ function AppInner() {
       .catch(() => { });
   }, [actions, user.email, user.onboarded, user.quiz_result, syncRouteState]);
 
-  const [activeTab, setActiveTab] = React.useState(() => {
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path === "/library") return "library";
-    }
-    return "home";
-  });
-
   const [course, setCourse] = React.useState(null);
   const [ldRequest, setLdRequest] = React.useState(false);
   const [showAbout, setShowAbout] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
+  const [courseLinkNotice, setCourseLinkNotice] = React.useState("");
+  const activeCourseLinkRef = React.useRef("");
   const [showTutorial, setShowTutorial] = React.useState(() => {
     try { if (typeof window !== "undefined") { return !localStorage.getItem("glh_tutorial_done"); } } catch (e) { } return false;
   });
@@ -471,6 +474,34 @@ function AppInner() {
     trackPageView(`/${pageName}`, pageName);
     if (pageName === "policy") trackEvent("policy_view", { page: "policy" });
   }, [phase, activeTab]);
+
+  React.useEffect(() => {
+    if (!mounted || !user.email || !user.quiz_result || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const courseId = params.get("courseId");
+    if (!courseId) {
+      activeCourseLinkRef.current = "";
+      return;
+    }
+    if (activeCourseLinkRef.current === courseId) return;
+    activeCourseLinkRef.current = courseId;
+    setCourseLinkNotice("");
+    setPhase("app");
+    setActiveTab("library");
+    fetch(`/api/courses/${encodeURIComponent(courseId)}`, { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error("COURSE_NOT_FOUND");
+        return res.json();
+      })
+      .then((data) => {
+        if (!data?.course) throw new Error("COURSE_NOT_FOUND");
+        setCourse(mapCourseToCard(data.course));
+      })
+      .catch(() => {
+        setCourse(null);
+        setCourseLinkNotice("Khóa học không còn khả dụng hoặc bạn chưa có quyền xem khóa này.");
+      });
+  }, [mounted, user.email, user.quiz_result]);
 
   const pendingScroll = React.useRef(null);
   React.useEffect(() => {
@@ -500,7 +531,7 @@ function AppInner() {
       window.history.pushState(null, "", targetUrl);
     }
     window.scrollTo(0, 0);
-  }, []);
+  }, [setPhase, setActiveTab]);
 
   // apply tweaks to :root
   React.useEffect(() => {
@@ -513,6 +544,16 @@ function AppInner() {
   }, [t.accent, t.spriteScale, t.displayFont]);
 
   const crisp = t.crisp;
+  const closeCourse = React.useCallback(() => {
+    setCourse(null);
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("courseId")) return;
+    url.searchParams.delete("courseId");
+    activeCourseLinkRef.current = "";
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }, []);
+
   const goApp = () => {
     setPhase("app");
     setActiveTab("home");
@@ -581,7 +622,32 @@ function AppInner() {
   return React.createElement(React.Fragment, null,
     body,
 
-    course ? React.createElement(CourseModal, { course, onClose: () => setCourse(null) }) : null,
+    course ? React.createElement(CourseModal, { course, onClose: closeCourse }) : null,
+    courseLinkNotice ? React.createElement("div", {
+      style: {
+        position: "fixed",
+        right: 18,
+        bottom: 18,
+        zIndex: 1000,
+        maxWidth: 360,
+        background: "var(--rpg-panel)",
+        border: "1px solid var(--rpg-border)",
+        borderRadius: 8,
+        padding: "12px 14px",
+        color: "var(--ui-heading)",
+        boxShadow: "0 16px 44px rgba(0,0,0,.28)",
+        fontSize: 13,
+        lineHeight: 1.5,
+      },
+    },
+      React.createElement("div", { style: { display: "flex", gap: 10, alignItems: "flex-start" } },
+        React.createElement(Icon, { name: "alert-circle", size: 17, color: "var(--glh-accent)" }),
+        React.createElement("div", { style: { flex: 1 } }, courseLinkNotice),
+        React.createElement("button", {
+          onClick: () => setCourseLinkNotice(""),
+          style: { background: "transparent", border: 0, color: "var(--ui-muted)", cursor: "pointer", padding: 0 },
+          title: "Đóng",
+        }, React.createElement(Icon, { name: "x", size: 15, color: "var(--ui-muted)" })))) : null,
     ldRequest ? React.createElement(LdRequestPopup, { onClose: () => setLdRequest(false) }) : null,
     showRating ? React.createElement(RatingModal, { onClose: () => setShowRating(false) }) : null,
     showAbout ? React.createElement(AboutModal, { onClose: () => setShowAbout(false) }) : null,

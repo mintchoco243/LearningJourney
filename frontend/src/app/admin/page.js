@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
 import { RequestsScreen } from '@/components/admin/ADMScreens2';
@@ -180,7 +181,7 @@ function DevLoginButton() {
           message="Đăng nhập bằng tài khoản Garena để tiếp tục vào màn admin."
           action={
             <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
-              <a className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Đăng nhập Garena</a>
+              <Link className="adm-btn adm-btn--primary" href="/auth/google?next=/admin">Đăng nhập Garena</Link>
               {process.env.NODE_ENV !== "production" && <DevLoginButton />}
             </div>
           }

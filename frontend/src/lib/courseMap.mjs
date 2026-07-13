@@ -8,9 +8,20 @@ const FORMAT_MAP = {
   video: "elearning", elearning: "elearning", "e-learning": "elearning",
   online: "online", webinar: "online",
 };
+export const LEARNING_BUDGET_SPONSOR_URL = "https://gigi.garena.vn/form/46";
 export function normalizeFormat(f) {
   return FORMAT_MAP[String(f || "").toLowerCase()] || "online";
 }
+
+export const COURSE_JOIN_OPTIONS = [
+  { id: "upcoming_scheduled", label: "Có lịch sắp tới", bg: "rgba(43,182,163,0.18)", color: "#2BB6A3" },
+  { id: "interest", label: "Đặt chỗ trước", bg: "rgba(255,158,0,0.18)", color: "#FFB340", isNew: true },
+  { id: "sponsor", label: "Hỗ trợ Learning Budget Sponsor", bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
+  { id: "self_learning", label: "Tự học qua video / tài liệu", bg: "rgba(59,130,246,0.16)", color: "#60A5FA" },
+  { id: "unscheduled", label: "Chưa có lịch", bg: "rgba(138,147,168,0.14)", color: "#A7B0C3" },
+  { id: "ended", label: "Đã kết thúc", bg: "rgba(107,114,128,0.14)", color: "#9CA3AF" },
+];
+const JOIN_OPTION_BY_ID = Object.fromEntries(COURSE_JOIN_OPTIONS.map((option) => [option.id, option]));
 
 const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 // Single-source invariant: UI actions use the unique DB row id. `course_code`
@@ -18,11 +29,31 @@ const dateOnly = (v) => (v ? String(v).split("T")[0] : null);
 const displayCourseCode = (row) => row.course_code || row.code || row.id;
 const courseRowId = (row) => row.id || row._id || row.course_row_id || row.course_id || displayCourseCode(row);
 const courseType = (row) => String(row.type || "").trim().toLowerCase();
+const courseUrl = (row) => {
+  const raw = String(row.registration_url || row.url || "").trim();
+  if (!raw || raw === "#") return "#";
+  if (/^(https?:)?\/\//i.test(raw) || /^mailto:/i.test(raw)) return raw;
+  return `https://${raw}`;
+};
 const isExternalCourse = (row) => {
   const type = courseType(row);
   const source = String(row.course_source || row.trainer_type || "").trim().toLowerCase();
   return type === "external" || source === "external" || row.trainer === "External";
 };
+const displayCourseUrl = (row) => isExternalCourse(row) ? LEARNING_BUDGET_SPONSOR_URL : courseUrl(row);
+
+export function getCourseJoinMeta(course = {}) {
+  const type = courseType(course);
+  const date = dateOnly(course.start_date || course.session_date);
+  const rawStatus = normalizeSessionStatus(course.status || course.session_status);
+  const status = effectiveLifecycle(course.course_status || course.status, date);
+  if (isExternalCourse(course)) return JOIN_OPTION_BY_ID.sponsor;
+  if (type === "interest") return JOIN_OPTION_BY_ID.interest;
+  if (type === "elearning" || type === "material_only" || course.format === "elearning") return JOIN_OPTION_BY_ID.self_learning;
+  if (status === "ended") return JOIN_OPTION_BY_ID.ended;
+  if ((type === "scheduled" || !type) && date && rawStatus !== "cancelled" && status !== "cancelled") return JOIN_OPTION_BY_ID.upcoming_scheduled;
+  return JOIN_OPTION_BY_ID.unscheduled;
+}
 
 function listValue(value) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -109,7 +140,7 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     class_ids: listValue(s.class_ids || s.role_targets),
     rank_ids: listValue(s.rank_ids || s.rank_targets),
     target_ranks: listValue(s.target_ranks || s.rank_ids || s.rank_targets),
-    trainer_type: String(s.trainer_type || s.course_source || (normalizeFormat(s.format) === "elearning" || s.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
+    trainer_type: String(s.trainer_type || s.course_source || (s.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
     skill_tags: listValue(s.skill_tags),
     start_date: date,
     start_time: times[0] || null,
@@ -123,7 +154,7 @@ export function mapSessionToUpcoming(s, today = new Date()) {
         ? "upcoming_closed"
         : "upcoming_open",
     countdown_days: countdown,
-    url: s.registration_url || "#",
+    url: displayCourseUrl(s),
     audience: s.audience || "Mọi cấp độ",
   };
 }
@@ -153,8 +184,8 @@ export function mapCourseToCard(c, today = new Date()) {
     class_ids: listValue(c.class_ids || c.role_targets),
     rank_ids: listValue(c.rank_ids || c.rank_targets),
     target_ranks: listValue(c.target_ranks || c.rank_ids || c.rank_targets),
-    trainer_type: String(c.trainer_type || c.course_source || (normalizeFormat(c.format) === "elearning" || c.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
-    url: c.registration_url || "#",
+    trainer_type: String(c.trainer_type || c.course_source || (c.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
+    url: displayCourseUrl(c),
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
     session_id: usesReservationFlow ? rowId : null,
@@ -187,6 +218,12 @@ export function getCourseCta(course, user = {}) {
   const hasUrl = Boolean(c.url && c.url !== "#");
   const status = effectiveLifecycle(c.course_status, c.start_date);
 
+  if (status === "cancelled" || c.session_status === "cancelled") {
+    return { key: "cancelled", text: "Đã hủy", modalText: "Khóa đã hủy", tone: "muted", action: "none", disabled: true };
+  }
+  if (type === "external") {
+    return { key: "external_register", text: "Đăng ký →", modalText: "Đăng ký", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
+  }
   if (completed) {
     if ((type === "elearning" || c.format === "elearning") && hasUrl) {
       return { key: "review", text: "Xem lại →", modalText: "Xem lại", tone: "purple", action: "url", disabled: false };
@@ -194,9 +231,6 @@ export function getCourseCta(course, user = {}) {
     return hasMaterial
       ? { key: "completed_material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "purple", action: "material", disabled: false }
       : { key: "completed", text: "Đã hoàn thành", modalText: "Đã hoàn thành", tone: "success", action: "none", disabled: true };
-  }
-  if (status === "cancelled" || c.session_status === "cancelled") {
-    return { key: "cancelled", text: "Đã hủy", modalText: "Khóa đã hủy", tone: "muted", action: "none", disabled: true };
   }
   if (status === "ended") {
     if (type === "elearning" || c.format === "elearning") {
@@ -206,9 +240,6 @@ export function getCourseCta(course, user = {}) {
     }
     if (hasMaterial) {
       return { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false };
-    }
-    if (type === "external") {
-      return { key: "complete", text: "Đánh dấu đã hoàn thành", modalText: "Đánh dấu đã hoàn thành", tone: "success", action: "complete", disabled: false };
     }
     return { key: "ended", text: "Đã kết thúc", modalText: "Đã kết thúc", tone: "muted", action: "none", disabled: true };
   }
@@ -222,9 +253,6 @@ export function getCourseCta(course, user = {}) {
   }
   if (type === "elearning" || c.format === "elearning") {
     return { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: hasUrl ? "url" : "none", disabled: !hasUrl };
-  }
-  if (type === "external") {
-    return { key: "external_register", text: "Đăng ký →", modalText: "Đăng ký", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
   }
   if (type === "interest") {
     if (status === "upcoming_closed" || status === "full" || c.session_status === "full") {

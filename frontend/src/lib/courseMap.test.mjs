@@ -1,6 +1,6 @@
 // Run: node src/lib/courseMap.test.mjs   (from frontend/)
 import assert from "node:assert/strict";
-import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToCourse, mapCourseToCard, getCourseCta, pickUpcoming, pickRecommended } from "./courseMap.mjs";
+import { normalizeFormat, daysUntil, mapSessionToUpcoming, mapSessionToCourse, mapCourseToCard, getCourseCta, getCourseJoinMeta, pickUpcoming, pickRecommended, LEARNING_BUDGET_SPONSOR_URL } from "./courseMap.mjs";
 
 const TODAY = new Date(2026, 6, 1); // 2026-07-01 (local)
 
@@ -81,9 +81,11 @@ assert.equal(getCourseCta({ course_id: "LC-005", format: "elearning", url: "http
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", status: "open" }, TODAY)).key, "interest");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "material");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "complete");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "external_register");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "external_register");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", format: "video", status: "ended", registration_url: "https://learn.example", material_url: "https://docs.example" }, TODAY)).key, "learn");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C2", type: "external", format: "elearning", status: "open", registration_url: "https://learn.example" }, TODAY)).key, "external_register");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C3", type: "external", format: "offline", status: "open" }, TODAY), { completed_courses: ["LC-009C3"] }).key, "external_register");
 {
   const externalLinked = mapCourseToCard({
     id: "LC-009D",
@@ -92,11 +94,22 @@ assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", fo
     session_date: "2026-07-20",
     registration_url: "https://vendor.example/register",
   }, TODAY);
+  assert.equal(externalLinked.url, LEARNING_BUDGET_SPONSOR_URL);
   const externalCta = getCourseCta(externalLinked);
   assert.equal(externalCta.key, "external_register");
   assert.equal(externalCta.action, "url");
 }
+assert.equal(mapCourseToCard({ id: "LC-009E", type: "external", registration_url: "vendor.example/path" }, TODAY).url, LEARNING_BUDGET_SPONSOR_URL);
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
+
+// join-method badge/filter meta
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-1", type: "scheduled", status: "open", session_date: "2026-07-20" }, TODAY)).id, "upcoming_scheduled");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-2", type: "interest", status: "open" }, TODAY)).id, "interest");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-3", type: "external", format: "offline", status: "ended" }, TODAY)).id, "sponsor");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-4", type: "elearning", format: "video", status: "open" }, TODAY)).id, "self_learning");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-5", type: "scheduled", status: "ended" }, TODAY)).id, "ended");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-6", type: "scheduled", status: "open" }, TODAY)).id, "unscheduled");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-7", type: "scheduled", status: "cancelled", session_date: "2026-07-20" }, TODAY)).id, "unscheduled");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

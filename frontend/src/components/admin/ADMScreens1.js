@@ -332,6 +332,7 @@ const COURSE_STATUSES = [
     const [editTarget, setEditTarget] = React.useState(null);
     const [saving, setSaving]     = React.useState(false);
     const [error, setError]       = React.useState("");
+    const [copiedCourseId, setCopiedCourseId] = React.useState("");
 
     function reloadCourses() {
       return apiFetch("/admin/api/courses")
@@ -355,6 +356,31 @@ const COURSE_STATUSES = [
     function openEdit(c) { setEditTarget(c); setError(""); setEditModal(true); }
     function openCreate() { setEditTarget(null); setError(""); setEditModal(true); }
     function openImport(c = null) { setImportTarget(c); setImportModal(true); }
+    function buildCourseDeepLink(c) {
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      return `${origin}/library?courseId=${encodeURIComponent(c.id)}`;
+    }
+    async function copyCourseLink(c) {
+      const link = buildCourseDeepLink(c);
+      try {
+        if (navigator?.clipboard?.writeText) {
+          await navigator.clipboard.writeText(link);
+        } else {
+          const input = document.createElement("textarea");
+          input.value = link;
+          input.style.position = "fixed";
+          input.style.opacity = "0";
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand("copy");
+          document.body.removeChild(input);
+        }
+        setCopiedCourseId(c.id);
+        window.setTimeout(() => setCopiedCourseId((id) => (id === c.id ? "" : id)), 1600);
+      } catch {
+        alert("Không thể copy link. Vui lòng thử lại.");
+      }
+    }
     const canReserve = (c) => ["scheduled", "interest"].includes(c.type) || Boolean(c.session_date);
     const bookingCount = (c) => Number(c.active_reservation_count ?? c.current_count ?? 0);
     const completionCount = (c) => Number(c.enrollment_count ?? c.enrollments ?? 0);
@@ -716,6 +742,9 @@ const COURSE_STATUSES = [
                       )}
                       <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => openImport(c)} title="Import participants">
                         <Icon name="users" size={14} />
+                      </button>
+                      <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => copyCourseLink(c)} title={copiedCourseId === c.id ? "Đã copy link khóa học" : "Copy link khóa học"}>
+                        <Icon name={copiedCourseId === c.id ? "check" : "link"} size={14} />
                       </button>
                       <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => openEdit(c)} title="Sửa">
                         <Icon name="edit-3" size={14} />

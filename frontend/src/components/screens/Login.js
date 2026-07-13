@@ -20,7 +20,8 @@ const { useGame } = GLHEngine;
     const handleGoogleLogin = () => {
       setError("");
       setLoading(true);
-      window.location.href = "/auth/google";
+      const next = window.location.pathname + window.location.search + window.location.hash;
+      window.location.href = `/auth/google?next=${encodeURIComponent(next || "/")}`;
     };
 
     const handleDevLogin = async () => {
