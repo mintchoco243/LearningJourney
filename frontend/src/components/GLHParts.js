@@ -8,7 +8,7 @@ import { getCourseCta, getCourseJoinMeta, publicCourseRating } from '@/lib/cours
 import { trackEvent } from '@/lib/analytics';
 import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 
-const { Icon, fmtDate, fmtDuration } = GLHUI;
+const { Icon, fmtDate, fmtDuration, FORMAT_LABEL } = GLHUI;
 const { useGame } = GLHEngine;
 const D = GLH_DATA;
 
@@ -580,9 +580,8 @@ const D = GLH_DATA;
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 } },
             c.trainer ? React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }) : null,
-            c.audience ? React.createElement(DetailItem, { icon: "users", label: "Đối tượng", value: c.audience }) : null,
+            c.format ? React.createElement(DetailItem, { icon: "layers", label: "Format", value: FORMAT_LABEL[c.format] || c.format }) : null,
             c.duration_minutes ? React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }) : null,
-            modalCourse.material_url ? React.createElement(DetailItem, { icon: "book-open", label: "Tài liệu", value: "Có tài liệu / recording" }) : null,
             modalCourse.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: modalCourse.location }) : null,
             modalCourse.start_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(modalCourse.start_date) }) : null,
             modalCourse.start_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: modalCourse.start_time }) : null,
