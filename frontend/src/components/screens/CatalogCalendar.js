@@ -31,6 +31,14 @@ const targetMatchesFilter = (targets, selected) => {
   const list = (targets || []).map(normalizeTarget).filter(Boolean);
   return !list.length || list.some(isAllTarget) || list.includes(selected);
 };
+const dateOnlyLocal = (value) => {
+  if (!value) return null;
+  const [y, m, d] = String(value).split("T")[0].split("-").map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+};
+const startOfLocalDay = (date = new Date()) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 export const COURSE_DURATION_OPTIONS = [
   { id: "short",  label: "< 1 giờ",  test: m => m < 60 },
@@ -542,23 +550,38 @@ function ctaColor(cta) {
 
   function ListView(props) {
     const { user } = useGame();
-    const today = new Date();
-    let list = props.events.slice().sort((a, b) => new Date(a.start_date) - new Date(b.start_date));
+    const now = new Date();
+    const today = startOfLocalDay(now);
+    let list = props.events.slice().sort((a, b) => dateOnlyLocal(a.start_date) - dateOnlyLocal(b.start_date));
     if (props.view === "quarter") {
       const threeMonths = new Date(today.getFullYear(), today.getMonth() + 3, 0);
-      list = list.filter(e => { const d = new Date(e.start_date); return d >= today && d <= threeMonths; });
+      list = list.filter(e => {
+        const d = dateOnlyLocal(e.start_date);
+        return d && d >= today && d <= threeMonths;
+      });
     }
     const groups = {};
-    list.forEach(e => { const d = new Date(e.start_date); const key = d.getFullYear() + "-" + d.getMonth(); (groups[key] = groups[key] || []).push(e); });
+    list.forEach(e => {
+      const d = dateOnlyLocal(e.start_date);
+      if (!d) return;
+      const key = d.getFullYear() + "-" + d.getMonth();
+      (groups[key] = groups[key] || []).push(e);
+    });
+    const groupKeys = Object.keys(groups);
+
+    if (!groupKeys.length) {
+      return React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--ui-box)", color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } },
+        "Chưa có khóa học sắp tới trong khoảng thời gian này.");
+    }
 
     return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 28 } },
-      Object.keys(groups).map(key => {
+      groupKeys.map(key => {
         const [yy, mm] = key.split("-").map(Number);
         return React.createElement("div", { key },
           React.createElement("h3", { style: { fontSize: 16, fontWeight: 700, color: "var(--garena-red)", marginBottom: 10, marginTop: 0 } }, MONTHS_VI[mm] + " " + yy),
           React.createElement("div", { style: { display: "grid", gap: 8 } },
             groups[key].map(e => {
-              const d = new Date(e.start_date);
+              const d = dateOnlyLocal(e.start_date);
               const isPast = d < today;
               const daysLeft = Math.ceil((d - today) / 86400000);
               const fc = FORMAT_COLOR[e.format] || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)" };
