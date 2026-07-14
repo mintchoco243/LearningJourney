@@ -52,7 +52,7 @@ const D = GLH_DATA;
         React.createElement(Icon, { name: props.icon, size: 16, color: "var(--garena-grey)" })),
       React.createElement("div", null,
         React.createElement("div", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)" } }, props.label),
-        React.createElement("div", { style: { fontSize: 14, color: "var(--ui-heading)", fontWeight: 500, marginTop: 2 } }, props.value)));
+        React.createElement("div", { style: { fontSize: 14, color: "var(--ui-heading)", fontWeight: 500, marginTop: 2, overflowWrap: "anywhere", wordBreak: "break-word" } }, props.value)));
   }
 
   function ctaColor(cta) {
@@ -92,7 +92,7 @@ const D = GLH_DATA;
         target: "_blank",
         rel: "noopener noreferrer",
         onClick: (event) => event.stopPropagation(),
-        style: { color: "var(--glh-accent)", fontWeight: 700, textDecoration: "underline" },
+        style: { color: "var(--glh-accent)", fontWeight: 700, textDecoration: "underline", overflowWrap: "anywhere", wordBreak: "break-word" },
       }, cleanUrl));
       if (trailing) nodes.push(trailing);
       lastIndex = match.index + rawUrl.length;
@@ -564,21 +564,21 @@ const D = GLH_DATA;
     };
     const stop = (e) => e.stopPropagation();
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
-      React.createElement("div", { className: "modal", onClick: stop },
-        React.createElement("div", { style: { background: "radial-gradient(600px 240px at 0% -40%, #1a2334, #0d1117)", color: "#fff", padding: "24px 28px 20px", borderRadius: "12px 12px 0 0", position: "relative" } },
+      React.createElement("div", { className: "modal course-modal", onClick: stop },
+        React.createElement("div", { className: "course-modal__header", style: { background: "radial-gradient(600px 240px at 0% -40%, #1a2334, #0d1117)", color: "#fff", padding: "24px 28px 20px", borderRadius: "12px 12px 0 0", position: "relative" } },
           React.createElement("button", { onClick: props.onClose, style: { position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, padding: 8, color: "#fff", cursor: "pointer" } },
             React.createElement(Icon, { name: "x", size: 18, color: "#fff" })),
           React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } },
             React.createElement("span", { className: "u-pill", style: { background: modalJoinMeta?.bg || "rgba(255,255,255,0.12)", color: modalJoinMeta?.color || "#fff" } }, modalJoinMeta?.label || "Chi tiết"),
             statusChipText ? React.createElement("span", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0, textTransform: "none", padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.07)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(255,255,255,0.12)" } }, statusChipText) : null,
             rating ? React.createElement(Stars, { value: rating }) : null),
-          React.createElement("h2", { style: { fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.2, color: "#fff" } }, c.title)),
-        React.createElement("div", { style: { padding: "24px 28px 28px" } },
-          React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--ui-text)", margin: "0 0 18px" } },
+          React.createElement("h2", { className: "course-modal__title", style: { fontSize: 24, fontWeight: 700, margin: 0, lineHeight: 1.2, color: "#fff", paddingRight: 56, overflowWrap: "anywhere", wordBreak: "break-word" } }, c.title)),
+        React.createElement("div", { className: "course-modal__body", style: { padding: "24px 28px 28px" } },
+          React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--ui-text)", margin: "0 0 18px", overflowWrap: "anywhere", wordBreak: "break-word" } },
             React.createElement(LinkifiedText, { text: c.description })),
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
-          React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 } },
+          React.createElement("div", { className: "course-modal__details", style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 20 } },
             c.trainer ? React.createElement(DetailItem, { icon: "user", label: "Trainer", value: c.trainer }) : null,
             c.format ? React.createElement(DetailItem, { icon: "layers", label: "Format", value: FORMAT_LABEL[c.format] || c.format }) : null,
             c.duration_minutes ? React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }) : null,
@@ -600,7 +600,7 @@ const D = GLH_DATA;
               ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, marginBottom: 12, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
                   React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
               : null,
-            React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap" } },
+            React.createElement("div", { className: "course-modal__actions", style: { display: "flex", gap: 12, flexWrap: "wrap" } },
               !cta.disabled ? React.createElement("button", {
                 className: "u-btn u-btn--primary",
                 style: {

@@ -285,6 +285,8 @@ export function Dashboard(props) {
         React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
 
 
+    React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }),
+
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
         title: "Gợi ý cho rank của bạn",
@@ -311,8 +313,5 @@ export function Dashboard(props) {
         : React.createElement("div", { className: "rec-grid" },
             endedMaterialCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
 
-    // Training calendar
-    React.createElement("div", { style: { marginTop: 40 } },
-      React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }))
   );
 }
