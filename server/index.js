@@ -30,6 +30,7 @@ import { adminSettingsRouter } from "./routes/admin/settings.js";
 import { botRouter } from "./routes/bot.js";
 import { faqsRouter } from "./routes/faqs.js";
 import { adminFaqsRouter } from "./routes/admin/faqs.js";
+import { localMockApiRouter, localMockAuthRouter } from "./local-mock.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -67,15 +68,21 @@ app.get("/api/config/public", async (req, res) => {
   res.json({ ga_measurement_id: gaMeasurementId });
 });
 
-app.use("/auth", authRouter);
-app.use("/api/me", requireAuth, meRouter);
-app.use("/api/courses", requireAuth, coursesRouter);
-app.use("/api/sessions", requireAuth, sessionsRouter);
-app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
-app.use("/api/policies", requireAuth, policiesRouter);
-app.use("/api/site-feedback", requireAuth, siteFeedbackRouter);
-app.use("/api/bot", requireAuth, botRouter);
-app.use("/api/faqs", requireAuth, faqsRouter);
+if (process.env.LOCAL_MOCK_MODE === "true") {
+  app.use("/auth", localMockAuthRouter);
+  app.use("/api", localMockApiRouter);
+  console.warn("[local-mock] LOCAL_MOCK_MODE is enabled; data is in-memory and resets on restart.");
+} else {
+  app.use("/auth", authRouter);
+  app.use("/api/me", requireAuth, meRouter);
+  app.use("/api/courses", requireAuth, coursesRouter);
+  app.use("/api/sessions", requireAuth, sessionsRouter);
+  app.use("/api/ld-requests", requireAuth, ldRequestsRouter);
+  app.use("/api/policies", requireAuth, policiesRouter);
+  app.use("/api/site-feedback", requireAuth, siteFeedbackRouter);
+  app.use("/api/bot", requireAuth, botRouter);
+  app.use("/api/faqs", requireAuth, faqsRouter);
+}
 app.get("/admin/api/me", requireAuth, requireAdmin, (req, res) => {
   res.json({
     user: {

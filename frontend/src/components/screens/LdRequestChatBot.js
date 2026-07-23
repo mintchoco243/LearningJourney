@@ -4,6 +4,7 @@ import React from "react";
 import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
+import { mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const D = GLH_DATA;
 const { Icon } = GLHUI;
@@ -444,7 +445,8 @@ export function ChatBot(props) {
         role: "bot",
         text: data.reply || "Xin lỗi, mình chưa có phản hồi cho câu hỏi này.",
         citations: data.citations || [],
-        images: data.images || []
+        images: data.images || [],
+        course_links: data.course_links || [],
       }]);
     } catch (err) {
       setMessages((prev) => [...prev, {
@@ -595,6 +597,17 @@ export function ChatBot(props) {
                             : React.createElement("span", { style: { color: "var(--rpg-muted)" } }, `[${cIdx + 1}] ${c.title || "Tài liệu nội bộ"}`)
                     )
                   )
+                ) : null
+                ,msg.course_links && msg.course_links.length > 0 ? React.createElement("div", {
+                  style: { marginTop: 8, paddingTop: 8, borderTop: "1px dashed rgba(255,255,255,0.2)" }
+                },
+                  React.createElement("div", { style: { fontWeight: 700, color: "var(--glh-accent)", marginBottom: 6, fontSize: 11 } }, "Khóa học liên quan:"),
+                  msg.course_links.map((course) => React.createElement("button", {
+                    key: course.id,
+                    type: "button",
+                    onClick: () => { setOpen(false); props.onOpenCourse && props.onOpenCourse(mapCourseToCard(course)); },
+                    style: { display: "block", width: "100%", border: 0, background: "transparent", color: "var(--ui-text, #fff)", cursor: "pointer", padding: "5px 0", textAlign: "left", fontSize: 12, textDecoration: "underline" },
+                  }, `${course.course_code || ""} · ${course.title}`))
                 ) : null
               ),
               msg.hasQuickReplies ? React.createElement("div", {

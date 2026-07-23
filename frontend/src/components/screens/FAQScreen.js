@@ -28,38 +28,47 @@ function FaqItem({ item }) {
 
 export function FAQScreen(props) {
   const [faqs, setFaqs] = React.useState([]);
+  const [policies, setPolicies] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
-    fetch("/api/faqs")
-      .then(r => r.ok ? r.json() : {})
-      .then(data => {
-        if (data.faqs && Array.isArray(data.faqs)) {
-          setFaqs(data.faqs);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch("/api/faqs").then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      fetch("/api/policies", { credentials: "include" }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+    ]).then(([faqData, policyData]) => {
+      if (Array.isArray(faqData.faqs)) setFaqs(faqData.faqs);
+      const grouped = policyData.policies || {};
+      const rows = Object.entries(grouped).flatMap(([topic, items]) => (items || []).map((item) => ({
+        id: `policy-${item.id}`,
+        topic: `ChÃ­nh sÃ¡ch Â· ${topic}`,
+        question: item.title,
+        answer: String(item.content || item.preview || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+        keywords: topic,
+      })));
+      setPolicies(rows);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
+
+  const displayItems = React.useMemo(() => [...faqs, ...policies], [faqs, policies]);
 
   const topics = React.useMemo(() => {
     const seen = new Set();
     const list = [];
-    faqs.forEach(item => {
+    displayItems.forEach(item => {
       if (item.topic && !seen.has(item.topic)) {
         seen.add(item.topic);
         list.push(item.topic);
       }
     });
     return list;
-  }, [faqs]);
+  }, [displayItems]);
 
   const qLower = searchQuery.toLowerCase().trim();
 
   const filteredFaqs = React.useMemo(() => {
-    if (!qLower) return faqs;
-    return faqs.filter(item => {
+    if (!qLower) return displayItems;
+    return displayItems.filter(item => {
       return (
         (item.topic && item.topic.toLowerCase().includes(qLower)) ||
         (item.question && item.question.toLowerCase().includes(qLower)) ||
@@ -67,7 +76,7 @@ export function FAQScreen(props) {
         (item.keywords && item.keywords.toLowerCase().includes(qLower))
       );
     });
-  }, [faqs, qLower]);
+  }, [displayItems, qLower]);
 
   return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
     React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: "var(--ui-heading)", marginBottom: 20, marginTop: 0 } }, "Câu hỏi thường gặp (FAQ)"),

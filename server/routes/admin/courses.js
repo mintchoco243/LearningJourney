@@ -19,6 +19,12 @@ function normalizeRating(value) {
   return Number.isFinite(rating) && rating >= 0 && rating <= 5 ? rating : null;
 }
 
+function normalizeBoolean(value, fallback = false) {
+  if (value === undefined || value === null || value === "") return fallback;
+  if (typeof value === "boolean") return value;
+  return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
+}
+
 async function nextCourseCode() {
   const result = await query("SELECT course_code FROM courses");
   const max = result.rows.reduce((current, row) => {
@@ -98,7 +104,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, rating, is_active, status, material_url,
-      session_date, session_time, location, max_participants,
+      session_date, session_time, location, max_participants, is_hr_recommended,
     } = req.body;
     const course_code = String(id || bodyCourseCode || await nextCourseCode()).trim().toUpperCase();
 
@@ -116,16 +122,17 @@ adminCoursesRouter.post("/", async (req, res, next) => {
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
           rating, skill_tags, rank_targets, role_targets, type, min_participants,
           registration_url, description, xp_reward, is_active, status, material_url,
-          session_date, session_time, location, max_participants, current_count, session_status)
+          session_date, session_time, location, max_participants, current_count, session_status, is_hr_recommended)
        VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, 0, $17)`,
+          $18, $19, $20, $21, $22, 0, $17, $23)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
         normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
         registration_url, description, xp_reward,
-        is_active === undefined ? true : is_active,
+        normalizeBoolean(is_active, true),
         status || "open", material_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
+        normalizeBoolean(is_hr_recommended),
       ]
     );
 
@@ -145,7 +152,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, rating, is_active, status, material_url,
-      session_date, session_time, location, max_participants,
+      session_date, session_time, location, max_participants, is_hr_recommended,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
@@ -167,16 +174,17 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
            min_participants = $13, registration_url = $14, description = $15,
            xp_reward = $16, is_active = $17, status = $18, material_url = $19,
            session_date = $20, session_time = $21, location = $22, max_participants = $23,
-           session_status = $18,
+           session_status = $18, is_hr_recommended = $24,
            updated_at = NOW()
        WHERE id = $1`,
       [
         id, course_code || id, title, trainer, trainer_type || "internal", format, duration_hours,
         normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
         registration_url, description, xp_reward,
-        is_active === undefined ? true : is_active,
+        normalizeBoolean(is_active, true),
         status || "open", material_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
+        normalizeBoolean(is_hr_recommended),
       ]
     );
 

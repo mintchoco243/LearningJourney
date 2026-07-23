@@ -22,6 +22,12 @@ const FORMAT_COLOR = {
 const SKILL_LABEL = { leadership: "Lãnh đạo", data: "Dữ liệu", ai: "AI", communication: "Giao tiếp", product: "Sản phẩm", foundations: "Nền tảng", facilitation: "Đào tạo", analytics: "Phân tích", strategy: "Chiến lược", ops_excellence: "Vận hành", mentoring: "Dẫn dắt" };
 
 const normalizeTarget = (value) => String(value || "").trim();
+const normalizeSearch = (value) => String(value || "")
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, " ")
+  .trim();
 const isAllTarget = (value) => normalizeTarget(value).toLowerCase() === "all";
 const uniqueTargetOptions = (values) =>
   [...new Set(values.map(normalizeTarget).filter((value) => value && !isAllTarget(value)))]
@@ -49,15 +55,17 @@ export const COURSE_DURATION_OPTIONS = [
 export function defaultCourseFilters() {
   return {
     q: "",
-    cmFilter: "all",
-    trainerFilter: "all",
-    durationFilter: "all",
-    tagFilter: "all",
-    rankFilter: "all",
-    joinFilter: "all",
+    cmFilter: [],
+    trainerFilter: [],
+    durationFilter: [],
+    tagFilter: [],
+    rankFilter: [],
+    joinFilter: [],
     sortMode: "priority",
   };
 }
+
+const selectionValues = (value) => Array.isArray(value) ? value : (value && value !== "all" ? [value] : []);
 
 export function getCourseFilterOptions(courses, targetOptions = {}) {
   return {
@@ -71,32 +79,37 @@ export function getCourseFilterOptions(courses, targetOptions = {}) {
 export function filterCourses(courses, filters, user) {
   const f = Object.assign(defaultCourseFilters(), filters);
   return (courses || []).filter(c => {
-    if (f.cmFilter !== "all" && !targetMatchesFilter(c.class_ids, f.cmFilter)) return false;
-    if (f.trainerFilter !== "all" && c.trainer !== f.trainerFilter) return false;
-    if (f.durationFilter !== "all") {
-      const opt = COURSE_DURATION_OPTIONS.find(o => o.id === f.durationFilter);
-      if (opt && !opt.test(c.duration_minutes)) return false;
-    }
-    if (f.tagFilter !== "all" && !(c.skill_tags || []).includes(f.tagFilter)) return false;
-    if (f.rankFilter !== "all") {
+    const cmFilters = selectionValues(f.cmFilter);
+    const trainerFilters = selectionValues(f.trainerFilter);
+    const durationFilters = selectionValues(f.durationFilter);
+    const tagFilters = selectionValues(f.tagFilter);
+    const rankFilters = selectionValues(f.rankFilter);
+    const joinFilters = selectionValues(f.joinFilter);
+    if (cmFilters.length && !cmFilters.some((value) => targetMatchesFilter(c.class_ids, value))) return false;
+    if (trainerFilters.length && !trainerFilters.includes(c.trainer)) return false;
+    if (durationFilters.length && !durationFilters.some((value) => COURSE_DURATION_OPTIONS.find((o) => o.id === value)?.test(c.duration_minutes))) return false;
+    if (tagFilters.length && !tagFilters.some((value) => (c.skill_tags || []).includes(value))) return false;
+    if (rankFilters.length) {
       const ranks = c.target_ranks || c.rank_ids || [];
-      if (!targetMatchesFilter(ranks, f.rankFilter)) return false;
+      if (!rankFilters.some((value) => targetMatchesFilter(ranks, value))) return false;
     }
-    if (f.joinFilter !== "all" && getCourseJoinMeta(c).id !== f.joinFilter) return false;
+    if (joinFilters.length && !joinFilters.includes(getCourseJoinMeta(c).id)) return false;
     if (f.q.trim()) {
-      const hay = [c.title, c.trainer, c.description, c.audience, ...(c.skill_tags || [])].join(" ").toLowerCase();
-      if (!hay.includes(f.q.trim().toLowerCase())) return false;
+      const hay = normalizeSearch([c.title, c.trainer, c.description, c.audience, ...(c.skill_tags || [])].join(" "));
+      if (!hay.includes(normalizeSearch(f.q))) return false;
     }
     return true;
   });
 }
 
-function SearchableSelect({ placeholder, value, onChange, options, noDefault, minWidth = 110, maxWidth = 180 }) {
+function SearchableSelect({ placeholder, value, onChange, options, noDefault, multi = false, minWidth = 110, maxWidth = 180 }) {
   const [open, setOpen] = React.useState(false);
   const [term, setTerm] = React.useState("");
   const wrapRef = React.useRef(null);
-  const allOptions = noDefault ? options : [{ id: "all", label: placeholder }, ...options];
-  const selected = allOptions.find(o => o.id === value);
+  const selectedValues = selectionValues(value);
+  const allOptions = noDefault || multi ? options : [{ id: "all", label: placeholder }, ...options];
+  const selected = allOptions.filter(o => selectedValues.includes(o.id));
+  const selectedLabel = selected.length ? selected.map((item) => item.label).join(", ") : placeholder;
   const visible = allOptions.filter(o => !term.trim() || String(o.label).toLowerCase().includes(term.trim().toLowerCase()));
 
   React.useEffect(() => {
@@ -109,19 +122,23 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mi
   }, [open]);
 
   const pick = (id) => {
-    onChange(id);
-    setOpen(false);
+    if (multi) {
+      onChange(id === "all" ? [] : (selectedValues.includes(id) ? selectedValues.filter((item) => item !== id) : [...selectedValues, id]));
+    } else {
+      onChange(id);
+      setOpen(false);
+    }
     setTerm("");
   };
 
   return React.createElement("div", { ref: wrapRef, style: { position: "relative", flex: "1 1 auto", minWidth, maxWidth } },
     React.createElement("button", {
       type: "button",
-      className: "glh-filter-sel" + (!noDefault && value && value !== "all" ? " is-active" : ""),
+      className: "glh-filter-sel" + (selectedValues.length ? " is-active" : ""),
       onClick: () => setOpen(v => !v),
       style: { width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left" },
     },
-      React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, selected ? selected.label : placeholder),
+      React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, selectedLabel),
       React.createElement(Icon, { name: "chevron-down", size: 14, color: "var(--ui-muted)" })),
     open && React.createElement("div", {
       style: {
@@ -153,7 +170,7 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mi
           style: {
             width: "100%",
             border: 0,
-            background: value === option.id ? "rgba(228,30,38,.12)" : "transparent",
+            background: selectedValues.includes(option.id) ? "rgba(228,30,38,.12)" : "transparent",
             color: "var(--ui-heading)",
             borderRadius: 6,
             padding: "8px 10px",
@@ -167,7 +184,7 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mi
             gap: 8,
           },
         },
-          React.createElement("span", null, option.label),
+          React.createElement("span", null, multi && selectedValues.includes(option.id) ? "✓ " : "", option.label),
           option.isNew && React.createElement("span", {
             style: {
               flexShrink: 0,
@@ -208,11 +225,11 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
         onClick: () => onOpenLdRequest && onOpenLdRequest()
       }, "Gửi yêu cầu hỗ trợ đào tạo")),
     React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
-      React.createElement(SearchableSelect, { placeholder: "Kỹ năng", value: filters.tagFilter, onChange: setOne("tagFilter"), options: options.skills.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
-      React.createElement(SearchableSelect, { placeholder: "Tất cả rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }),
-      React.createElement(SearchableSelect, { placeholder: "Cách tham gia", value: filters.joinFilter, onChange: setOne("joinFilter"), options: COURSE_JOIN_OPTIONS, minWidth: 170, maxWidth: 230 }),
-      React.createElement(SearchableSelect, { placeholder: "Trainer", value: filters.trainerFilter, onChange: setOne("trainerFilter"), options: options.trainers.map(t => ({ id: t, label: t })) }),
-      React.createElement(SearchableSelect, { placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: COURSE_DURATION_OPTIONS.map(d => ({ id: d.id, label: d.label })) }),
+      React.createElement(SearchableSelect, { multi: true, placeholder: "Kỹ năng", value: filters.tagFilter, onChange: setOne("tagFilter"), options: options.skills.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
+      React.createElement(SearchableSelect, { multi: true, placeholder: "Rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }),
+      React.createElement(SearchableSelect, { multi: true, placeholder: "Cách tham gia", value: filters.joinFilter, onChange: setOne("joinFilter"), options: COURSE_JOIN_OPTIONS, minWidth: 170, maxWidth: 230 }),
+      React.createElement(SearchableSelect, { multi: true, placeholder: "Trainer", value: filters.trainerFilter, onChange: setOne("trainerFilter"), options: options.trainers.map(t => ({ id: t, label: t })) }),
+      React.createElement(SearchableSelect, { multi: true, placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: COURSE_DURATION_OPTIONS.map(d => ({ id: d.id, label: d.label })) }),
       React.createElement("div", { style: { display: "inline-flex", alignItems: "center", gap: 8, flexShrink: 0 } },
         React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
         React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
@@ -220,8 +237,8 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
       activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
       React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
-      chip("Tất cả", filters.cmFilter === "all", () => setOne("cmFilter")("all")),
-      options.roles.map(r => chip(r.label, filters.cmFilter === r.id, () => setOne("cmFilter")(filters.cmFilter === r.id ? "all" : r.id), r.id))));
+      chip("Tất cả", !selectionValues(filters.cmFilter).length, () => setOne("cmFilter")([])),
+      options.roles.map(r => chip(r.label, selectionValues(filters.cmFilter).includes(r.id), () => setOne("cmFilter")(selectionValues(filters.cmFilter).includes(r.id) ? selectionValues(filters.cmFilter).filter((id) => id !== r.id) : [...selectionValues(filters.cmFilter), r.id]), r.id))));
 }
 
 function ctaColor(cta) {
@@ -239,18 +256,17 @@ function ctaColor(cta) {
     const { user } = useGame();
     const [courses, setCourses] = React.useState([]);
     const [q, setQ] = React.useState("");
-    const [cmFilter,       setCmFilter]       = React.useState("all");
-    const [trainerFilter,  setTrainerFilter]  = React.useState("all");
-    const [durationFilter, setDurationFilter] = React.useState("all");
-    const [tagFilter,      setTagFilter]      = React.useState("all");
-    const [rankFilter,     setRankFilter]     = React.useState("all");
-    const [joinFilter,     setJoinFilter]     = React.useState("all");
+    const [cmFilter,       setCmFilter]       = React.useState([]);
+    const [trainerFilter,  setTrainerFilter]  = React.useState([]);
+    const [durationFilter, setDurationFilter] = React.useState([]);
+    const [tagFilter,      setTagFilter]      = React.useState([]);
+    const [rankFilter,     setRankFilter]     = React.useState([]);
+    const [joinFilter,     setJoinFilter]     = React.useState([]);
     const [sortMode,       setSortMode]       = React.useState("priority");
     const [targetOptions,  setTargetOptions]  = React.useState({ ranks: [], roles: [] });
 
     React.useEffect(() => {
       const params = new URLSearchParams({ limit: "100" });
-      if (joinFilter !== "all") params.set("join_method", joinFilter);
       fetch(`/api/courses?${params.toString()}`, { credentials: "include" })
         .then((res) => (res.ok ? res.json() : null))
         .then((data) => {
@@ -262,7 +278,7 @@ function ctaColor(cta) {
         .catch(() => {
           setCourses([]);
         });
-    }, [joinFilter]);
+    }, []);
 
     React.useEffect(() => {
       fetch("/api/courses/options", { credentials: "include" })
@@ -279,7 +295,7 @@ function ctaColor(cta) {
     }, []);
 
     const filterOptions = getCourseFilterOptions(courses, targetOptions);
-    const activeFilterCount = [cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter].filter(v => v !== "all").length;
+    const activeFilterCount = [cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter].reduce((count, value) => count + selectionValues(value).length, q.trim() ? 1 : 0);
 
     let filtered = filterCourses(courses, { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, joinFilter, sortMode }, user);
 
@@ -455,18 +471,13 @@ function ctaColor(cta) {
 
   /* ---------------- Calendar ---------------- */
   export function Calendar(props) {
-    const [view, setView] = React.useState("quarter");
-    const _now = new Date();
-    const [cursor, setCursor] = React.useState({ y: _now.getFullYear(), m: _now.getMonth() });
-    const [skillFilter, setSkillFilter] = React.useState("all");
     const [calendarEvents, setCalendarEvents] = React.useState([]);
+    const [skillFilter, setSkillFilter] = React.useState("all");
 
     React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
 
     const calSkills = [...new Set(calendarEvents.flatMap(e => e.skill_tags || []))];
-    const events = calendarEvents.filter(e =>
-      skillFilter === "all" || (e.skill_tags || []).includes(skillFilter)
-    );
+    const events = calendarEvents.filter((e) => skillFilter === "all" || (e.skill_tags || []).includes(skillFilter));
 
     const calChip = (label, active, onClick, key) =>
       React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
@@ -475,23 +486,42 @@ function ctaColor(cta) {
       React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Kỹ năng"),
       calChip("Tất cả", skillFilter === "all", () => setSkillFilter("all")),
       calSkills.map(s => calChip(SKILL_LABEL[s] || s, skillFilter === s, () => setSkillFilter(skillFilter === s ? "all" : s), s)));
-    const evByDay = {};
-    events.forEach((e) => { const d = new Date(e.start_date); const k = d.getFullYear() + "-" + d.getMonth() + "-" + d.getDate(); (evByDay[k] = evByDay[k] || []).push(e); });
-
     return React.createElement("div", { className: props.embedded ? undefined : "glh-container fade-screen", style: { padding: props.embedded ? "24px 0 0" : "28px clamp(16px,4vw,40px) 80px" } },
-      React.createElement("div", { style: { marginBottom: 12 } },
-        React.createElement("h2", { className: "u-h3", style: { margin: "0 0 10px" } }, "Lịch sắp tới"),
-        React.createElement("div", { style: { display: "flex", gap: 4, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 4, width: "fit-content" } },
-          [["quarter", "Theo quý"], ["month", "Theo tháng"]].map(([v, l]) => React.createElement("button", {
-            key: v, onClick: () => setView(v),
-            className: "appbar__link" + (view === v ? " is-active" : ""),
-            style: { borderRadius: 6 },
-          }, l)))),
+      React.createElement("h2", { className: "u-h3", style: { margin: "0 0 10px" } }, "Lịch sắp tới"),
 
       filterSection,
+      React.createElement(CalendarBoard, { events, onOpen: props.onOpenCourse })
+    );
+  }
 
-      view === "month" ? React.createElement(MonthView, { cursor, setCursor, evByDay, onOpen: props.onOpenCourse })
-        : React.createElement(ListView, { view, events, onOpen: props.onOpenCourse })
+  function CalendarBoard({ events, onOpen }) {
+    const { user } = useGame();
+    const today = startOfLocalDay(new Date());
+    const months = [0, 1, 2].map((offset) => new Date(today.getFullYear(), today.getMonth() + offset, 1));
+    const end = new Date(today.getFullYear(), today.getMonth() + 3, 0);
+    const upcoming = events.filter((event) => {
+      const date = dateOnlyLocal(event.start_date);
+      return date && date >= today && date <= end;
+    });
+
+    return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, overflowX: "auto", paddingBottom: 4 } },
+      months.map((month) => {
+        const monthEvents = upcoming.filter((event) => {
+          const date = dateOnlyLocal(event.start_date);
+          return date && date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
+        });
+        return React.createElement("section", { key: `${month.getFullYear()}-${month.getMonth()}`, style: { minWidth: 220, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 12 } },
+          React.createElement("h3", { style: { margin: "0 0 10px", color: "var(--ui-heading)", fontSize: 15 } }, `${MONTHS_VI[month.getMonth()]} ${month.getFullYear()}`),
+          monthEvents.length ? React.createElement("div", { style: { display: "grid", gap: 8 } }, monthEvents.map((event) => {
+            const date = dateOnlyLocal(event.start_date);
+            const cta = getCourseCta(event, user);
+            return React.createElement("button", { key: event.session_id || event.course_id, type: "button", onClick: () => onOpen(event), style: { textAlign: "left", border: "1px solid var(--ui-box-border)", borderRadius: 7, background: "var(--ui-bg)", padding: "9px 10px", cursor: "pointer", color: "var(--ui-heading)" }, title: cta?.text || "Chi tiết" },
+              React.createElement("div", { style: { fontSize: 12, fontWeight: 800, marginBottom: 3 } }, `${date.getDate()} ${DOW_VI[(date.getDay() + 6) % 7]} · ${event.title}`),
+              React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted)" } }, [event.location || "Online", event.start_time || ""].filter(Boolean).join(" · "))
+            );
+          })) : React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, padding: "14px 2px" } }, "Chưa có lịch.")
+        );
+      })
     );
   }
 

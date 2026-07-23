@@ -193,4 +193,45 @@ const { useGame } = GLHEngine;
     );
   }
 
+  // Step 7: Focus skills (maximum three selections, persisted to users.focus_skills)
+  export function Step7FocusSkills(props) {
+    const selected = props.value || [];
+    const toggle = (id) => {
+      if (selected.includes(id)) {
+        props.onChange(selected.filter((item) => item !== id));
+        return;
+      }
+      if (selected.length >= 3) return;
+      props.onChange([...selected, id]);
+    };
+
+    return React.createElement("div", { className: "qz-step" },
+      React.createElement("div", { className: "qz-group" },
+        React.createElement(Icon, { name: "target", size: 16, color: "var(--amber)" }),
+        "FOCUS SKILLS"
+      ),
+      React.createElement("h2", { className: "qz-q" }, "Bạn muốn cải thiện kỹ năng nào?"),
+      React.createElement("p", { style: { fontSize: 13, color: "var(--rpg-muted)", marginBottom: 20, marginTop: -8 } }, `Chọn tối đa 3 kỹ năng (${selected.length}/3)`),
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 } },
+        D.SKILLS.map((skill) => {
+          const active = selected.includes(skill.id);
+          return React.createElement("button", {
+            key: skill.id,
+            onClick: () => toggle(skill.id),
+            disabled: !active && selected.length >= 3,
+            style: {
+              padding: "14px 12px", border: "1px solid", borderColor: active ? "var(--glh-accent)" : "var(--rpg-border)",
+              borderRadius: 8, background: active ? "var(--glh-accent-soft)" : "rgba(255,255,255,0.04)",
+              color: "#fff", cursor: !active && selected.length >= 3 ? "not-allowed" : "pointer", opacity: !active && selected.length >= 3 ? .55 : 1,
+              textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
+            },
+          },
+            React.createElement("span", null, skill.name),
+            active ? React.createElement("span", { style: { color: "var(--glh-accent)", fontWeight: 800 } }, "✓") : null
+          );
+        })
+      )
+    );
+  }
+
   

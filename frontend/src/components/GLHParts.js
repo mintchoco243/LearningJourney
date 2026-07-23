@@ -55,19 +55,20 @@ const D = GLH_DATA;
         React.createElement("div", { style: { fontSize: 14, color: "var(--ui-heading)", fontWeight: 500, marginTop: 2, overflowWrap: "anywhere", wordBreak: "break-word" } }, props.value)));
   }
 
-  function ctaColor(cta) {
-    return ({
-      accent: "var(--glh-accent)",
-      warning: "#FF9E00",
-      purple: "#A38BFF",
-      success: "var(--garena-positive)",
-      muted: "var(--rpg-muted)",
-    })[cta?.tone] || "var(--rpg-muted)";
-  }
-
   function scheduleTime(c) {
     if (!c?.start_time) return null;
     return c.end_time ? `${c.start_time} - ${c.end_time}` : c.start_time;
+  }
+
+  function displayLocation(value, format) {
+    const text = String(value || "").trim();
+    if (!text && (format === "online" || format === "elearning")) return "Online";
+    if (!text) return null;
+    const normalized = text.toLowerCase();
+    if (normalized.includes("online") || normalized.includes("zoom") || normalized.includes("meet")) return "Online";
+    if (normalized.includes("hcm") || normalized.includes("ho chi minh") || normalized.includes("saigon")) return "HCM";
+    if (normalized.includes("hn") || normalized.includes("hanoi") || normalized.includes("ha noi")) return "HN";
+    return text;
   }
 
   function LinkifiedText({ text }) {
@@ -264,14 +265,19 @@ const D = GLH_DATA;
   }
 
   export function CourseCard({ course: c, onClick, showDate }) {
-    const { user } = useGame();
+    const { user, actions } = useGame();
     const joinMeta = getCourseJoinMeta(c);
-    const fc = joinMeta || { bg: "rgba(255,255,255,0.07)", color: "var(--ui-muted)", label: "Chi tiết" };
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
     const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
     const isRegistered = c.session_id && (user.registered_events || []).includes(c.session_id);
-    const cta = getCourseCta(c, user);
+    const [favoriteDialog, setFavoriteDialog] = React.useState(null);
+    const [favoriteBusy, setFavoriteBusy] = React.useState(false);
+    const favoriteId = rowId || c.course_id;
+    const [favoriteState, setFavoriteState] = React.useState(
+      Boolean(c.is_favorite) || (user.favorite_course_ids || []).includes(favoriteId),
+    );
+    const isFavorite = favoriteState;
 
     let statusChipText = null;
     let statusBg = "rgba(138,147,168,0.14)";
@@ -299,19 +305,39 @@ const D = GLH_DATA;
       topBorderColor = "#6B7280";
     }
 
-    const desc = c.description_short || c.description;
     const timeText = scheduleTime(c);
     const rating = publicCourseRating(c);
-    const cardCta = cta && !["completed", "reserved", "ended"].includes(cta.key)
-      ? React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: ctaColor(cta) } }, cta.text)
-      : null;
+    const cardCta = React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: "var(--glh-accent)" } }, "Xem chi tiết →");
+    const requestFavorite = (event) => {
+      event.stopPropagation();
+      setFavoriteDialog({
+        title: isFavorite ? "Bỏ yêu thích khóa học?" : "Thêm vào yêu thích?",
+        message: isFavorite ? "Khóa học sẽ được xóa khỏi danh sách Yêu thích." : "Khóa học sẽ được lưu vào danh sách Yêu thích của bạn.",
+        confirmText: isFavorite ? "Bỏ yêu thích" : "Yêu thích",
+        cancelText: "Hủy",
+      });
+    };
+    const confirmFavorite = async () => {
+      setFavoriteBusy(true);
+      const ok = await actions.toggleFavoriteCourse(c, !isFavorite);
+      setFavoriteBusy(false);
+      setFavoriteDialog(null);
+      if (ok) setFavoriteState(!isFavorite);
+      if (!ok) window.alert("Không thể cập nhật Yêu thích. Vui lòng thử lại.");
+    };
     const cardBody = React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
-        // join method chip + status
+        // skill tag + status + favorite
         React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
-          React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "none", letterSpacing: ".04em", padding: "3px 10px", borderRadius: 999, background: fc.bg, color: fc.color } },
-            fc.label),
+          (c.skill_tags || []).slice(0, 1).map((sid) => React.createElement(SkillPill, { key: sid, id: sid })),
           statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } },
-            statusChipText)),
+            statusChipText),
+          React.createElement("button", {
+            type: "button",
+            onClick: requestFavorite,
+            title: isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích",
+            "aria-label": isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích",
+            style: { marginLeft: "auto", border: 0, background: "transparent", cursor: "pointer", padding: 4, color: isFavorite ? "var(--glh-accent)" : "var(--ui-muted)" },
+          }, React.createElement(Icon, { name: isFavorite ? "heart" : "heart", size: 17, color: isFavorite ? "var(--glh-accent)" : "currentColor", fill: isFavorite ? "currentColor" : "none" }))),
         rating ? React.createElement(Stars, { value: rating }) : null,
         // countdown (dashboard recommended only)
         showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
@@ -321,33 +347,30 @@ const D = GLH_DATA;
         (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--ui-muted)" } },
           c.start_date && React.createElement(MetaChip, { icon: "calendar" }, fmtDate(c.start_date)),
           timeText && React.createElement(MetaChip, { icon: "clock" }, timeText)),
-        // description
-        desc && React.createElement("p", { className: "rec-desc", style: { fontSize: 12, color: "var(--ui-muted)", margin: 0, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } }, desc),
-        // skill tags
-        (c.skill_tags || []).length > 0 && React.createElement("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" } },
-          (c.skill_tags || []).slice(0, 2).map(sid => React.createElement(SkillPill, { key: sid, id: sid }))),
         // meta row
         React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
+          displayLocation(c.location, c.format) && React.createElement(MetaChip, { icon: "map-pin" }, displayLocation(c.location, c.format)),
           c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
           c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
           cardCta));
     const cardStyle = { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: 1, borderTop: topBorderColor !== "transparent" ? `3px solid ${topBorderColor}` : undefined };
 
-    return React.createElement("div", {
-      role: "button",
-      tabIndex: 0,
-      className: "u-card u-card--hover",
-      style: cardStyle,
-      onClick: () => {
-        onClick && onClick(c);
-      },
-      onKeyDown: (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onClick && onClick(c);
-        }
-      },
-    }, cardBody);
+    return React.createElement(React.Fragment, null,
+      React.createElement("div", {
+        role: "button",
+        tabIndex: 0,
+        className: "u-card u-card--hover",
+        style: cardStyle,
+        onClick: () => { onClick && onClick(c); },
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick && onClick(c);
+          }
+        },
+      }, cardBody),
+      React.createElement(ConfirmPopup, { dialog: favoriteDialog, busy: favoriteBusy, onCancel: () => !favoriteBusy && setFavoriteDialog(null), onConfirm: confirmFavorite })
+    );
   }
 
   /* ---------- Course modal ---------- */
@@ -425,6 +448,23 @@ const D = GLH_DATA;
     const completionButtonStyle = { minWidth: 180 };
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
+    };
+    const guidanceText = {
+      scheduled: "Đăng ký để giữ chỗ. Khi lớp được xác nhận, L&D sẽ gửi email thông báo lịch học.",
+      interest: "Đặt chỗ để L&D tổng hợp nhu cầu và mở lớp khi đủ số lượng.",
+      external: "Bấm Đăng ký để mở link bên ngoài và hoàn tất thủ tục theo hướng dẫn.",
+      elearning: "Bấm Học ngay để mở nội dung tự học.",
+      material_only: "Mở tài liệu để xem lại nội dung khóa học.",
+    }[String(modalCourse.type || "scheduled").toLowerCase()] || "Xem chi tiết khóa học và chọn hành động phù hợp.";
+    const copyRegistrationLink = async () => {
+      const rawUrl = String(modalCourse.registration_url || "").trim();
+      if (!rawUrl || rawUrl === "#") return;
+      try {
+        await navigator.clipboard.writeText(rawUrl);
+        setConfirmDialog({ type: "notice", title: "Đã sao chép link khóa học", message: "Bạn có thể gửi link này cho đồng nghiệp.", confirmText: "Đóng" });
+      } catch {
+        setConfirmDialog({ type: "notice", title: "Không thể sao chép", message: "Trình duyệt không cho phép truy cập clipboard. Vui lòng thử lại.", confirmText: "Đóng" });
+      }
     };
     const showError = () => {
       setConfirmDialog({
@@ -576,6 +616,9 @@ const D = GLH_DATA;
         React.createElement("div", { className: "course-modal__body", style: { padding: "24px 28px 28px" } },
           React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--ui-text)", margin: "0 0 18px", overflowWrap: "anywhere", wordBreak: "break-word" } },
             React.createElement(LinkifiedText, { text: c.description })),
+          React.createElement("div", { style: { padding: "12px 14px", marginBottom: 18, background: "var(--glh-accent-soft)", border: "1px solid var(--glh-accent)", borderRadius: 8, color: "var(--ui-text)", fontSize: 13, lineHeight: 1.55 } },
+            React.createElement("strong", { style: { display: "block", marginBottom: 4, color: "var(--glh-accent)" } }, "Hướng dẫn đăng ký"),
+            guidanceText),
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { className: "course-modal__details", style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 20 } },
@@ -621,6 +664,7 @@ const D = GLH_DATA;
                 busyAction === "reserve" ? "Đang đặt chỗ..." : busyAction === "complete" ? "Đang lưu..." : cta.modalText
               ) : null,
               canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
+              modalCourse.registration_url && modalCourse.registration_url !== "#" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: copyRegistrationLink }, React.createElement(Icon, { name: "copy", size: 15 }), " Chia sẻ link") : null,
               done
                 ? React.createElement(React.Fragment, null,
                     React.createElement("button", {
@@ -659,7 +703,7 @@ const D = GLH_DATA;
             React.createElement(Icon, { name: "check-circle", size: 36, color: "#10B981" })),
           React.createElement("h3", { style: { margin: "0 0 12px", fontSize: 20, fontWeight: 700, color: "var(--rpg-text)" } }, "Đăng ký thành công!"),
           React.createElement("p", { style: { margin: "0 0 24px", fontSize: 14, color: "var(--rpg-muted)", lineHeight: 1.6 } },
-            "Bạn đã đăng ký thành công. Lịch trên Google Calendar sẽ được gửi tới mail của bạn trong tối đa 48h tới."),
+            "Bạn đã đăng ký thành công. Thông tin xác nhận sẽ được gửi qua email theo quy trình hiện tại. Bạn có thể xem lại danh sách ở cuối trang Home."),
           React.createElement("button", { className: "u-btn u-btn--primary", style: { width: "100%", justifyContent: "center" }, onClick: () => setShowRegSuccess(false) }, "Đóng và tiếp tục")
         )
       ) : null,

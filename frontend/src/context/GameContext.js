@@ -27,6 +27,10 @@ const D = GLH_DATA;
     completed_courses: [],
     completed_course_details: [],
     registered_events: [],
+    reservation_details: [],
+    favorite_course_ids: [],
+    favorite_course_details: [],
+    focus_skills: [],
     unlocked_skills: [], // skill ids unlocked beyond quiz baseline
     badges: [],
     last_seen: null,
@@ -44,6 +48,15 @@ const D = GLH_DATA;
     try { localStorage.setItem(KEY, JSON.stringify(u)); } catch (e) {}
   }
   function clearUser() { try { localStorage.removeItem(KEY); } catch (e) {} }
+
+  function parseList(value) {
+    if (Array.isArray(value)) return value.filter(Boolean);
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+    } catch (e) { return []; }
+  }
 
   /* ---------- profile rank ---------- */
   function rankForUser(user = {}) {
@@ -100,7 +113,7 @@ const D = GLH_DATA;
     const actions = React.useMemo(() => ({
       reset() { clearUser(); persist(Object.assign({}, DEFAULT_USER)); },
       setEmail(email) { persist(Object.assign({}, user, { email, onboarded: true })); },
-      setUserProfile(profile, enrollments, reservations) {
+      setUserProfile(profile, enrollments, reservations, favorites) {
         const hasEnrollmentSnapshot = Array.isArray(enrollments);
         const completedCourses = hasEnrollmentSnapshot
           ? Array.from(new Set(enrollments.map((item) => item.course_id).filter(Boolean)))
@@ -112,6 +125,10 @@ const D = GLH_DATA;
         const registeredEvents = hasReservationSnapshot
           ? Array.from(new Set(reservations.map((item) => item.session_id).filter(Boolean)))
           : user.registered_events;
+        const hasFavoriteSnapshot = Array.isArray(favorites);
+        const favoriteCourseIds = hasFavoriteSnapshot
+          ? Array.from(new Set(favorites.map((item) => item.id || item.course_id).filter(Boolean)))
+          : user.favorite_course_ids;
         const enrollmentHours = hasEnrollmentSnapshot
           ? enrollments.reduce((sum, item) => sum + Number(item.hours_earned || 0), 0)
           : user.hours_total;
@@ -124,6 +141,7 @@ const D = GLH_DATA;
           learning_style: profile.learning_formats || [],
           availability: profile.weekly_hours || "",
           trainers: profile.preferred_trainers || [],
+          focus_skills: parseList(profile.focus_skills),
         } : user.quiz_extended;
 
         persist(Object.assign({}, user, {
@@ -141,6 +159,10 @@ const D = GLH_DATA;
           completed_courses: completedCourses,
           completed_course_details: completedCourseDetails,
           registered_events: registeredEvents,
+          reservation_details: hasReservationSnapshot ? reservations : user.reservation_details,
+          favorite_course_ids: favoriteCourseIds,
+          favorite_course_details: hasFavoriteSnapshot ? favorites : user.favorite_course_details,
+          focus_skills: profile.focus_skills !== undefined ? parseList(profile.focus_skills) : (user.focus_skills || []),
           character: profile.character || user.character,
           onboarded: true,
           quiz_result,
@@ -164,6 +186,29 @@ const D = GLH_DATA;
           badges: Array.from(new Set([...(user.badges || []), "first_quest"])),
           last_seen: new Date().toISOString(),
         }));
+      },
+      async toggleFavoriteCourse(course, shouldFavorite) {
+        const apiCourseId = course?._id || course?.id || course?.course_row_id || course?.course_id;
+        if (!apiCourseId) return false;
+        const response = await fetch(`/api/courses/${encodeURIComponent(apiCourseId)}/favorite`, {
+          method: shouldFavorite ? "POST" : "DELETE",
+          credentials: "include",
+        });
+        if (!response.ok) return false;
+        const ids = new Set(user.favorite_course_ids || []);
+        const details = new Map((user.favorite_course_details || []).map((item) => [item.id || item.course_id, item]));
+        if (shouldFavorite) {
+          ids.add(apiCourseId);
+          details.set(apiCourseId, course);
+        } else {
+          ids.delete(apiCourseId);
+          details.delete(apiCourseId);
+        }
+        persist(Object.assign({}, user, {
+          favorite_course_ids: [...ids],
+          favorite_course_details: [...details.values()],
+        }));
+        return true;
       },
       addXp(amount, label) {
         const nextXp = (user.xp || 0) + amount;

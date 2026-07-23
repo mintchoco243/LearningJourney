@@ -186,6 +186,7 @@ export function mapCourseToCard(c, today = new Date()) {
     target_ranks: listValue(c.target_ranks || c.rank_ids || c.rank_targets),
     trainer_type: String(c.trainer_type || c.course_source || (c.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
     url: displayCourseUrl(c),
+    registration_url: c.registration_url || null,
     fit_tag: c.fit_tag || null,
     course_status: status === "ended" ? "ended" : status === "full" ? "upcoming_closed" : date ? "upcoming_open" : status === "cancelled" ? "cancelled" : status,
     session_id: usesReservationFlow ? rowId : null,
@@ -203,6 +204,8 @@ export function mapCourseToCard(c, today = new Date()) {
     rating: publicCourseRating(c),
     featured_testimonial_count: Number(c.featured_testimonial_count || 0),
     has_featured_testimonial: hasFeaturedTestimonial(c),
+    is_favorite: Boolean(c.is_favorite),
+    is_hr_recommended: Boolean(c.is_hr_recommended),
   };
 }
 

@@ -1,6 +1,7 @@
 import express from "express";
 import { query, withTransaction } from "../db.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
+import { getRecommendationsForUser } from "../services/recommendations.js";
 
 export const coursesRouter = express.Router();
 
@@ -106,7 +107,11 @@ coursesRouter.get("/", async (req, res, next) => {
     const result = await query(
       `SELECT c.*,
               (e.id IS NOT NULL) AS is_enrolled,
-              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved
+              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved,
+              EXISTS (
+                SELECT 1 FROM course_favorites f
+                WHERE f.course_id = c.id AND f.user_id = $1
+              ) AS is_favorite
        FROM courses c
        LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $1
        LEFT JOIN reservations r ON r.session_id = c.id AND r.user_id = $1
@@ -133,14 +138,63 @@ coursesRouter.get("/", async (req, res, next) => {
 coursesRouter.get("/options", async (req, res, next) => {
   try {
     const result = await query(
-      `SELECT rank_targets, role_targets
+      `SELECT trainer, location, rank_targets, role_targets, skill_tags
        FROM courses
        WHERE is_active = TRUE AND status <> 'draft'`
     );
+    const skills = await query("SELECT id, label, icon, color, display_order FROM skill_catalog WHERE is_active = TRUE ORDER BY display_order, label");
+    const listValue = (value) => {
+      if (Array.isArray(value)) return value.filter(Boolean);
+      if (!value) return [];
+      try { const parsed = JSON.parse(value); if (Array.isArray(parsed)) return parsed.filter(Boolean); } catch {}
+      return String(value).split(",").map((item) => item.trim()).filter(Boolean);
+    };
+    const unique = (values) => [...new Set(values.flatMap(listValue).map((item) => String(item).trim()).filter((item) => item && item.toLowerCase() !== "all"))].sort((a, b) => a.localeCompare(b));
     res.json({
       ranks: uniqueTargets(result.rows, "rank_targets"),
       roles: uniqueTargets(result.rows, "role_targets"),
+      trainers: unique(result.rows.map((row) => row.trainer)),
+      locations: unique(result.rows.map((row) => row.location)),
+      skills: skills.rows,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+coursesRouter.get("/recommendations", async (req, res, next) => {
+  try {
+    res.json(await getRecommendationsForUser(req.user.id));
+  } catch (err) {
+    next(err);
+  }
+});
+
+coursesRouter.post("/:id/favorite", async (req, res, next) => {
+  try {
+    const course = await query("SELECT id FROM courses WHERE id = $1 AND is_active = TRUE", [req.params.id]);
+    if (!course.rowCount) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
+    await query(
+      "INSERT IGNORE INTO course_favorites (user_id, course_id) VALUES ($1, $2)",
+      [req.user.id, req.params.id],
+    );
+    const favorite = await query(
+      "SELECT * FROM course_favorites WHERE user_id = $1 AND course_id = $2",
+      [req.user.id, req.params.id],
+    );
+    res.status(201).json({ favorite: favorite.rows[0], is_favorite: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+coursesRouter.delete("/:id/favorite", async (req, res, next) => {
+  try {
+    await query(
+      "DELETE FROM course_favorites WHERE user_id = $1 AND course_id = $2",
+      [req.user.id, req.params.id],
+    );
+    res.json({ is_favorite: false });
   } catch (err) {
     next(err);
   }
@@ -152,7 +206,11 @@ coursesRouter.get("/:id", async (req, res, next) => {
     const result = await query(
       `SELECT c.*,
               (e.id IS NOT NULL) AS is_enrolled,
-              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved
+              (r.id IS NOT NULL AND r.status <> 'cancelled') AS is_reserved,
+              EXISTS (
+                SELECT 1 FROM course_favorites f
+                WHERE f.course_id = c.id AND f.user_id = $2
+              ) AS is_favorite
        FROM courses c
        LEFT JOIN enrollments e ON e.course_id = c.id AND e.user_id = $2
        LEFT JOIN reservations r ON r.session_id = c.id AND r.user_id = $2

@@ -110,6 +110,7 @@ function AppBar(props) {
   const opts = Object.assign({}, user.character, { rank: rank.level });
 
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
 
   // Close sidebar on navigation (for mobile)
   const handleNav = (id) => {
@@ -120,7 +121,6 @@ function AppBar(props) {
   const tabs = [
     ["home", "Trang chủ", "home"],
     ["library", "Thư viện đào tạo", "book-open"],
-    ["policy", "Chính sách đào tạo", "layers"],
     ["qa", "FAQ", "help-circle"],
   ];
 
@@ -183,6 +183,16 @@ function AppBar(props) {
             title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
           }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--ui-heading)" })),
+          React.createElement("button", {
+            onClick: () => setProfileOpen((value) => !value),
+            title: "Mở menu cá nhân",
+            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+          }, React.createElement(Icon, { name: "user", size: 16, color: "var(--ui-heading)" })),
+          profileOpen && React.createElement("div", { style: { position: "fixed", top: 70, right: 28, zIndex: 80, minWidth: 210, padding: 8, background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 10, boxShadow: "0 16px 36px rgba(0,0,0,.22)" } },
+            React.createElement("button", { type: "button", onClick: () => { setProfileOpen(false); handleNav("profile"); }, style: { width: "100%", padding: "9px 10px", border: 0, background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: "pointer", borderRadius: 6 } }, "Hồ sơ cá nhân"),
+            React.createElement("button", { type: "button", onClick: () => { setProfileOpen(false); toggleTheme(); }, style: { width: "100%", padding: "9px 10px", border: 0, background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: "pointer", borderRadius: 6 } }, isDark ? "Chuyển sang Light" : "Chuyển sang Dark"),
+            React.createElement("div", { style: { padding: "8px 10px", color: "var(--ui-muted)", fontSize: 12, borderTop: "1px solid var(--ui-box-border)", marginTop: 4 } }, "Thông báo nâng cao sẽ bổ sung ở phase sau.")
+          ),
           // Logout button
           React.createElement("button", {
             title: "Đăng xuất",
@@ -356,6 +366,23 @@ function ContactFooter() {
   );
 }
 
+function BackToTop() {
+  const [visible, setVisible] = React.useState(false);
+  React.useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 360);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return React.createElement("button", {
+    type: "button",
+    onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
+    title: "Lên đầu trang",
+    style: { position: "fixed", right: 24, bottom: 124, zIndex: 90, width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--ui-box-border)", background: "var(--ui-surface, var(--rpg-panel))", color: "var(--glh-accent)", display: "grid", placeItems: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.16)" },
+  }, React.createElement(Icon, { name: "chevron-up", size: 18, color: "currentColor" }));
+}
+
 /* ---------- Root App ---------- */
 function AppInner() {
   const [mounted, setMounted] = React.useState(false);
@@ -375,7 +402,7 @@ function AppInner() {
     if (typeof window !== "undefined") {
       const path = window.location.pathname;
       if (path === "/library") return "app";
-      if (path === "/policy") return "policy";
+      if (path === "/policy") return "qa";
       if (path === "/qa") return "qa";
       if (path === "/profile") return "profile";
       if (path === "/store") return "store";
@@ -397,7 +424,8 @@ function AppInner() {
       setPhase("app");
       setActiveTab("library");
     } else if (path === "/policy") {
-      setPhase("policy");
+      setPhase("qa");
+      if (typeof window !== "undefined") window.history.replaceState(null, "", "/qa");
     } else if (path === "/qa") {
       setPhase("qa");
     } else if (path === "/profile") {
@@ -434,7 +462,7 @@ function AppInner() {
       })
       .then((data) => {
         if (data && data.user && data.user.email) {
-          actions.setUserProfile(data.user, data.enrollments, data.reservations);
+          actions.setUserProfile(data.user, data.enrollments, data.reservations, data.favorites);
           if (user.quiz_result || data.user.quiz_result || data.user.onboarding_done) {
             syncRouteState();
           } else {
@@ -568,7 +596,7 @@ function AppInner() {
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (data && data.user) {
-            actions.setUserProfile(data.user, data.enrollments, data.reservations);
+            actions.setUserProfile(data.user, data.enrollments, data.reservations, data.favorites);
             if (data.user.onboarding_done) {
               syncRouteState();
             } else {
@@ -668,9 +696,11 @@ function AppInner() {
     showTutorial && phase === "app" ? React.createElement(Tutorial, { onClose: () => setShowTutorial(false) }) : null,
     !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(ChatBot, {
       hideOnGameWorld: true,
-      onOpenLdRequest: () => setLdRequest(true)
+      onOpenLdRequest: () => setLdRequest(true),
+      onOpenCourse: setCourse,
     }) : null,
     !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(ContactFooter, null) : null,
+    !["login", "onboarding", "character", "quiz"].includes(phase) ? React.createElement(BackToTop, null) : null,
     React.createElement(XpToast, null),
     React.createElement(TweaksUI, { t, setTweak }));
 }

@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
-import { Step4LearningStyle, Step5Availability, Step6TrainerPreference } from './OnboardingSteps';
+import { Step4LearningStyle, Step5Availability, Step6TrainerPreference, Step7FocusSkills } from './OnboardingSteps';
 import { trackEvent } from '@/lib/analytics';
 
 const D = GLH_DATA;
@@ -24,15 +24,16 @@ const { Avatar } = GLHAvatar;
     const [step4, setStep4] = React.useState([]);
     const [step5, setStep5] = React.useState("");
     const [step6, setStep6] = React.useState([]);
+    const [focusSkills, setFocusSkills] = React.useState([]);
     const [anim, setAnim] = React.useState(0);
 
-    const TOTAL_STEPS = 3;
+    const TOTAL_STEPS = 4;
     const goTo = (n) => { setIdx(n); setAnim((a) => a + 1); };
 
     React.useEffect(() => {
       trackEvent("quiz_step_view", {
         step_index: idx + 1,
-        step_name: idx === 0 ? "learning_style" : idx === 1 ? "availability" : "trainer_preference"
+        step_name: idx === 0 ? "learning_style" : idx === 1 ? "availability" : idx === 2 ? "trainer_preference" : "focus_skills"
       });
     }, [idx]);
 
@@ -42,7 +43,8 @@ const { Avatar } = GLHAvatar;
         rank_id: user.db_rank || "rank_01",
         start_xp: dbRank ? dbRank.required_xp + 50 : 50,
         completed_at: new Date().toISOString(),
-        quiz_extended: { learning_style: step4, availability: step5, trainers: step6 },
+        quiz_extended: { learning_style: step4, availability: step5, trainers: step6, focus_skills: focusSkills },
+        focus_skills: focusSkills,
       };
       trackEvent("quiz_complete", { rank_id: user.db_rank || "rank_01", learning_styles_count: step4.length, availability: step5 });
       actions.completeQuiz(result);
@@ -54,6 +56,7 @@ const { Avatar } = GLHAvatar;
           learning_formats: step4 || [],
           weekly_hours: step5 || null,
           preferred_trainers: step6 || [],
+          focus_skills: focusSkills,
           rank: result.rank_id,
           role: user.db_role || null,
         }),
@@ -81,7 +84,8 @@ const { Avatar } = GLHAvatar;
         React.createElement("div", { key: anim, className: "qz-anim-enter" },
           idx === 0 ? React.createElement(Step4LearningStyle, { value: step4, onChange: setStep4 })
           : idx === 1 ? React.createElement(Step5Availability, { value: step5, onChange: setStep5 })
-          : React.createElement(Step6TrainerPreference, { value: step6, onChange: setStep6 })
+          : idx === 2 ? React.createElement(Step6TrainerPreference, { value: step6, onChange: setStep6 })
+          : React.createElement(Step7FocusSkills, { value: focusSkills, onChange: setFocusSkills })
         ),
         React.createElement("div", { style: { marginTop: 24, display: "flex", gap: 12 } },
           idx > 0 ? React.createElement("button", {
@@ -139,6 +143,33 @@ const { Avatar } = GLHAvatar;
 
   export function Reveal(props) {
     const { user } = useGame();
+    const [loading, setLoading] = React.useState(true);
+    const [loadingProgress, setLoadingProgress] = React.useState(0);
+    React.useEffect(() => {
+      const startedAt = Date.now();
+      const timer = setInterval(() => {
+        const progress = Math.min(100, Math.round(((Date.now() - startedAt) / 10000) * 100));
+        setLoadingProgress(progress);
+        if (progress >= 100) {
+          clearInterval(timer);
+          setLoading(false);
+        }
+      }, 100);
+      return () => clearInterval(timer);
+    }, []);
+    if (loading) {
+      const loadingRank = rankForUser(user);
+      const loadingAvatar = Object.assign({}, user.character, { rank: loadingRank.level });
+      const loadingMessages = ["Đang đọc hành trình của bạn...", "Đang ghép skill phù hợp...", "Đang chuẩn bị bản đồ học tập...", "Sắp xong rồi..."];
+      return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad", style: { position: "relative", textAlign: "center" } },
+        React.createElement(Starfield),
+        React.createElement("div", { style: { width: 108, height: 108, margin: "0 auto 24px", borderRadius: "50%", overflow: "hidden", border: "2px solid var(--glh-accent)", boxShadow: "0 0 32px rgba(228,30,38,.32)", animation: "pulse 1.8s ease-in-out infinite" } }, React.createElement(Avatar, { opts: loadingAvatar, size: "100%", crisp: props.crisp })),
+        React.createElement("h2", { style: { margin: "0 0 8px", color: "#fff" } }, "Đang tạo hồ sơ học tập"),
+        React.createElement("p", { style: { color: "var(--rpg-muted)", marginBottom: 20 } }, loadingMessages[Math.min(loadingMessages.length - 1, Math.floor(loadingProgress / 25))]),
+        React.createElement("div", { style: { width: "min(420px, 86vw)", height: 8, margin: "0 auto 8px", borderRadius: 999, background: "rgba(255,255,255,.1)", overflow: "hidden" } }, React.createElement("div", { style: { width: `${loadingProgress}%`, height: "100%", background: "var(--glh-accent)", transition: "width .1s linear" } })),
+        React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12 } }, `${loadingProgress}%`)
+      );
+    }
     const qr = user.quiz_result || {};
     const quizExt = qr.quiz_extended || {};
     const rank = rankForUser(user);

@@ -7,10 +7,12 @@ import { GLHAvatar } from '../GLHAvatar';
 import { CourseCard } from '../GLHParts';
 import { AvatarEditModal } from './ProfilePolicy';
 import { Calendar } from './CatalogCalendar';
-import { getRecommendedCourses } from '@/lib/mockApi';
-import { sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
+import { GLH_DATA } from '@/data/glhData';
+import { getRecommendations } from '@/lib/mockApi';
+import { mapCourseToCard } from '@/lib/courseMap.mjs';
 
 const { Icon } = GLHUI;
+const D = GLH_DATA;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
@@ -204,36 +206,34 @@ export function Dashboard(props) {
   const roleLabel   = user.db_team || user.db_role;
   const rankLabel   = user.db_rank || rank.name;
   const profileMeta = [roleLabel, rankLabel].filter(Boolean).join(" · ");
-  const hasSurvey   = !!(qr._answers?.length > 0);
+  const hasSurvey   = !!(qr?._answers?.length > 0);
   const totalHours  = Number(user.hours_total || 0);
   const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
-  const [recommended, setRecommended] = React.useState([]);
+  const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
+  const [selectedSkills, setSelectedSkills] = React.useState(user.focus_skills || []);
+  const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {
-    getRecommendedCourses().then(rec => setRecommended(rec));
+    getRecommendations().then(setRecommendations);
+    fetch("/api/ld-requests/mine", { credentials: "include" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setRequestCount((data?.requests || []).filter((item) => ["new", "pending", "in_review"].includes(String(item.status || "").toLowerCase())).length))
+      .catch(() => {});
   }, []);
 
-  const allRankCourses = React.useMemo(
-    () => sortCoursesByStatusPriority(rankCompassCourses(recommended, user, rank), user),
-    [recommended, user, rank]
-  );
-  const rankCourses = React.useMemo(
-    () => allRankCourses.filter((course) => !isEndedCourse(course)),
-    [allRankCourses]
-  );
-  const endedMaterialCourses = React.useMemo(() => {
-    const rankTokens = userRankTokens(user, rank);
-    return allRankCourses
-      .filter((course) => isEndedCourse(course) && hasCourseMaterial(course))
-      .sort((a, b) => {
-        const tierDiff = courseFitTier(a, rankTokens, user) - courseFitTier(b, rankTokens, user);
-        if (tierDiff) return tierDiff;
-        return endedCourseDate(b) - endedCourseDate(a);
-      })
-      .slice(0, MAX_ENDED_MATERIAL_COURSES);
-  }, [allRankCourses, user, rank]);
+  const filterBySkill = React.useCallback((courses) => selectedSkills.length
+    ? courses.filter((course) => (course.skill_tags || []).some((skill) => selectedSkills.includes(skill)))
+    : courses, [selectedSkills]);
+  const quizCourses = filterBySkill(recommendations.quiz_skill_courses || []);
+  const hrCourses = filterBySkill(recommendations.hr_recommended_courses || []);
+  const rankCourses = [...quizCourses, ...hrCourses];
+  const reservationCourses = (user.reservation_details || []).map((item) => mapCourseToCard(item));
+  const registeredCourses = reservationCourses.filter((course) => course.type === "scheduled");
+  const reservedCourses = reservationCourses.filter((course) => course.type === "interest");
+  const completedCourses = (user.completed_course_details || []).map((item) => mapCourseToCard(item));
+  const favoriteCourses = (user.favorite_course_details || []).map((item) => mapCourseToCard(item));
   const progressTotal = rankCourses.length;
   const progressCompleted = rankCourses.filter((course) => isCompletedCourse(course, user)).length;
   const progressPercent = progressTotal ? Math.round((progressCompleted / progressTotal) * 100) : 0;
@@ -280,16 +280,19 @@ export function Dashboard(props) {
             `Hoàn thành ${progressCompleted}/${progressTotal} khóa gợi ý cho rank của bạn`),
           React.createElement("div", { className: "xpbar", style: { height: 8 } },
             React.createElement("div", { className: "xpbar__fill", style: { width: `${progressPercent}%` } })))),
-      React.createElement("div", { style: { display: "flex", gap: 24 } },
-        React.createElement(Stat, { value: completedSessions, label: "Khóa đã học" }),
-        React.createElement(Stat, { value: `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, label: "Giờ học tích lũy" }))),
+      React.createElement("div", { className: "dash-quick-stats", style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(76px, 1fr))", gap: 10, minWidth: 270 } },
+        [["registered-list", registeredCourses.length, "Đã đăng ký"], ["completed-list", completedCourses.length || completedSessions, "Đã học"], ["reserved-list", reservedCourses.length, "Đặt chỗ"], ["favorite-list", favoriteCourses.length, "Yêu thích"], [null, `${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, "Giờ học"], [null, requestCount, "Yêu cầu"]].map(([anchor, value, label]) =>
+          anchor
+            ? React.createElement("button", { key: label, type: "button", onClick: () => document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }), style: { background: "transparent", border: 0, color: "inherit", cursor: "pointer", padding: 4 } }, React.createElement(Stat, { value, label }))
+            : React.createElement(Stat, { key: label, value, label }))
+      )),
 
-
+    React.createElement(SkillFilterBar, { selected: selectedSkills, onChange: setSelectedSkills }),
     React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }),
 
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
-        title: "Gợi ý cho rank của bạn",
+        title: "Gợi ý theo skill và rank của bạn",
         action: progressTotal > 0 ? { label: "Xem tất cả →", onClick: () => props.onNav("library") } : null,
       }),
       completedAllRankCourses && React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, lineHeight: 1.6, margin: "-6px 0 16px" } },
@@ -299,19 +302,46 @@ export function Dashboard(props) {
         ? React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--rpg-panel)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" } },
             React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có khóa gợi ý cho rank này."),
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))
-        : React.createElement("div", { className: "rec-grid" },
-            rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+        : React.createElement(React.Fragment, null,
+            quizCourses.length ? React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700, marginBottom: 8 } }, "Theo skill Quiz") : null,
+            React.createElement("div", { className: "rec-grid" }, quizCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true }))),
+            hrCourses.length ? React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700, margin: "18px 0 8px" } }, "HR Recommend") : null,
+            React.createElement("div", { className: "rec-grid" }, hrCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true }))))),
 
-    React.createElement(React.Fragment, null,
-      React.createElement(SectionRow, {
-        title: "Tham khảo tài liệu các khóa đã kết thúc",
-        action: endedMaterialCourses.length > 0 ? { label: "Xem tất cả →", onClick: () => props.onNav("library") } : null,
-      }),
-      endedMaterialCourses.length === 0
-        ? React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--rpg-panel)" } },
-            React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có tài liệu từ các khóa đã kết thúc."))
-        : React.createElement("div", { className: "rec-grid" },
-            endedMaterialCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+    React.createElement(PersonalAccordion, { id: "registered-list", title: "Đã đăng ký", courses: registeredCourses, onOpenCourse: props.onOpenCourse }),
+    React.createElement(PersonalAccordion, { id: "completed-list", title: "Đã học", courses: completedCourses, onOpenCourse: props.onOpenCourse }),
+    React.createElement(PersonalAccordion, { id: "reserved-list", title: "Đặt chỗ", courses: reservedCourses, onOpenCourse: props.onOpenCourse }),
+    React.createElement(PersonalAccordion, { id: "favorite-list", title: "Yêu thích", courses: favoriteCourses, onOpenCourse: props.onOpenCourse }),
 
+  );
+}
+
+function SkillFilterBar({ selected, onChange }) {
+  const toggle = (id) => onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
+  return React.createElement("div", { style: { position: "sticky", top: 0, zIndex: 30, padding: "10px 0", marginBottom: 18, background: "var(--ui-bg)", backdropFilter: "blur(10px)" } },
+    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
+      React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700 } }, "Kỹ năng muốn cải thiện"),
+      D.SKILLS.map((skill) => React.createElement("button", {
+        key: skill.id,
+        type: "button",
+        onClick: () => toggle(skill.id),
+        className: selected.includes(skill.id) ? "u-chip is-active" : "u-chip",
+        style: { borderColor: selected.includes(skill.id) ? "var(--glh-accent)" : undefined, background: selected.includes(skill.id) ? "var(--glh-accent-soft)" : undefined },
+      }, selected.includes(skill.id) ? "✓ " : "", skill.name)),
+      selected.length ? React.createElement("button", { type: "button", className: "u-btn u-btn--ghost", style: { fontSize: 12, padding: "5px 9px" }, onClick: () => onChange([]) }, "Xóa lọc") : null
+    )
+  );
+}
+
+function PersonalAccordion({ id, title, courses, onOpenCourse }) {
+  const [open, setOpen] = React.useState(false);
+  return React.createElement("section", { id, style: { marginTop: 28, scrollMarginTop: 70 } },
+    React.createElement("button", { type: "button", onClick: () => setOpen((value) => !value), style: { width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", border: "1px solid var(--ui-box-border)", borderRadius: open ? "8px 8px 0 0" : 8, background: "var(--ui-box)", color: "var(--ui-heading)", cursor: "pointer", textAlign: "left" } },
+      React.createElement("span", null, `${title} (${courses.length})`),
+      React.createElement("span", { style: { color: "var(--ui-muted)" } }, open ? "−" : "+")
+    ),
+    open ? React.createElement("div", { className: "rec-grid", style: { paddingTop: 12 } }, courses.length
+      ? courses.map((course) => React.createElement(CourseCard, { key: course._id || course.course_id, course, onClick: onOpenCourse, showDate: true }))
+      : React.createElement("div", { className: "u-card", style: { padding: 18, color: "var(--ui-muted)" } }, "Chưa có dữ liệu.")) : null
   );
 }

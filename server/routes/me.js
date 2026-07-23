@@ -22,7 +22,12 @@ meRouter.get("/", async (req, res) => {
     [req.user.id]
   );
   const reservations = await query(
-    `SELECT r.*, s.session_date, s.session_time, s.title
+    `SELECT r.id AS reservation_id, r.user_id, r.session_id, r.reserved_at, r.status AS reservation_status,
+            s.id AS course_id, s.course_code, s.title, s.description, s.trainer,
+            s.trainer_type, s.format, s.duration_hours, s.xp_reward, s.rating,
+            s.skill_tags, s.rank_targets, s.role_targets, s.type, s.registration_url,
+            s.status, s.material_url, s.location, s.min_participants,
+            s.max_participants, s.current_count, s.session_date, s.session_time
      FROM reservations r
      JOIN courses s ON s.id = r.session_id
      WHERE r.user_id = $1
@@ -30,7 +35,17 @@ meRouter.get("/", async (req, res) => {
     [req.user.id]
   );
   const publicEnrollments = await attachPublicCourseRatings(enrollments.rows, (row) => row.id || row.course_id);
-  res.json({ user: profile.rows[0], enrollments: publicEnrollments, reservations: reservations.rows });
+  const favorites = await query(
+    `SELECT f.created_at AS favorited_at,
+            c.*
+     FROM course_favorites f
+     JOIN courses c ON c.id = f.course_id
+     WHERE f.user_id = $1
+     ORDER BY f.created_at DESC`,
+    [req.user.id],
+  );
+  const publicFavorites = await attachPublicCourseRatings(favorites.rows, (row) => row.id);
+  res.json({ user: profile.rows[0], enrollments: publicEnrollments, reservations: reservations.rows, favorites: publicFavorites });
 });
 
 meRouter.put("/", async (req, res) => {
@@ -45,20 +60,37 @@ meRouter.put("/", async (req, res) => {
 });
 
 meRouter.post("/onboarding", async (req, res) => {
-  const { learning_formats, weekly_hours, preferred_trainers, rank, role } = req.body;
+  const { learning_formats, weekly_hours, preferred_trainers, focus_skills = [], rank, role } = req.body;
+  const requestedSkills = Array.isArray(focus_skills)
+    ? [...new Set(focus_skills.map((skill) => String(skill || "").trim()).filter(Boolean))]
+    : [];
+  if (requestedSkills.length > 3) {
+    return res.status(400).json({ error: "FOCUS_SKILLS_MAX_3" });
+  }
+  if (requestedSkills.length) {
+    const skillRows = await query(
+      "SELECT id FROM skill_catalog WHERE is_active = TRUE AND JSON_CONTAINS($1, JSON_QUOTE(id))",
+      [requestedSkills],
+    );
+    const known = new Set(skillRows.rows.map((row) => String(row.id)));
+    if (requestedSkills.some((skill) => !known.has(skill))) {
+      return res.status(400).json({ error: "UNKNOWN_FOCUS_SKILL" });
+    }
+  }
 
   await query(
     `UPDATE users
      SET learning_formats = COALESCE($2, JSON_ARRAY()),
          weekly_hours = $3,
          preferred_trainers = COALESCE($4, JSON_ARRAY()),
-         rank = COALESCE($5, rank),
-         role = COALESCE($6, role),
+         focus_skills = $5,
+         rank = COALESCE($6, rank),
+         role = COALESCE($7, role),
          onboarding_done = TRUE,
          xp_total = GREATEST(xp_total, 50),
          updated_at = NOW()
      WHERE id = $1`,
-    [req.user.id, learning_formats, weekly_hours, preferred_trainers, rank, role]
+    [req.user.id, learning_formats, weekly_hours, preferred_trainers, requestedSkills, rank, role]
   );
   const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0], xp_earned: 50 });

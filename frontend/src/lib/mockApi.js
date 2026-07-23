@@ -27,6 +27,22 @@ export async function getRecommendedCourses() {
   }
 }
 
+export async function getRecommendations() {
+  try {
+    const res = await fetch("/api/courses/recommendations", { credentials: "include" });
+    if (!res.ok) return { quiz_skill_courses: [], hr_recommended_courses: [], courses: [] };
+    const data = await res.json();
+    const map = (items) => (items || []).map((course) => mapCourseToCard(course));
+    return {
+      quiz_skill_courses: map(data.quiz_skill_courses),
+      hr_recommended_courses: map(data.hr_recommended_courses),
+      courses: map(data.courses),
+    };
+  } catch {
+    return { quiz_skill_courses: [], hr_recommended_courses: [], courses: [] };
+  }
+}
+
 export async function getCalendarEvents() {
   try {
     const res = await fetch("/api/sessions", { credentials: "include" });

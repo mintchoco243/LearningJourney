@@ -15,6 +15,43 @@ async function getSetting(key, defaultValue = "") {
   return defaultValue;
 }
 
+function normalizeSearch(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+async function findCourseLinks(messages) {
+  const lastUserMessage = [...(messages || [])].reverse().find((message) => message.role === "user");
+  const queryText = normalizeSearch(lastUserMessage?.content);
+  if (!queryText) return [];
+  const rows = await query(
+    `SELECT id, course_code, title, description, trainer, format, duration_hours,
+            skill_tags, rank_targets, role_targets, type, registration_url,
+            material_url, location, session_date, session_time, status, is_active,
+            rating, is_hr_recommended
+     FROM courses
+     WHERE is_active = TRUE AND status NOT IN ('draft', 'cancelled')
+     ORDER BY is_hr_recommended DESC, rating DESC, session_date ASC, updated_at DESC
+     LIMIT 100`,
+  );
+  const terms = queryText.split(/\s+/).filter((term) => term.length >= 3);
+  const asList = (value) => Array.isArray(value) ? value : String(value || "").split(",").map((item) => item.trim()).filter(Boolean);
+  return rows.rows
+    .map((course) => {
+      const haystack = normalizeSearch([course.course_code, course.title, course.trainer, ...asList(course.skill_tags)].join(" "));
+      const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0);
+      return { course, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .map(({ course }) => course);
+}
+
 // POST /api/bot/chat
 botRouter.post("/chat", async (req, res) => {
   try {
@@ -79,10 +116,18 @@ botRouter.post("/chat", async (req, res) => {
       console.warn("Could not parse metadata from choices[1]:", e.message);
     }
 
+    let courseLinks = [];
+    try {
+      courseLinks = await findCourseLinks(messages);
+    } catch (error) {
+      console.warn("Could not load structured course links:", error.message);
+    }
+
     return res.json({
       reply: botText,
       citations: metadata.citations || [],
-      images: metadata.images || []
+      images: metadata.images || [],
+      course_links: courseLinks,
     });
 
   } catch (error) {

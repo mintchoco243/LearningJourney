@@ -56,6 +56,11 @@ const COURSE_STATUSES = [
     return Array.isArray(value) ? value.join(", ") : (value || "");
   }
 
+  function catalogOptions(courses, key, list = false) {
+    const values = (courses || []).flatMap((course) => list ? toList(course[key]) : [course[key]]);
+    return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }
+
   function nextCourseCode(courses) {
     const max = (courses || []).reduce((current, course) => {
       const match = String(course.course_code || "").match(/^LC-(\d+)$/i);
@@ -81,6 +86,7 @@ const COURSE_STATUSES = [
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),
+      is_hr_recommended: Boolean(c.is_hr_recommended),
       status: c.status || "open",
       material_url: c.material_url || "",
       enrollments: Number(c.enrollment_count ?? c.enrolled_count ?? 0),
@@ -433,6 +439,7 @@ const COURSE_STATUSES = [
             location: course.location || null,
             max_participants: course.max_participants || null,
             is_active: newVal,
+            is_hr_recommended: course.is_hr_recommended,
           }),
         });
       } catch (e) {
@@ -467,6 +474,7 @@ const COURSE_STATUSES = [
           session_time: formData.session_time || null,
           location: formData.location || null,
           max_participants: parseInt(formData.max_participants) || null,
+          is_hr_recommended: formData.is_hr_recommended === true,
         };
         if (!isEdit) payload.id = formData.id;
         const data = await apiFetch(
@@ -922,6 +930,11 @@ const COURSE_STATUSES = [
   }
 
   function CourseForm({ course, courses, onSave, onClose, saving, error }) {
+    const trainerOptions = catalogOptions(courses, "trainer");
+    const locationOptions = catalogOptions(courses, "location");
+    const rankOptions = catalogOptions(courses, "rank_targets", true);
+    const roleOptions = catalogOptions(courses, "role_targets", true);
+    const skillOptions = catalogOptions(courses, "skill_tags", true);
     const [form, setForm] = React.useState({
       id: course?.course_code || nextCourseCode(courses),
       title: course?.title || "",
@@ -945,6 +958,7 @@ const COURSE_STATUSES = [
       session_time: course?.session_time || "",
       location: course?.location || "",
       max_participants: course?.max_participants || "",
+      is_hr_recommended: Boolean(course?.is_hr_recommended),
     });
 
     function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
@@ -955,6 +969,15 @@ const COURSE_STATUSES = [
     return (
       <div>
         {error && <div style={{ background: "rgba(228,30,38,.1)", border: "1px solid rgba(228,30,38,.3)", borderRadius: 6, padding: "10px 14px", marginBottom: 14, color: "#ff6b6b", fontSize: 13 }}>{error}</div>}
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, padding: 10, marginBottom: 14, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8 }}>
+          <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "var(--ui-muted)" }}>Chọn nhanh giá trị đang có trong database; vẫn có thể nhập giá trị mới ở các ô bên dưới.</div>
+          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("trainer", e.target.value)}><option value="">Trainer</option>{trainerOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("location", e.target.value)}><option value="">Location</option>{locationOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("rank_targets", [e.target.value])}><option value="">Rank</option>{rankOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("role_targets", [e.target.value])}><option value="">Role</option>{roleOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("skill_tags", [e.target.value])}><option value="">Skill</option>{skillOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
+        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
@@ -1101,6 +1124,13 @@ const COURSE_STATUSES = [
           <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <Toggle value={form.is_active} onChange={v => set("is_active", v)} />
             <span style={{ fontSize: 13, color: "var(--rpg-muted)" }}>Hiển thị cho người dùng</span>
+          </label>
+        </div>
+
+        <div className="adm-form-group" style={{ marginBottom: 18 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+            <Toggle value={form.is_hr_recommended} onChange={v => set("is_hr_recommended", v)} />
+            <span style={{ fontSize: 13, color: "var(--rpg-muted)" }}>HR Recommend trên trang chủ</span>
           </label>
         </div>
 
