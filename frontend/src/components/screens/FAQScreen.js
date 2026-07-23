@@ -22,7 +22,7 @@ function FaqItem({ item }) {
       React.createElement("span", { style: { fontSize: 14, fontWeight: 600, color: isOpen ? "var(--glh-accent)" : "var(--ui-heading)" } }, item.question),
       React.createElement("span", { style: { flexShrink: 0, fontWeight: 700, fontSize: 18, color: isOpen ? "var(--glh-accent)" : "var(--ui-muted)" } }, isOpen ? "−" : "+")
     ),
-    isOpen && React.createElement("div", { style: { padding: "0 20px 14px", fontSize: 14, lineHeight: 1.7, color: "var(--ui-muted)", borderTop: "1px solid var(--ui-box-border)" } }, item.answer)
+    isOpen && React.createElement("div", { style: { padding: "0 20px 14px", fontSize: 14, lineHeight: 1.7, color: "var(--ui-muted)" } }, item.answer)
   );
 }
 

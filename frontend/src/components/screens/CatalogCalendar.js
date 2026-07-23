@@ -207,9 +207,6 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mu
 export function CourseSearchFilters({ filters, setFilters, options, activeFilterCount }) {
   const setOne = (key) => (value) => setFilters(prev => Object.assign({}, prev, { [key]: value }));
   const clearAll = () => setFilters(prev => Object.assign({}, prev, defaultCourseFilters()));
-  const chip = (label, active, onClick, key) =>
-    React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontWeight: 700 } }, label);
-  const roleChips = options.roles.map(r => chip(r.label, selectionValues(filters.cmFilter).includes(r.id), () => setOne("cmFilter")(selectionValues(filters.cmFilter).includes(r.id) ? selectionValues(filters.cmFilter).filter((id) => id !== r.id) : [...selectionValues(filters.cmFilter), r.id]), r.id));
 
   return React.createElement(React.Fragment, null,
     React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 } },
@@ -227,11 +224,7 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
         React.createElement("span", { style: { fontSize: 12, fontWeight: 600, color: "var(--ui-muted)", flexShrink: 0, whiteSpace: "nowrap" } }, "Sắp xếp:"),
         React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), options: [{ id: "priority", label: "Ưu tiên trạng thái" }, { id: "newest", label: "Mới nhất" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
       ),
-      activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×")),
-    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
-      React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
-      chip("Tất cả", !selectionValues(filters.cmFilter).length, () => setOne("cmFilter")([])),
-      roleChips)));
+      activeFilterCount > 0 && React.createElement("button", { onClick: clearAll, style: { background: "none", border: "none", color: "var(--glh-accent)", fontSize: 12, cursor: "pointer", fontWeight: 700, padding: "0 4px", flexShrink: 0 } }, "Xóa lọc ×"))));
 }
 
 function ctaColor(cta) {
