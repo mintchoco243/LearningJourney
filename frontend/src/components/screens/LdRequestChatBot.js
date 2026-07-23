@@ -536,7 +536,7 @@ export function ChatBot(props) {
 
   return React.createElement(React.Fragment, null,
     // Chat button
-    !open ? React.createElement("div", { "data-tour": "learning-support", style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
+    !open ? React.createElement("div", { style: { position: "fixed", bottom: 24, right: 24, zIndex: 100, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 } },
       React.createElement("div", {
         style: {
           background: "var(--ui-surface, var(--rpg-panel-2, #1c2433))",
