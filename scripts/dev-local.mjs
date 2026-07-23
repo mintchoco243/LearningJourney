@@ -1,10 +1,21 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const isWindows = process.platform === "win32";
 const npmCmd = isWindows ? "npm.cmd" : "npm";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// Auto-apply DB migrations on startup so dev environment is always up-to-date
+try {
+  console.log("[dev-local] Checking & running database migrations...");
+  spawnSync(process.execPath, [path.join(repoRoot, "server", "migrate.js")], {
+    stdio: "inherit",
+    cwd: repoRoot,
+  });
+} catch (err) {
+  console.warn("[dev-local] Warning: Could not run automatic migrations:", err.message);
+}
 
 const children = [
   spawn(process.execPath, ["--watch", "server/index.js"], {
@@ -43,3 +54,4 @@ for (const child of children) {
 
 process.on("SIGINT", () => shutdown(0));
 process.on("SIGTERM", () => shutdown(0));
+
