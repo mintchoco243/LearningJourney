@@ -419,6 +419,7 @@ function ctaColor(cta) {
               ),
               React.createElement("button", {
                 className: "glh-btn glh-btn--primary",
+                "data-tour": "training-request",
                 onClick: () => props.onOpenLdRequest && props.onOpenLdRequest(),
                 style: { flexShrink: 0, whiteSpace: "nowrap" },
               },
@@ -454,6 +455,7 @@ function ctaColor(cta) {
               ),
               React.createElement("button", {
                 className: "glh-btn glh-btn--primary",
+                "data-tour": "training-request",
                 onClick: () => props.onOpenLdRequest && props.onOpenLdRequest(),
               }, "Gửi yêu cầu")
             )

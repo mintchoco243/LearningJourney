@@ -712,6 +712,7 @@ function AppInner() {
         React.createElement(Catalog, utilCommon),
         React.createElement("button", {
           className: "library-fab",
+          "data-tour": "training-request",
           onClick: utilCommon.onOpenLdRequest,
           title: "Gửi yêu cầu học tập",
         },

@@ -552,6 +552,7 @@ export function ChatBot(props) {
         }
       }, "Cần Hộ giá gợi ý không ạ?"),
       React.createElement("button", {
+        "data-tour": "learning-support",
         onClick: () => setOpen(true),
         style: {
           width: 86, height: 86,

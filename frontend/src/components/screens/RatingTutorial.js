@@ -179,7 +179,7 @@ const { useGame } = GLHEngine;
     {
       title: "Bot Hộ giá và Form gửi nhu cầu đào tạo",
       desc: "Dùng bot hỗ trợ để hỏi nhanh về khóa học, rank hoặc chính sách L&D. Nếu chưa thấy khóa phù hợp, bạn có thể gửi nhu cầu đào tạo để L&D team xem xét và phản hồi.",
-      selector: "[data-tour='learning-support']",
+      selectors: ["[data-tour='training-request']", "[data-tour='learning-support']"],
       placement: "top",
     },
     {
@@ -192,11 +192,12 @@ const { useGame } = GLHEngine;
 
   export function Tutorial(props) {
     const [step, setStep] = React.useState(0);
-    const [spotlight, setSpotlight] = React.useState(null);
+    const [spotlights, setSpotlights] = React.useState([]);
     const tooltipRef = React.useRef(null);
 
     const cur = STEPS[step];
     const isLast = step === STEPS.length - 1;
+    const spotlight = spotlights[0] || null;
 
     const isDark = document.documentElement.getAttribute("data-theme") !== "light";
     const overlayBg = isDark ? "rgba(0,0,0,0.72)" : "rgba(0,0,0,0.5)";
@@ -212,30 +213,43 @@ const { useGame } = GLHEngine;
 
     // Update spotlight when step changes
     React.useEffect(() => {
-      if (!cur.selector) {
-        const frame = requestAnimationFrame(() => setSpotlight(null));
+      const selectors = cur.selectors || (cur.selector ? [cur.selector] : []);
+      if (!selectors.length) {
+        const frame = requestAnimationFrame(() => setSpotlights([]));
         return () => cancelAnimationFrame(frame);
       }
-      const el = document.querySelector(cur.selector);
-      if (!el) {
-        const frame = requestAnimationFrame(() => setSpotlight(null));
+      const elements = selectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
+      if (!elements.length) {
+        const frame = requestAnimationFrame(() => setSpotlights([]));
         return () => cancelAnimationFrame(frame);
       }
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      const scrollTarget = elements.find((element) => getComputedStyle(element).position !== "fixed");
+      if (scrollTarget) scrollTarget.scrollIntoView({ behavior: "auto", block: "center" });
+
       const update = () => {
-        const rect = el.getBoundingClientRect();
-        setSpotlight({
-          top: rect.top - 8,
-          left: rect.left - 8,
-          width: rect.width + 16,
-          height: rect.height + 16,
-          bottom: rect.bottom + 8,
-          right: rect.right + 8,
-        });
+        const next = elements
+          .map((element) => element.getBoundingClientRect())
+          .filter((rect) => rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight)
+          .map((rect) => ({
+            top: rect.top - 8,
+            left: rect.left - 8,
+            width: rect.width + 16,
+            height: rect.height + 16,
+            bottom: rect.bottom + 8,
+            right: rect.right + 8,
+          }));
+        setSpotlights(next);
       };
-      const timer = setTimeout(update, 350); // wait for scroll
-      return () => clearTimeout(timer);
-    }, [step, cur.selector]);
+      const frame = requestAnimationFrame(update);
+      window.addEventListener("resize", update);
+      window.addEventListener("scroll", update, true);
+      return () => {
+        cancelAnimationFrame(frame);
+        window.removeEventListener("resize", update);
+        window.removeEventListener("scroll", update, true);
+      };
+    }, [step, cur.selector, cur.selectors]);
 
     const finish = () => {
       localStorage.setItem("glh_tutorial_done", "1");
@@ -282,14 +296,15 @@ const { useGame } = GLHEngine;
         React.createElement("defs", null,
           React.createElement("mask", { id: "tut-mask" },
             React.createElement("rect", { x: 0, y: 0, width: "100%", height: "100%", fill: "white" }),
-            spotlight ? React.createElement("rect", {
-              x: spotlight.left,
-              y: spotlight.top,
-              width: spotlight.width,
-              height: spotlight.height,
+            spotlights.map((item, index) => React.createElement("rect", {
+              key: "mask-" + index,
+              x: item.left,
+              y: item.top,
+              width: item.width,
+              height: item.height,
               rx: 8,
               fill: "black",
-            }) : null,
+            })),
           )
         ),
         React.createElement("rect", {
@@ -298,18 +313,19 @@ const { useGame } = GLHEngine;
           mask: "url(#tut-mask)",
         }),
         // Highlight border
-        spotlight ? React.createElement("rect", {
-          x: spotlight.left,
-          y: spotlight.top,
-          width: spotlight.width,
-          height: spotlight.height,
+        spotlights.map((item, index) => React.createElement("rect", {
+          key: "border-" + index,
+          x: item.left,
+          y: item.top,
+          width: item.width,
+          height: item.height,
           rx: 8,
           fill: "none",
           stroke: "#E41E26",
           strokeWidth: 2,
           strokeDasharray: "6 3",
           style: { animation: "none" },
-        }) : null,
+        })),
       ),
 
       // Tooltip card
