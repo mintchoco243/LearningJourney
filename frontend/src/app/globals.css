@@ -1057,6 +1057,7 @@ img { max-width: 100%; }
 .u-chip { white-space: nowrap; }
 .u-chip:hover { border-color: var(--rpg-border-strong); color: var(--ui-heading); }
 .u-chip.is-active { background: var(--garena-red); color:#fff; border-color: var(--garena-red); }
+.dash-filter-sticky { position: sticky; top: 64px; z-index: 30; }
 .u-input { font-family: var(--garena-font-vn); font-size: 14px; padding: 11px 14px 11px 40px; border:1px solid var(--ui-box-border); border-radius: 6px; width: 100%; outline: none; background: var(--ui-box); color: var(--ui-text); }
 .u-input::placeholder { color: var(--ui-muted); }
 .u-input:focus { box-shadow: var(--shadow-focus); border-color: var(--garena-red); }
@@ -1092,18 +1093,47 @@ img { max-width: 100%; }
 /* toggle-button variant */
 button.glh-filter-sel { padding: 10px 14px; background-image: none; white-space: nowrap; border: 1px solid var(--rpg-border); }
 button.glh-filter-sel:hover { background-color: var(--ui-control-hover); color: var(--ui-heading); border-color: var(--rpg-border-strong); }
-button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #fff; border-color: var(--garena-red); }
+button.glh-filter-sel.is-active {
+  background-color: rgba(228,30,38,.12) !important;
+  color: var(--ui-heading) !important;
+  border-color: var(--glh-accent) !important;
+}
+.glh-filter-sel__label {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.glh-filter-sel__count {
+  flex: 0 0 auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--glh-accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
 
 /* ===== DASHBOARD hero ===== */
 .dash-hero {
   background: radial-gradient(900px 500px at 12% -30%, #1a2334 0%, #0d1117 60%);
-  border-radius: 14px; color: #fff; padding: clamp(14px, 2vw, 22px);
+  border-radius: 12px; color: #fff; padding: clamp(12px, 1.5vw, 16px);
   display: grid; grid-template-columns: auto 1fr auto; gap: clamp(12px, 2vw, 24px); align-items: center;
   border: 1px solid var(--rpg-border);
 }
 .dash-hero__avatar { background: rgba(255,255,255,0.04); border:1px solid var(--rpg-border); border-radius: 12px; padding: 10px; }
 .dash-classname { font-family: var(--glh-display); font-weight: 700; font-size: clamp(20px,3vw,28px); line-height: 1.1; }
 .dash-rank { font-family: var(--glh-display); font-size: 13px; letter-spacing:.12em; text-transform: uppercase; color: var(--amber); font-weight:700; }
+.dash-quick-stats { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 8px; min-width: 300px; }
+.dash-stat { transition: border-color .14s, background .14s; }
+.dash-stat--action:hover { border-color: var(--glh-accent) !important; background: var(--glh-accent-soft) !important; }
+.dash-section-heading { text-transform: uppercase; font-size: clamp(22px, 2.5vw, 28px); }
 .xpbar { height: 12px; border-radius: 999px; background: rgba(255,255,255,0.1); overflow: hidden; }
 .xpbar__fill { height: 100%; background: linear-gradient(90deg, var(--amber), #ffd45e); border-radius: 999px; transition: width .6s var(--ease-out); box-shadow: 0 0 12px rgba(255,186,0,.5); }
 
@@ -1138,6 +1168,28 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
 .cal-day { font-size: 12px; font-weight: 700; color: var(--rpg-text); }
 .cal-ev { font-size: 11px; font-weight: 600; padding: 4px 7px; border-radius: 5px; cursor: pointer; line-height: 1.25; transition: filter .12s; text-align:left; border:none; width:100%; }
 .cal-ev:hover { filter: brightness(.96); }
+
+/* Embedded Home timeline */
+.calendar-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; overflow-x: auto; padding-bottom: 4px; }
+.calendar-month { min-width: 220px; }
+.calendar-month__title { margin: 0 0 14px; color: var(--ui-muted); font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.calendar-timeline { position: relative; display: grid; gap: 12px; }
+.calendar-timeline::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: var(--rpg-border-strong); }
+.calendar-event { position: relative; display: block; width: 100%; min-width: 0; padding: 0 0 0 28px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.calendar-event__dot { position: absolute; z-index: 1; left: 1px; top: 14px; width: 14px; height: 14px; box-sizing: border-box; border: 2px solid var(--rpg-bg); border-radius: 50%; background: var(--garena-red); box-shadow: 0 0 0 1px var(--rpg-border-strong); }
+.calendar-event__card { display: block; min-height: 64px; padding: 11px 14px; box-sizing: border-box; border: 1px solid var(--ui-box-border); border-radius: 8px; background: var(--ui-box); transition: border-color .14s, transform .14s; }
+.calendar-event:hover .calendar-event__card { border-color: var(--garena-red); transform: translateY(-1px); }
+.calendar-event__date { display: block; margin-bottom: 4px; color: var(--garena-red); font-size: 15px; font-weight: 800; line-height: 1.1; }
+.calendar-event__title { display: -webkit-box; overflow: hidden; color: var(--ui-heading); font-size: 14px; font-weight: 700; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+
+@media (max-width: 860px) {
+  .calendar-board { grid-template-columns: repeat(3, minmax(250px, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .calendar-board { grid-template-columns: 1fr; overflow-x: visible; }
+  .calendar-month { min-width: 0; }
+}
 
 /* Calendar light theme */
 [data-theme="light"] .cal-cell {
@@ -1196,6 +1248,7 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
     top: 0;
     z-index: 30;
   }
+  .dash-filter-sticky { top: 60px; }
   .mobile-header__menu {
     background: none; border: none; cursor: pointer; margin-right: 12px; padding: 4px; display: flex; align-items: center;
   }
@@ -1249,6 +1302,7 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
 @media (max-width: 860px) {
   .cc-grid { grid-template-columns: 1fr; }
   .dash-hero { grid-template-columns: 1fr; text-align: center; justify-items: center; }
+  .dash-quick-stats { width: 100%; min-width: 0; }
 }
 
 @media (max-width: 768px) {
@@ -1259,11 +1313,28 @@ button.glh-filter-sel.is-active { background-color: var(--garena-red); color: #f
   grid-template-columns: repeat(3, 1fr);
   gap: 18px;
 }
+.my-learning-section__header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.my-learning-section__toggle { color: var(--glh-accent); background: transparent; padding: 6px 0; }
+.my-learning-section__summary { color: var(--ui-muted); font-size: 13px; margin-top: 10px; }
+.my-learning-tabs { display: flex; gap: 18px; margin-top: 18px; border-bottom: 1px solid var(--ui-box-border); overflow-x: auto; }
+.my-learning-tab { flex: 0 0 auto; padding: 0 0 10px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--ui-muted); font-size: 13px; font-weight: 700; cursor: pointer; }
+.my-learning-tab.is-active { color: var(--ui-heading); border-bottom-color: var(--glh-accent); }
+.my-learning-list { display: grid; gap: 8px; margin-top: 12px; }
+.my-learning-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 14px; width: 100%; padding: 13px 16px; border: 1px solid var(--ui-box-border); border-radius: 8px; background: var(--ui-box); color: var(--ui-heading); text-align: left; cursor: pointer; transition: border-color .14s, transform .14s; }
+.my-learning-row:hover { border-color: var(--glh-accent); transform: translateY(-1px); }
+.my-learning-row__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.my-learning-row__status { color: var(--ui-muted); font-size: 12px; white-space: nowrap; }
+.my-learning-empty { padding: 18px; margin-top: 12px; color: var(--ui-muted); }
 @media (max-width: 900px) { .rec-grid { grid-template-columns: repeat(2, 1fr); } }
 
 @media (max-width: 600px) {
   .rec-grid { grid-template-columns: 1fr; }
   .rec-desc { display: none; }
+  .dash-quick-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .my-learning-section__header { align-items: flex-start; }
+  .my-learning-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .my-learning-row__status { grid-column: 1 / 2; grid-row: 2; }
+  .my-learning-row > svg { grid-column: 2; grid-row: 1 / span 2; }
 }
 
 /* Catalog filter panel */

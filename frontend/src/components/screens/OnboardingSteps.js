@@ -177,7 +177,7 @@ const { useGame } = GLHEngine;
               border: "1px solid var(--amber)",
               borderRadius: 999,
               color: "#fff",
-              fontSize: 13,
+              fontSize: 11,
             },
           },
             tag,

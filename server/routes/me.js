@@ -95,3 +95,19 @@ meRouter.post("/onboarding", async (req, res) => {
   const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   res.json({ user: result.rows[0], xp_earned: 50 });
 });
+
+meRouter.delete("/onboarding", async (req, res) => {
+  await query(
+    `UPDATE users
+     SET learning_formats = JSON_ARRAY(),
+         weekly_hours = NULL,
+         preferred_trainers = JSON_ARRAY(),
+         focus_skills = JSON_ARRAY(),
+         onboarding_done = FALSE,
+         updated_at = NOW()
+     WHERE id = $1`,
+    [req.user.id],
+  );
+  const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
+  res.json({ user: result.rows[0] });
+});

@@ -109,7 +109,7 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mu
   const selectedValues = selectionValues(value);
   const allOptions = noDefault || multi ? options : [{ id: "all", label: placeholder }, ...options];
   const selected = allOptions.filter(o => selectedValues.includes(o.id));
-  const selectedLabel = selected.length ? selected.map((item) => item.label).join(", ") : placeholder;
+  const selectedLabel = multi ? placeholder : (selected.length ? selected.map((item) => item.label).join(", ") : placeholder);
   const visible = allOptions.filter(o => !term.trim() || String(o.label).toLowerCase().includes(term.trim().toLowerCase()));
 
   React.useEffect(() => {
@@ -138,7 +138,11 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mu
       onClick: () => setOpen(v => !v),
       style: { width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left" },
     },
-      React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, selectedLabel),
+      React.createElement("span", { className: "glh-filter-sel__label" },
+        React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }, selectedLabel),
+        multi && selectedValues.length
+          ? React.createElement("span", { className: "glh-filter-sel__count", "aria-label": `${selectedValues.length} lựa chọn` }, selectedValues.length)
+          : null),
       React.createElement(Icon, { name: "chevron-down", size: 14, color: "var(--ui-muted)" })),
     open && React.createElement("div", {
       style: {
@@ -200,11 +204,12 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mu
           }, "NEW"))) : React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, padding: "8px 10px" } }, "Không có kết quả"))));
 }
 
-export function CourseSearchFilters({ filters, setFilters, options, activeFilterCount, onOpenLdRequest, showActions = true }) {
+export function CourseSearchFilters({ filters, setFilters, options, activeFilterCount }) {
   const setOne = (key) => (value) => setFilters(prev => Object.assign({}, prev, { [key]: value }));
   const clearAll = () => setFilters(prev => Object.assign({}, prev, defaultCourseFilters()));
   const chip = (label, active, onClick, key) =>
-    React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
+    React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontWeight: 700 } }, label);
+  const roleChips = options.roles.map(r => chip(r.label, selectionValues(filters.cmFilter).includes(r.id), () => setOne("cmFilter")(selectionValues(filters.cmFilter).includes(r.id) ? selectionValues(filters.cmFilter).filter((id) => id !== r.id) : [...selectionValues(filters.cmFilter), r.id]), r.id));
 
   return React.createElement(React.Fragment, null,
     React.createElement("div", { style: { display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", marginBottom: 8 } },
@@ -212,18 +217,6 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
         React.createElement("div", { style: { position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" } },
           React.createElement(Icon, { name: "search", size: 15, color: "var(--garena-grey)" })),
         React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: filters.q, onChange: e => setOne("q")(e.target.value), style: { paddingLeft: 40, width: "100%", boxSizing: "border-box" } })),
-      showActions && React.createElement("a", {
-        href: "https://gigi.garena.vn/form/46",
-        target: "_blank",
-        rel: "noopener noreferrer",
-        className: "glh-btn glh-btn--primary",
-        style: { whiteSpace: "nowrap", textDecoration: "none", fontSize: 13 }
-      }, "Đăng ký hỗ trợ chi phí đào tạo"),
-      showActions && React.createElement("button", {
-        className: "glh-btn glh-btn--primary",
-        style: { whiteSpace: "nowrap", fontSize: 13 },
-        onClick: () => onOpenLdRequest && onOpenLdRequest()
-      }, "Gửi yêu cầu hỗ trợ đào tạo")),
     React.createElement("div", { style: { display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap", alignItems: "center" } },
       React.createElement(SearchableSelect, { multi: true, placeholder: "Kỹ năng", value: filters.tagFilter, onChange: setOne("tagFilter"), options: options.skills.map(sid => ({ id: sid, label: SKILL_LABEL[sid] || sid })) }),
       React.createElement(SearchableSelect, { multi: true, placeholder: "Rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }),
@@ -238,7 +231,7 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 20, flexWrap: "wrap" } },
       React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Vai trò"),
       chip("Tất cả", !selectionValues(filters.cmFilter).length, () => setOne("cmFilter")([])),
-      options.roles.map(r => chip(r.label, selectionValues(filters.cmFilter).includes(r.id), () => setOne("cmFilter")(selectionValues(filters.cmFilter).includes(r.id) ? selectionValues(filters.cmFilter).filter((id) => id !== r.id) : [...selectionValues(filters.cmFilter), r.id]), r.id))));
+      roleChips)));
 }
 
 function ctaColor(cta) {
@@ -356,7 +349,6 @@ function ctaColor(cta) {
         setFilters,
         options: filterOptions,
         activeFilterCount,
-        onOpenLdRequest: props.onOpenLdRequest,
       }),
 
       // Result count
@@ -472,24 +464,14 @@ function ctaColor(cta) {
   /* ---------------- Calendar ---------------- */
   export function Calendar(props) {
     const [calendarEvents, setCalendarEvents] = React.useState([]);
-    const [skillFilter, setSkillFilter] = React.useState("all");
 
     React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
 
-    const calSkills = [...new Set(calendarEvents.flatMap(e => e.skill_tags || []))];
-    const events = calendarEvents.filter((e) => skillFilter === "all" || (e.skill_tags || []).includes(skillFilter));
-
-    const calChip = (label, active, onClick, key) =>
-      React.createElement("button", { key, className: "u-chip" + (active ? " is-active" : ""), onClick, style: { padding: "4px 12px", fontSize: 12, fontWeight: 700 } }, label);
-
-    const filterSection = React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 20 } },
-      React.createElement("span", { style: { fontSize: 11, fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: "var(--garena-grey)", flexShrink: 0 } }, "Kỹ năng"),
-      calChip("Tất cả", skillFilter === "all", () => setSkillFilter("all")),
-      calSkills.map(s => calChip(SKILL_LABEL[s] || s, skillFilter === s, () => setSkillFilter(skillFilter === s ? "all" : s), s)));
+    const selectedSkills = Array.isArray(props.selectedSkills) ? props.selectedSkills : [];
+    const events = calendarEvents.filter((event) => !selectedSkills.length
+      || (event.skill_tags || []).some((skill) => selectedSkills.includes(skill)));
     return React.createElement("div", { className: props.embedded ? undefined : "glh-container fade-screen", style: { padding: props.embedded ? "24px 0 0" : "28px clamp(16px,4vw,40px) 80px" } },
-      React.createElement("h2", { className: "u-h3", style: { margin: "0 0 10px" } }, "Lịch sắp tới"),
-
-      filterSection,
+      React.createElement("h2", { className: "u-h2 dash-section-heading", style: { margin: "0 0 14px" } }, "Lịch sắp tới"),
       React.createElement(CalendarBoard, { events, onOpen: props.onOpenCourse })
     );
   }
@@ -497,31 +479,43 @@ function ctaColor(cta) {
   function CalendarBoard({ events, onOpen }) {
     const { user } = useGame();
     const today = startOfLocalDay(new Date());
-    const months = [0, 1, 2].map((offset) => new Date(today.getFullYear(), today.getMonth() + offset, 1));
-    const end = new Date(today.getFullYear(), today.getMonth() + 3, 0);
     const upcoming = events.filter((event) => {
       const date = dateOnlyLocal(event.start_date);
-      return date && date >= today && date <= end;
+      return date && date >= today;
     });
+    const months = Array.from(new Map(upcoming.map((event) => {
+      const date = dateOnlyLocal(event.start_date);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      return [key, new Date(date.getFullYear(), date.getMonth(), 1)];
+    })).values()).sort((a, b) => a - b).slice(0, 3);
 
-    return React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, overflowX: "auto", paddingBottom: 4 } },
-      months.map((month) => {
-        const monthEvents = upcoming.filter((event) => {
+    const monthGroups = months.map((month) => ({
+      month,
+      events: upcoming.filter((event) => {
+        const date = dateOnlyLocal(event.start_date);
+        return date && date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
+      }).sort((a, b) => {
+        const dateDiff = dateOnlyLocal(a.start_date) - dateOnlyLocal(b.start_date);
+        if (dateDiff) return dateDiff;
+        return String(a.start_time || "").localeCompare(String(b.start_time || ""));
+      }),
+    })).filter((group) => group.events.length);
+
+    return React.createElement("div", { className: "calendar-board" },
+      monthGroups.length ? monthGroups.map(({ month, events: monthEvents }) => React.createElement("section", { key: `${month.getFullYear()}-${month.getMonth()}`, className: "calendar-month" },
+        React.createElement("h3", { className: "calendar-month__title" }, `${MONTHS_VI[month.getMonth()]} ${month.getFullYear()}`),
+        React.createElement("div", { className: "calendar-timeline" }, monthEvents.map((event) => {
           const date = dateOnlyLocal(event.start_date);
-          return date && date.getFullYear() === month.getFullYear() && date.getMonth() === month.getMonth();
-        });
-        return React.createElement("section", { key: `${month.getFullYear()}-${month.getMonth()}`, style: { minWidth: 220, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8, padding: 12 } },
-          React.createElement("h3", { style: { margin: "0 0 10px", color: "var(--ui-heading)", fontSize: 15 } }, `${MONTHS_VI[month.getMonth()]} ${month.getFullYear()}`),
-          monthEvents.length ? React.createElement("div", { style: { display: "grid", gap: 8 } }, monthEvents.map((event) => {
-            const date = dateOnlyLocal(event.start_date);
-            const cta = getCourseCta(event, user);
-            return React.createElement("button", { key: event.session_id || event.course_id, type: "button", onClick: () => onOpen(event), style: { textAlign: "left", border: "1px solid var(--ui-box-border)", borderRadius: 7, background: "var(--ui-bg)", padding: "9px 10px", cursor: "pointer", color: "var(--ui-heading)" }, title: cta?.text || "Chi tiết" },
-              React.createElement("div", { style: { fontSize: 12, fontWeight: 800, marginBottom: 3 } }, `${date.getDate()} ${DOW_VI[(date.getDay() + 6) % 7]} · ${event.title}`),
-              React.createElement("div", { style: { fontSize: 11, color: "var(--ui-muted)" } }, [event.location || "Online", event.start_time || ""].filter(Boolean).join(" · "))
-            );
-          })) : React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, padding: "14px 2px" } }, "Chưa có lịch.")
-        );
-      })
+          const cta = getCourseCta(event, user);
+          return React.createElement("button", { key: event.session_id || event.course_id, type: "button", className: "calendar-event", onClick: () => onOpen(event), title: cta?.text || "Chi tiết" },
+            React.createElement("span", { className: "calendar-event__dot", "aria-hidden": "true" }),
+            React.createElement("span", { className: "calendar-event__card" },
+              React.createElement("span", { className: "calendar-event__date" }, `${date.getDate()}/${date.getMonth() + 1}`),
+              React.createElement("span", { className: "calendar-event__title" }, event.title)
+            )
+          );
+        }))
+      )) : React.createElement("div", { className: "u-card", style: { gridColumn: "1 / -1", padding: 18, color: "var(--ui-muted)" } }, "Chưa có lịch sắp tới.")
     );
   }
 
@@ -633,7 +627,7 @@ function ctaColor(cta) {
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
                   React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
                     React.createElement("div", { className: "u-h3", style: { fontSize: 15, margin: 0 } }, e.title),
-                    React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "none", padding: "2px 8px", borderRadius: 999, background: fc.bg, color: fc.color, flexShrink: 0 } },
+                    React.createElement("span", { style: { fontSize: 11, fontWeight: 700, textTransform: "none", padding: "2px 8px", borderRadius: 999, background: fc.bg, color: fc.color, border: `1px solid ${fc.color}`, flexShrink: 0 } },
                       FORMAT_LABEL[e.format] || e.format)),
                   React.createElement("div", { style: { fontSize: 13, color: "var(--garena-grey)", marginTop: 4, display: "flex", gap: 12, flexWrap: "wrap" } },
                     timeMeta.map((m, i) => React.createElement("span", { key: i }, m)))),

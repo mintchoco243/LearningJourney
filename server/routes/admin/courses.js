@@ -25,6 +25,19 @@ function normalizeBoolean(value, fallback = false) {
   return ["1", "true", "yes", "on"].includes(String(value).trim().toLowerCase());
 }
 
+function normalizeStringArray(value, fieldName) {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    const error = new Error(`${fieldName} must be an array of strings`);
+    error.status = 400;
+    error.code = `INVALID_${fieldName.toUpperCase()}`;
+    throw error;
+  }
+  return value
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+}
+
 async function nextCourseCode() {
   const result = await query("SELECT course_code FROM courses");
   const max = result.rows.reduce((current, row) => {
@@ -116,6 +129,9 @@ adminCoursesRouter.post("/", async (req, res, next) => {
 
     const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
     const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+    const normalizedSkillTags = normalizeStringArray(skill_tags, "skill_tags");
+    const normalizedRankTargets = normalizeStringArray(rank_targets, "rank_targets");
+    const normalizedRoleTargets = normalizeStringArray(role_targets, "role_targets");
 
     await query(
       `INSERT INTO courses
@@ -127,7 +143,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
           $18, $19, $20, $21, $22, 0, $17, $23)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
-        normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
+        normalizedRating, normalizedSkillTags, normalizedRankTargets, normalizedRoleTargets, type, cleanMin,
         registration_url, description, xp_reward,
         normalizeBoolean(is_active, true),
         status || "open", material_url || null,
@@ -166,6 +182,9 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
 
     const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
     const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+    const normalizedSkillTags = normalizeStringArray(skill_tags, "skill_tags");
+    const normalizedRankTargets = normalizeStringArray(rank_targets, "rank_targets");
+    const normalizedRoleTargets = normalizeStringArray(role_targets, "role_targets");
 
     await query(
       `UPDATE courses
@@ -179,7 +198,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
        WHERE id = $1`,
       [
         id, course_code || id, title, trainer, trainer_type || "internal", format, duration_hours,
-        normalizedRating, skill_tags, rank_targets, role_targets, type, cleanMin,
+        normalizedRating, normalizedSkillTags, normalizedRankTargets, normalizedRoleTargets, type, cleanMin,
         registration_url, description, xp_reward,
         normalizeBoolean(is_active, true),
         status || "open", material_url || null,

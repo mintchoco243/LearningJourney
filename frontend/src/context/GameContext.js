@@ -182,10 +182,41 @@ const D = GLH_DATA;
       completeQuiz(result) {
         persist(Object.assign({}, user, {
           quiz_result: result,
+          quiz_extended: result.quiz_extended || null,
+          focus_skills: result.focus_skills || [],
+          learning_formats: result.quiz_extended?.learning_style || [],
+          weekly_hours: result.quiz_extended?.availability || "",
+          preferred_trainers: result.quiz_extended?.trainers || [],
           xp: result.start_xp,
           badges: Array.from(new Set([...(user.badges || []), "first_quest"])),
           last_seen: new Date().toISOString(),
         }));
+      },
+      async resetOnboarding() {
+        try {
+          const response = await fetch("/api/me/onboarding", {
+            method: "DELETE",
+            credentials: "include",
+          });
+          if (!response.ok) return false;
+          const data = await response.json();
+          const profile = data?.user || {};
+          persist(Object.assign({}, user, {
+            onboarded: true,
+            db_rank: profile.rank ?? user.db_rank,
+            db_role: profile.role ?? user.db_role,
+            db_team: profile.team ?? user.db_team,
+            learning_formats: [],
+            weekly_hours: "",
+            preferred_trainers: [],
+            focus_skills: [],
+            quiz_result: null,
+            quiz_extended: null,
+          }));
+          return true;
+        } catch (error) {
+          return false;
+        }
       },
       async toggleFavoriteCourse(course, shouldFavorite) {
         const apiCourseId = course?._id || course?.id || course?.course_row_id || course?.course_id;

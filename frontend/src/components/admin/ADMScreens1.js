@@ -52,10 +52,6 @@ const COURSE_STATUSES = [
     return raw.split(/[,;\n]/).map(item => item.trim()).filter(Boolean);
   }
 
-  function formatListInput(value) {
-    return Array.isArray(value) ? value.join(", ") : (value || "");
-  }
-
   function catalogOptions(courses, key, list = false) {
     const values = (courses || []).flatMap((course) => list ? toList(course[key]) : [course[key]]);
     return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
@@ -862,7 +858,7 @@ const COURSE_STATUSES = [
                   <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
                     {RANKS_ALL.map(r => (
                       <button key={r.id} type="button" onClick={() => setBatchRanks(prev => prev.includes(r.id) ? prev.filter(x => x !== r.id) : [...prev, r.id])} style={{
-                        padding: "5px 13px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+                        padding: "5px 13px", borderRadius: 999, fontSize: 11, fontWeight: 600,
                         background: batchRanks.includes(r.id) ? "rgba(228,30,38,.15)" : "rgba(255,255,255,.04)",
                         border: `1px solid ${batchRanks.includes(r.id) ? "var(--glh-accent)" : "var(--rpg-border)"}`,
                         color: batchRanks.includes(r.id) ? "#E41E26" : "var(--rpg-muted)",
@@ -929,6 +925,55 @@ const COURSE_STATUSES = [
     );
   }
 
+  function TickList({ options, value, onChange, multi = false }) {
+    const selected = multi ? toList(value) : (value ? [String(value)] : []);
+    const toggle = (option) => {
+      if (multi) {
+        onChange(selected.includes(option)
+          ? selected.filter(item => item !== option)
+          : [...selected, option]);
+      } else {
+        onChange(selected.includes(option) ? "" : option);
+      }
+    };
+
+    return (
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {options.length ? options.map((option) => {
+          const checked = selected.includes(option);
+          return (
+            <label
+              key={option}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 7,
+                padding: "7px 10px",
+                border: `1px solid ${checked ? "var(--glh-accent)" : "var(--ui-box-border)"}`,
+                borderRadius: 7,
+                background: checked ? "var(--glh-accent-soft)" : "var(--ui-box)",
+                color: checked ? "var(--ui-heading)" : "var(--ui-muted)",
+                fontSize: 12,
+                fontWeight: checked ? 700 : 600,
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggle(option)}
+                style={{ accentColor: "var(--glh-accent)" }}
+              />
+              {option}
+            </label>
+          );
+        }) : (
+          <span style={{ color: "var(--ui-muted)", fontSize: 12 }}>Chưa có giá trị trong dữ liệu.</span>
+        )}
+      </div>
+    );
+  }
+
   function CourseForm({ course, courses, onSave, onClose, saving, error }) {
     const trainerOptions = catalogOptions(courses, "trainer");
     const locationOptions = catalogOptions(courses, "location");
@@ -970,15 +1015,6 @@ const COURSE_STATUSES = [
       <div>
         {error && <div style={{ background: "rgba(228,30,38,.1)", border: "1px solid rgba(228,30,38,.3)", borderRadius: 6, padding: "10px 14px", marginBottom: 14, color: "#ff6b6b", fontSize: 13 }}>{error}</div>}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, padding: 10, marginBottom: 14, background: "var(--ui-box)", border: "1px solid var(--ui-box-border)", borderRadius: 8 }}>
-          <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "var(--ui-muted)" }}>Chọn nhanh giá trị đang có trong database; vẫn có thể nhập giá trị mới ở các ô bên dưới.</div>
-          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("trainer", e.target.value)}><option value="">Trainer</option>{trainerOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
-          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("location", e.target.value)}><option value="">Location</option>{locationOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
-          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("rank_targets", [e.target.value])}><option value="">Rank</option>{rankOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
-          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("role_targets", [e.target.value])}><option value="">Role</option>{roleOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
-          <select className="adm-select" defaultValue="" onChange={(e) => e.target.value && set("skill_tags", [e.target.value])}><option value="">Skill</option>{skillOptions.map((value) => <option key={value} value={value}>{value}</option>)}</select>
-        </div>
-
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Mã khoá học <span style={{color:"#E41E26"}}>*</span></label>
@@ -993,7 +1029,7 @@ const COURSE_STATUSES = [
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Trainer <span style={{color:"#E41E26"}}>*</span></label>
-            <input className="adm-input" value={form.trainer} onChange={e => set("trainer", e.target.value)} placeholder="Tên trainer" />
+            <TickList options={trainerOptions} value={form.trainer} onChange={value => set("trainer", value)} />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Loại trainer</label>
@@ -1036,32 +1072,17 @@ const COURSE_STATUSES = [
 
         <div className="adm-form-group" style={{ marginBottom: 14 }}>
           <label className="adm-label">Rank targets</label>
-          <input
-            className="adm-input"
-            value={formatListInput(form.rank_targets)}
-            onChange={e => set("rank_targets", e.target.value)}
-            placeholder="VD: Associate, Senior Associate, Manager"
-          />
+          <TickList options={rankOptions} value={form.rank_targets} multi onChange={value => set("rank_targets", value)} />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Role targets</label>
-            <input
-              className="adm-input"
-              value={formatListInput(form.role_targets)}
-              onChange={e => set("role_targets", e.target.value)}
-              placeholder="VD: General, People Manager, Product"
-            />
+            <TickList options={roleOptions} value={form.role_targets} multi onChange={value => set("role_targets", value)} />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Skill tags</label>
-            <input
-              className="adm-input"
-              value={formatListInput(form.skill_tags)}
-              onChange={e => set("skill_tags", e.target.value)}
-              placeholder="VD: Communication, Leadership, AI"
-            />
+            <TickList options={skillOptions} value={form.skill_tags} multi onChange={value => set("skill_tags", value)} />
           </div>
         </div>
 
@@ -1095,7 +1116,7 @@ const COURSE_STATUSES = [
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
           <div className="adm-form-group">
             <label className="adm-label">Địa điểm</label>
-            <input className="adm-input" value={form.location} onChange={e => set("location", e.target.value)} placeholder="Tên phòng học hoặc link online" />
+            <TickList options={locationOptions} value={form.location} onChange={value => set("location", value)} />
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Số người tối đa</label>

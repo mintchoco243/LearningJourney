@@ -26,6 +26,8 @@ const { Avatar } = GLHAvatar;
     const [step6, setStep6] = React.useState([]);
     const [focusSkills, setFocusSkills] = React.useState([]);
     const [anim, setAnim] = React.useState(0);
+    const [saving, setSaving] = React.useState(false);
+    const [saveError, setSaveError] = React.useState("");
 
     const TOTAL_STEPS = 4;
     const goTo = (n) => { setIdx(n); setAnim((a) => a + 1); };
@@ -37,7 +39,7 @@ const { Avatar } = GLHAvatar;
       });
     }, [idx]);
 
-    const finishExtended = () => {
+    const finishExtended = async () => {
       const dbRank = D.RANKS.find((r) => r.id === user.db_rank);
       const result = {
         rank_id: user.db_rank || "rank_01",
@@ -46,22 +48,31 @@ const { Avatar } = GLHAvatar;
         quiz_extended: { learning_style: step4, availability: step5, trainers: step6, focus_skills: focusSkills },
         focus_skills: focusSkills,
       };
-      trackEvent("quiz_complete", { rank_id: user.db_rank || "rank_01", learning_styles_count: step4.length, availability: step5 });
-      actions.completeQuiz(result);
-      fetch("/api/me/onboarding", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          learning_formats: step4 || [],
-          weekly_hours: step5 || null,
-          preferred_trainers: step6 || [],
-          focus_skills: focusSkills,
-          rank: result.rank_id,
-          role: user.db_role || null,
-        }),
-      }).catch(() => {});
-      props.onComplete();
+      setSaving(true);
+      setSaveError("");
+      try {
+        const response = await fetch("/api/me/onboarding", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            learning_formats: step4 || [],
+            weekly_hours: step5 || null,
+            preferred_trainers: step6 || [],
+            focus_skills: focusSkills,
+            rank: result.rank_id,
+            role: user.db_role || null,
+          }),
+        });
+        if (!response.ok) throw new Error("ONBOARDING_SAVE_FAILED");
+        trackEvent("quiz_complete", { rank_id: user.db_rank || "rank_01", learning_styles_count: step4.length, availability: step5 });
+        actions.completeQuiz(result);
+        props.onComplete();
+      } catch (error) {
+        setSaveError("Không thể lưu kết quả. Vui lòng thử lại.");
+      } finally {
+        setSaving(false);
+      }
     };
 
     const canContinue = () => {
@@ -91,14 +102,16 @@ const { Avatar } = GLHAvatar;
           idx > 0 ? React.createElement("button", {
             className: "glh-btn glh-btn--ghost",
             onClick: () => goTo(idx - 1),
+            disabled: saving,
           }, React.createElement(Icon, { name: "arrow-left", size: 16 }), " Quay lại") : null,
           React.createElement("button", {
             className: "glh-btn glh-btn--primary",
             onClick: () => idx === TOTAL_STEPS - 1 ? finishExtended() : goTo(idx + 1),
-            disabled: !canContinue(),
-            style: { opacity: canContinue() ? 1 : 0.5, flex: 1 },
-          }, idx === TOTAL_STEPS - 1 ? "Hoàn thành" : "Tiếp tục")
-        )
+            disabled: !canContinue() || saving,
+            style: { opacity: canContinue() && !saving ? 1 : 0.5, flex: 1 },
+          }, saving ? "Đang lưu..." : idx === TOTAL_STEPS - 1 ? "Hoàn thành" : "Tiếp tục")
+        ),
+        saveError ? React.createElement("p", { role: "alert", style: { margin: "12px 0 0", color: "var(--garena-red)", fontSize: 13, textAlign: "center" } }, saveError) : null
       )
     );
   }
@@ -209,7 +222,7 @@ const { Avatar } = GLHAvatar;
     ];
 
     const renderChip = (label, i) =>
-      React.createElement("span", { key: i, style: { fontSize: 12, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid var(--rpg-border)", borderRadius: 999, padding: "6px 10px" } }, label);
+      React.createElement("span", { key: i, style: { fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid var(--rpg-border)", borderRadius: 999, padding: "6px 10px" } }, label);
 
     return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad", style: { position: "relative", overflowY: "auto" } },
       React.createElement(Starfield),

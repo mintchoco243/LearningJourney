@@ -398,6 +398,77 @@ export function LdRequestPopup(props) {
   );
 }
 
+function normalizeRequestItem(item) {
+  const description = String(item?.description || item?.reason || "").trim();
+  const topicMatch = description.match(/(?:^|\n)Topic:\s*(.+)/i);
+  return {
+    id: item?.id || `${item?.created_at || "request"}-${item?.course_title || "item"}`,
+    title: topicMatch?.[1]?.trim() || item?.course_title || item?.skills_needed?.[0] || "Yêu cầu học tập",
+    description: description.replace(/^Topic:\s*.+(?:\n|$)/i, "").trim() || description,
+    status: String(item?.status || "unknown").toLowerCase(),
+    createdAt: item?.created_at || item?.submitted_at || "",
+  };
+}
+
+const REQUEST_STATUS_META = {
+  new: { label: "Chờ xử lý", color: "#FF9E00" },
+  pending: { label: "Chờ xử lý", color: "#FF9E00" },
+  in_review: { label: "Đang xem xét", color: "#6AA3E0" },
+  in_progress: { label: "Đang xem xét", color: "#6AA3E0" },
+  approved: { label: "Đã duyệt", color: "#2BB6A3" },
+  rejected: { label: "Từ chối", color: "#E41E26" },
+};
+
+export function LdRequestStatusModal(props) {
+  const [requests, setRequests] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState("");
+
+  const loadRequests = React.useCallback(() => {
+    setLoading(true);
+    setError("");
+    fetch("/api/ld-requests/mine", { credentials: "include" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Không thể tải danh sách yêu cầu.");
+        return response.json();
+      })
+      .then((data) => setRequests((data?.requests || []).map(normalizeRequestItem)))
+      .catch((loadError) => setError(loadError.message || "Không thể tải danh sách yêu cầu."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  React.useEffect(() => {
+    const timer = window.setTimeout(loadRequests, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadRequests]);
+
+  return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
+    React.createElement("div", { className: "modal", onClick: (event) => event.stopPropagation(), style: { maxWidth: 620, maxHeight: "82vh", overflow: "hidden", padding: 0, display: "flex", flexDirection: "column" } },
+      React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, padding: "22px 24px 16px", borderBottom: "1px solid var(--ui-box-border)", flexShrink: 0 } },
+        React.createElement("div", null,
+          React.createElement("h2", { style: { margin: 0, fontSize: 20, color: "var(--ui-heading)" } }, "Yêu cầu của tôi"),
+          React.createElement("p", { style: { margin: "5px 0 0", color: "var(--ui-muted)", fontSize: 13 } }, "Theo dõi trạng thái các yêu cầu học tập đã gửi.")),
+        React.createElement("button", { type: "button", onClick: props.onClose, "aria-label": "Đóng", style: { border: 0, background: "transparent", color: "var(--ui-muted)", cursor: "pointer", padding: 4 } }, React.createElement(Icon, { name: "x", size: 18 }))),
+      React.createElement("div", { style: { padding: 24, overflowY: "auto" } },
+        loading ? React.createElement("div", { style: { padding: 24, textAlign: "center", color: "var(--ui-muted)" } }, "Đang tải yêu cầu...")
+          : error ? React.createElement("div", { style: { display: "grid", gap: 12, justifyItems: "start" } },
+              React.createElement("div", { style: { color: "var(--glh-accent)", fontSize: 13 } }, error),
+              React.createElement("button", { type: "button", className: "u-btn u-btn--sec", onClick: loadRequests }, "Thử lại"))
+          : requests.length === 0 ? React.createElement("div", { style: { padding: 24, textAlign: "center", color: "var(--ui-muted)", fontSize: 13 } }, "Bạn chưa có yêu cầu nào.")
+            : React.createElement("div", { style: { display: "grid", gap: 10 } }, requests.map((request) => {
+                const meta = REQUEST_STATUS_META[request.status] || { label: request.status || "Chưa xác định", color: "var(--ui-muted)" };
+                const date = request.createdAt ? new Date(request.createdAt).toLocaleDateString("vi-VN") : "Chưa rõ ngày gửi";
+                return React.createElement("div", { key: request.id, style: { padding: 14, border: "1px solid var(--ui-box-border)", borderRadius: 8, background: "var(--ui-box)" } },
+                  React.createElement("div", { style: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 } },
+                    React.createElement("strong", { style: { color: "var(--ui-heading)", fontSize: 14 } }, request.title),
+                    React.createElement("span", { style: { flexShrink: 0, padding: "3px 8px", border: `1px solid ${meta.color}`, borderRadius: 999, color: meta.color, fontSize: 11, fontWeight: 700 } }, meta.label)),
+                  React.createElement("div", { style: { marginTop: 6, color: "var(--ui-muted)", fontSize: 12 } }, `Ngày gửi: ${date}`),
+                  request.description && React.createElement("div", { style: { marginTop: 8, color: "var(--ui-text)", fontSize: 13, lineHeight: 1.5, whiteSpace: "pre-wrap" } }, request.description));
+              })))
+    )
+  );
+}
+
 /* ---------- ChatBot Bubble + Helper Button ---------- */
 export function ChatBot(props) {
   const [open, setOpen] = React.useState(false);

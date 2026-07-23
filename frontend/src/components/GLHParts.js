@@ -12,6 +12,15 @@ const { Icon, fmtDate, fmtDuration, FORMAT_LABEL } = GLHUI;
 const { useGame } = GLHEngine;
 const D = GLH_DATA;
 
+function formatCardDate(value) {
+  if (!value) return "";
+  const [year, month, day] = String(value).split("T")[0].split("-").map(Number);
+  if (!year || !month || !day) return "";
+  const date = new Date(year, month - 1, day);
+  const weekdays = ["Chủ nhật", "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+  return `${weekdays[date.getDay()]}, ${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+}
+
 
   
   
@@ -21,7 +30,7 @@ const D = GLH_DATA;
     const meta = (D.SKILL_META || {})[props.id] || { color: "#8A93A8", label: props.id };
     const size = props.size || "sm";
     const p = size === "sm" ? "3px 8px" : "5px 12px";
-    const fs = size === "sm" ? 11 : 13;
+    const fs = 11;
     return React.createElement("span", {
       style: { display: "inline-flex", alignItems: "center", gap: 5, background: meta.color + "1a", border: "1px solid " + meta.color + "4d", color: meta.color, borderRadius: 999, padding: p, fontSize: fs, fontWeight: 700, whiteSpace: "nowrap", lineHeight: 1.2 },
     },
@@ -307,7 +316,7 @@ const D = GLH_DATA;
 
     const timeText = scheduleTime(c);
     const rating = publicCourseRating(c);
-    const cardCta = React.createElement("span", { style: { marginLeft: "auto", fontSize: 12, fontWeight: 800, color: "var(--glh-accent)" } }, "Xem chi tiết →");
+    const cardCta = React.createElement("span", { title: "Xem chi tiết khóa học", "aria-label": "Xem chi tiết khóa học", style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", color: "var(--glh-accent)" } }, React.createElement(Icon, { name: "arrow-right", size: 17 }));
     const requestFavorite = (event) => {
       event.stopPropagation();
       setFavoriteDialog({
@@ -325,34 +334,27 @@ const D = GLH_DATA;
       if (ok) setFavoriteState(!isFavorite);
       if (!ok) window.alert("Không thể cập nhật Yêu thích. Vui lòng thử lại.");
     };
-    const cardBody = React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
-        // skill tag + status + favorite
-        React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
-          (c.skill_tags || []).slice(0, 1).map((sid) => React.createElement(SkillPill, { key: sid, id: sid })),
-          statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } },
-            statusChipText),
-          React.createElement("button", {
-            type: "button",
-            onClick: requestFavorite,
-            title: isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích",
-            "aria-label": isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích",
-            style: { marginLeft: "auto", border: 0, background: "transparent", cursor: "pointer", padding: 4, color: isFavorite ? "var(--glh-accent)" : "var(--ui-muted)" },
-          }, React.createElement(Icon, { name: isFavorite ? "heart" : "heart", size: 17, color: isFavorite ? "var(--glh-accent)" : "currentColor", fill: isFavorite ? "currentColor" : "none" }))),
+    const topRow = React.createElement("div", { style: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" } },
+      (c.skill_tags || []).slice(0, 1).map((sid) => React.createElement(SkillPill, { key: sid, id: sid })),
+      statusChipText && React.createElement("span", { style: { fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } }, statusChipText),
+      React.createElement("div", { style: { marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 9 } },
         rating ? React.createElement(Stars, { value: rating }) : null,
-        // countdown (dashboard recommended only)
-        showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } },
-          c.countdown_days === 0 ? "Hôm nay" : "Còn " + c.countdown_days + " ngày"),
-        // title
-        React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3, margin: 0 } }, c.title),
-        (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--ui-muted)" } },
-          c.start_date && React.createElement(MetaChip, { icon: "calendar" }, fmtDate(c.start_date)),
-          timeText && React.createElement(MetaChip, { icon: "clock" }, timeText)),
-        // meta row
-        React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
-          displayLocation(c.location, c.format) && React.createElement(MetaChip, { icon: "map-pin" }, displayLocation(c.location, c.format)),
-          c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
-          c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
-          cardCta));
+        React.createElement("button", { type: "button", onClick: requestFavorite, title: isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích", "aria-label": isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích", style: { border: 0, background: "transparent", cursor: "pointer", padding: 4, color: isFavorite ? "var(--glh-accent)" : "var(--ui-muted)" } },
+          React.createElement(Icon, { name: "heart", size: 17, color: isFavorite ? "var(--glh-accent)" : "currentColor", fill: isFavorite ? "currentColor" : "none" }))));
+    const dateRow = (c.start_date || timeText) && React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", fontSize: 12, fontWeight: 600, color: "var(--ui-muted)" } },
+      c.start_date && React.createElement(MetaChip, { icon: "calendar" }, formatCardDate(c.start_date)),
+      timeText && React.createElement(MetaChip, { icon: "clock" }, timeText));
+    const metaRow = React.createElement("div", { style: { display: "flex", gap: 12, marginTop: "auto", paddingTop: 6, flexWrap: "wrap", alignItems: "center" } },
+      displayLocation(c.location, c.format) && React.createElement(MetaChip, { icon: "map-pin" }, displayLocation(c.location, c.format)),
+      c.trainer && React.createElement(MetaChip, { icon: "user" }, c.trainer),
+      c.duration_minutes && React.createElement(MetaChip, { icon: "clock" }, fmtDuration(c.duration_minutes)),
+      cardCta);
+    const cardBody = React.createElement("div", { style: { padding: "18px 20px", display: "flex", flexDirection: "column", gap: 8, flex: 1 } },
+      topRow,
+      showDate && c.countdown_days != null && React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: c.countdown_days <= 5 ? "#E41E26" : c.countdown_days <= 14 ? "#FF9E00" : "var(--rpg-muted)" } }, c.countdown_days === 0 ? "Hôm nay" : "Còn " + c.countdown_days + " ngày"),
+      React.createElement("h3", { className: "u-h3", style: { fontSize: 15, lineHeight: 1.3, margin: 0 } }, c.title),
+      dateRow,
+      metaRow);
     const cardStyle = { textAlign: "left", padding: 0, display: "flex", flexDirection: "column", cursor: "pointer", background: "var(--rpg-panel)", overflow: "hidden", opacity: 1, borderTop: topBorderColor !== "transparent" ? `3px solid ${topBorderColor}` : undefined };
 
     return React.createElement(React.Fragment, null,
@@ -446,6 +448,19 @@ const D = GLH_DATA;
     const modalJoinMeta = getCourseJoinMeta(modalCourse);
     const canOpenMaterial = Boolean(modalCourse.material_url) && (modalCourse.course_status === "ended" || done);
     const completionButtonStyle = { minWidth: 180 };
+    const disabledCtaStyle = {
+      success: { background: "var(--garena-positive)", color: "#fff", border: "1px solid var(--garena-positive)" },
+      warning: { background: "var(--amber)", color: "#17130a", border: "1px solid var(--amber)" },
+      purple: { background: "#7c5cff", color: "#fff", border: "1px solid #7c5cff" },
+      muted: { background: "var(--ui-control)", color: "var(--ui-muted)", border: "1px solid var(--rpg-border-strong)" },
+      accent: { background: "var(--ui-control)", color: "var(--ui-muted)", border: "1px solid var(--rpg-border-strong)" },
+    }[cta.tone] || { background: "var(--ui-control)", color: "var(--ui-muted)", border: "1px solid var(--rpg-border-strong)" };
+    const primaryCtaStyle = cta.disabled
+      ? Object.assign({}, disabledCtaStyle, { cursor: "not-allowed", boxShadow: "none", opacity: 1 })
+      : { cursor: busyAction ? "wait" : "pointer", boxShadow: "0 10px 24px rgba(228,30,38,0.22)" };
+    const primaryCtaIcon = cta.disabled
+      ? (cta.tone === "success" ? "check-circle" : cta.tone === "warning" ? "clock" : "x")
+      : (cta.action === "reserve" ? "check-circle" : "arrow-right");
     const openMaterial = () => {
       if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
     };
@@ -606,8 +621,10 @@ const D = GLH_DATA;
     return React.createElement("div", { className: "modal-bg", onClick: props.onClose },
       React.createElement("div", { className: "modal course-modal", onClick: stop },
         React.createElement("div", { className: "course-modal__header", style: { background: "radial-gradient(600px 240px at 0% -40%, #1a2334, #0d1117)", color: "#fff", padding: "24px 28px 20px", borderRadius: "12px 12px 0 0", position: "relative" } },
-          React.createElement("button", { onClick: props.onClose, style: { position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, padding: 8, color: "#fff", cursor: "pointer" } },
-            React.createElement(Icon, { name: "x", size: 18, color: "#fff" })),
+          React.createElement("div", { style: { position: "absolute", top: 16, right: 16, display: "flex", gap: 8 } },
+            modalCourse.registration_url && modalCourse.registration_url !== "#" ? React.createElement("button", { type: "button", onClick: copyRegistrationLink, title: "Sao chép link khóa học", "aria-label": "Sao chép link khóa học", style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, padding: 8, color: "#fff", cursor: "pointer" } }, React.createElement(Icon, { name: "copy", size: 18, color: "#fff" })) : null,
+            React.createElement("button", { onClick: props.onClose, title: "Đóng", "aria-label": "Đóng", style: { background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 8, padding: 8, color: "#fff", cursor: "pointer" } },
+              React.createElement(Icon, { name: "x", size: 18, color: "#fff" }))),
           React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 12 } },
             React.createElement("span", { className: "u-pill", style: { background: modalJoinMeta?.bg || "rgba(255,255,255,0.12)", color: modalJoinMeta?.color || "#fff" } }, modalJoinMeta?.label || "Chi tiết"),
             statusChipText ? React.createElement("span", { style: { fontSize: 11, fontWeight: 600, letterSpacing: 0, textTransform: "none", padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.07)", color: done ? "var(--garena-positive)" : "var(--rpg-muted)", border: "1px solid rgba(255,255,255,0.12)" } }, statusChipText) : null,
@@ -616,9 +633,6 @@ const D = GLH_DATA;
         React.createElement("div", { className: "course-modal__body", style: { padding: "24px 28px 28px" } },
           React.createElement("p", { style: { fontSize: 15, lineHeight: 1.65, color: "var(--ui-text)", margin: "0 0 18px", overflowWrap: "anywhere", wordBreak: "break-word" } },
             React.createElement(LinkifiedText, { text: c.description })),
-          React.createElement("div", { style: { padding: "12px 14px", marginBottom: 18, background: "var(--glh-accent-soft)", border: "1px solid var(--glh-accent)", borderRadius: 8, color: "var(--ui-text)", fontSize: 13, lineHeight: 1.55 } },
-            React.createElement("strong", { style: { display: "block", marginBottom: 4, color: "var(--glh-accent)" } }, "Hướng dẫn đăng ký"),
-            guidanceText),
           (c.skill_tags || []).length ? React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 } },
             (c.skill_tags || []).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, size: "md" }))) : null,
           React.createElement("div", { className: "course-modal__details", style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14, marginBottom: 20 } },
@@ -639,14 +653,11 @@ const D = GLH_DATA;
                 React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + reviewerName + (reviewerTeam ? " · " + reviewerTeam : "")));
             })) : null,
           React.createElement(React.Fragment, null,
-            cta.disabled
-              ? React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, padding: 14, marginBottom: 12, background: "rgba(22,163,74,0.14)", border: "1px solid rgba(22,163,74,0.45)", borderRadius: 8, color: "var(--garena-positive)", fontWeight: 700 } },
-                  React.createElement(Icon, { name: "check-circle", size: 18, color: "var(--garena-positive)" }), cta.modalText)
-              : null,
+            React.createElement("p", { style: { margin: "0 0 12px", color: "var(--ui-muted)", fontSize: 13, fontStyle: "italic", lineHeight: 1.55 } }, guidanceText),
             React.createElement("div", { className: "course-modal__actions", style: { display: "flex", gap: 12, flexWrap: "wrap" } },
-              !cta.disabled ? React.createElement("button", {
+              React.createElement("button", {
                 className: "u-btn u-btn--primary",
-                style: {
+                style: Object.assign({
                   flex: 1,
                   minWidth: 220,
                   minHeight: 52,
@@ -654,17 +665,14 @@ const D = GLH_DATA;
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 8,
-                  cursor: busyAction ? "wait" : "pointer",
-                  boxShadow: "0 10px 24px rgba(228,30,38,0.22)",
-                },
-                onClick: handlePrimary,
-                disabled: !!busyAction,
+                }, primaryCtaStyle),
+                onClick: cta.disabled ? undefined : handlePrimary,
+                disabled: cta.disabled || !!busyAction,
               },
-                React.createElement(Icon, { name: cta.action === "reserve" ? "check-circle" : "arrow-right", size: 18, color: "#fff" }),
+                React.createElement(Icon, { name: primaryCtaIcon, size: 18, color: "currentColor" }),
                 busyAction === "reserve" ? "Đang đặt chỗ..." : busyAction === "complete" ? "Đang lưu..." : cta.modalText
-              ) : null,
+              ),
               canOpenMaterial && cta.action !== "material" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: openMaterial }, "Xem tài liệu") : null,
-              modalCourse.registration_url && modalCourse.registration_url !== "#" ? React.createElement("button", { className: "u-btn u-btn--sec", onClick: copyRegistrationLink }, React.createElement(Icon, { name: "copy", size: 15 }), " Chia sẻ link") : null,
               done
                 ? React.createElement(React.Fragment, null,
                     React.createElement("button", {
@@ -716,4 +724,4 @@ const D = GLH_DATA;
     );
   }
 
-  export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars };
+  export const GLHParts = { CourseCard, CourseModal, DetailItem, SkillPill, Stars, ConfirmPopup };

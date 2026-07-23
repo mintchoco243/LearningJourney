@@ -111,6 +111,7 @@ function MyLdRequestsPanel() {
                     fontWeight: 700,
                     color: status.color,
                     background: status.bg,
+                    border: `1px solid ${status.color}`,
                   },
                 }, status.label)
               ),

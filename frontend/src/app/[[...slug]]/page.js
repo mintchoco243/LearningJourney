@@ -8,11 +8,11 @@ import { GLHParts } from '@/components/GLHParts';
 import { Login } from '@/components/screens/Login';
 import { Onboarding, CharacterCreation } from '@/components/screens/Onboarding';
 import { Quiz, Reveal } from '@/components/screens/QuizReveal';
-import { Profile, Policy } from '@/components/screens/ProfilePolicy';
+import { Policy } from '@/components/screens/ProfilePolicy';
 import { Store } from '@/components/screens/Store';
 import { Dashboard } from '@/components/screens/Dashboard';
 import { Catalog } from '@/components/screens/CatalogCalendar';
-import { LdRequestPopup, ChatBot } from '@/components/screens/LdRequestChatBot';
+import { LdRequestPopup, LdRequestStatusModal, ChatBot } from '@/components/screens/LdRequestChatBot';
 import { RatingModal, Tutorial } from '@/components/screens/RatingTutorial';
 import { FAQScreen } from '@/components/screens/FAQScreen';
 import { AboutModal } from '@/components/screens/AboutModal';
@@ -24,7 +24,7 @@ import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSli
 const { useGame, rankForUser } = GLHEngine;
 const { Icon } = GLHUI;
 const { Avatar } = GLHAvatar;
-const { CourseModal } = GLHParts;
+const { CourseModal, ConfirmPopup } = GLHParts;
 
 
 
@@ -111,11 +111,61 @@ function AppBar(props) {
 
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [restartingOnboarding, setRestartingOnboarding] = React.useState(false);
+  const [confirmDialog, setConfirmDialog] = React.useState(null);
 
   // Close sidebar on navigation (for mobile)
   const handleNav = (id) => {
     props.onNav(id);
     setSidebarOpen(false);
+  };
+
+  const requestLogout = () => {
+    setConfirmDialog({
+      id: "logout",
+      title: "Đăng xuất",
+      message: "Bạn có chắc muốn đăng xuất?",
+      confirmText: "Đăng xuất",
+      cancelText: "Hủy",
+    });
+  };
+
+  const requestRestartOnboarding = () => {
+    setConfirmDialog({
+      id: "restart-onboarding",
+      title: "Làm lại Onboarding Quiz",
+      message: "Làm lại Onboarding Quiz sẽ xóa các lựa chọn học tập hiện tại và tính lại gợi ý khóa học. Bạn muốn tiếp tục?",
+      confirmText: "Làm lại",
+      cancelText: "Hủy",
+    });
+  };
+
+  const handleConfirmDialog = async () => {
+    if (!confirmDialog) return;
+    if (confirmDialog.id === "logout") {
+      setConfirmDialog(null);
+      fetch("/auth/logout", { method: "POST", credentials: "include" })
+        .finally(() => { setProfileOpen(false); props.onLogout && props.onLogout(); });
+      return;
+    }
+    if (confirmDialog.id === "restart-onboarding") {
+      setRestartingOnboarding(true);
+      const ok = await props.onRestartOnboarding?.();
+      setRestartingOnboarding(false);
+      if (!ok) {
+        setConfirmDialog({
+          id: "restart-onboarding-error",
+          title: "Không thể đặt lại",
+          message: "Không thể đặt lại Onboarding Quiz. Vui lòng thử lại.",
+          confirmText: "Đóng",
+        });
+        return;
+      }
+      setConfirmDialog(null);
+      setProfileOpen(false);
+      return;
+    }
+    setConfirmDialog(null);
   };
 
   const tabs = [
@@ -183,31 +233,26 @@ function AppBar(props) {
             title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
           }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--ui-heading)" })),
-          React.createElement("button", {
-            onClick: () => setProfileOpen((value) => !value),
-            title: "Mở menu cá nhân",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "user", size: 16, color: "var(--ui-heading)" })),
-          profileOpen && React.createElement("div", { style: { position: "fixed", top: 70, right: 28, zIndex: 80, minWidth: 210, padding: 8, background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 10, boxShadow: "0 16px 36px rgba(0,0,0,.22)" } },
-            React.createElement("button", { type: "button", onClick: () => { setProfileOpen(false); handleNav("profile"); }, style: { width: "100%", padding: "9px 10px", border: 0, background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: "pointer", borderRadius: 6 } }, "Hồ sơ cá nhân"),
-            React.createElement("button", { type: "button", onClick: () => { setProfileOpen(false); toggleTheme(); }, style: { width: "100%", padding: "9px 10px", border: 0, background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: "pointer", borderRadius: 6 } }, isDark ? "Chuyển sang Light" : "Chuyển sang Dark"),
-            React.createElement("div", { style: { padding: "8px 10px", color: "var(--ui-muted)", fontSize: 12, borderTop: "1px solid var(--ui-box-border)", marginTop: 4 } }, "Thông báo nâng cao sẽ bổ sung ở phase sau.")
-          ),
-          // Logout button
-          React.createElement("button", {
-            title: "Đăng xuất",
-            onClick: () => {
-              if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
-              fetch("/auth/logout", { method: "POST", credentials: "include" })
-                .finally(() => { props.onLogout && props.onLogout(); });
-            },
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--ui-heading)" })),
-          React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => handleNav("profile"), title: "Thông tin tôi", style: { cursor: "pointer" } },
-            React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
-              React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })),
-            React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
-              React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng")))
+          React.createElement("div", { style: { position: "relative", flex: "0 0 auto" } },
+            React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => setProfileOpen((value) => !value), title: "Mở menu cá nhân", style: { cursor: "pointer" } },
+              React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
+                React.createElement(Avatar, { opts: opts, size: "100%", crisp: props.crisp })),
+              React.createElement("div", { style: { textAlign: "left", lineHeight: 1.2 } },
+                React.createElement("div", { className: "nm" }, user.email ? user.email.split("@")[0] : "Người dùng"))),
+            profileOpen && React.createElement("div", { style: { position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 80, minWidth: 250, padding: 8, background: "var(--ui-surface, var(--rpg-panel))", border: "1px solid var(--ui-box-border, var(--rpg-border))", borderRadius: 10, boxShadow: "0 16px 36px rgba(0,0,0,.22)" } },
+              React.createElement("button", {
+                type: "button",
+                disabled: restartingOnboarding,
+                onClick: requestRestartOnboarding,
+                style: { width: "100%", padding: "9px 10px", border: 0, borderBottom: "1px solid var(--ui-box-border)", background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: restartingOnboarding ? "wait" : "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }
+              }, React.createElement(Icon, { name: "rotate-ccw", size: 15, color: "currentColor" }), restartingOnboarding ? "Đang đặt lại..." : "Làm lại Onboarding Quiz"),
+              React.createElement("button", {
+                type: "button",
+                onClick: requestLogout,
+                style: { width: "100%", padding: "9px 10px", border: 0, background: "transparent", color: "var(--ui-heading)", textAlign: "left", cursor: "pointer", borderRadius: 6, display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }
+              }, React.createElement(Icon, { name: "log-out", size: 15, color: "currentColor" }), "Log out")
+            )
+          )
         )
       )
     ),
@@ -281,14 +326,18 @@ function AppBar(props) {
             title: "Đăng xuất",
             onClick: (e) => {
               e.stopPropagation();
-              if (!confirm("Bạn có chắc muốn đăng xuất?")) return;
-              fetch("/auth/logout", { method: "POST", credentials: "include" })
-                .finally(() => { props.onLogout && props.onLogout(); });
+              requestLogout();
             }
           }, React.createElement(Icon, { name: "log-out", size: 16, color: "var(--ui-heading)" }))
         )
       )
-    )
+    ),
+    React.createElement(ConfirmPopup, {
+      dialog: confirmDialog,
+      busy: restartingOnboarding,
+      onCancel: () => !restartingOnboarding && setConfirmDialog(null),
+      onConfirm: handleConfirmDialog,
+    })
   );
 }
 
@@ -379,7 +428,7 @@ function BackToTop() {
     type: "button",
     onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
     title: "Lên đầu trang",
-    style: { position: "fixed", right: 24, bottom: 124, zIndex: 90, width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--ui-box-border)", background: "var(--ui-surface, var(--rpg-panel))", color: "var(--glh-accent)", display: "grid", placeItems: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.16)" },
+    style: { position: "fixed", right: 122, bottom: 47, zIndex: 90, width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--ui-box-border)", background: "var(--ui-surface, var(--rpg-panel))", color: "var(--glh-accent)", display: "grid", placeItems: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.16)" },
   }, React.createElement(Icon, { name: "chevron-up", size: 18, color: "currentColor" }));
 }
 
@@ -404,7 +453,7 @@ function AppInner() {
       if (path === "/library") return "app";
       if (path === "/policy") return "qa";
       if (path === "/qa") return "qa";
-      if (path === "/profile") return "profile";
+      if (path === "/profile") return "app";
       if (path === "/store") return "store";
     }
     return "app";
@@ -429,7 +478,9 @@ function AppInner() {
     } else if (path === "/qa") {
       setPhase("qa");
     } else if (path === "/profile") {
-      setPhase("profile");
+      setPhase("app");
+      setActiveTab("home");
+      if (typeof window !== "undefined") window.history.replaceState(null, "", "/");
     } else if (path === "/store") {
       setPhase("store");
     } else {
@@ -475,6 +526,7 @@ function AppInner() {
 
   const [course, setCourse] = React.useState(null);
   const [ldRequest, setLdRequest] = React.useState(false);
+  const [ldRequestStatus, setLdRequestStatus] = React.useState(false);
   const [showAbout, setShowAbout] = React.useState(false);
   const [showRating, setShowRating] = React.useState(false);
   const [courseLinkNotice, setCourseLinkNotice] = React.useState("");
@@ -588,6 +640,19 @@ function AppInner() {
     window.scrollTo(0, 0);
   };
 
+  const restartOnboarding = React.useCallback(async () => {
+    const ok = await actions.resetOnboarding();
+    if (!ok) return false;
+    setCourse(null);
+    setPhase("onboarding");
+    setActiveTab("home");
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "/");
+      window.scrollTo(0, 0);
+    }
+    return true;
+  }, [actions]);
+
   if (!mounted) return null;
   let body;
   if (phase === "login") {
@@ -620,25 +685,19 @@ function AppInner() {
     body = React.createElement(Quiz, { onBack: () => setPhase("character"), onComplete: () => setPhase("reveal") });
   } else if (phase === "reveal") {
     body = React.createElement(Reveal, { crisp, onNext: () => goApp() });
-  } else if (phase === "profile") {
-    body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "profile", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
-      React.createElement("main", { className: "app-main" },
-        React.createElement(Profile, { crisp, onBack: () => { setPhase("app"); setActiveTab("home"); if (typeof window !== "undefined") { window.history.pushState(null, "", "/"); } window.scrollTo(0, 0); } }))
-    );
   } else if (phase === "policy") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "policy", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onRestartOnboarding: restartOnboarding, onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" },
         React.createElement(Policy, { crisp, onBack: () => { setPhase("app"); setActiveTab("home"); if (typeof window !== "undefined") { window.history.pushState(null, "", "/"); } window.scrollTo(0, 0); } })));
   } else if (phase === "qa") {
     body = React.createElement("div", { className: "glh-layout glh-light" },
-      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
+      React.createElement(AppBar, { tab: "qa", crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onRestartOnboarding: restartOnboarding, onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } }),
       React.createElement("main", { className: "app-main" }, React.createElement(FAQScreen, null)));
   } else {
     // app - tab-based navigation
     const utilCommon = { crisp, onNav: scrollTo, onOpenCourse: setCourse, onOpenLdRequest: () => setLdRequest(true) };
-    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } });
+    const appBar = React.createElement(AppBar, { tab: activeTab, crisp, onNav: scrollTo, onOpenAbout: () => setShowAbout(true), onOpenTutorial: () => setShowTutorial(true), onOpenRating: () => setShowRating(true), onRestartOnboarding: restartOnboarding, onLogout: () => { actions.reset(); setPhase("login"); if (typeof window !== "undefined") { window.history.replaceState(null, "", "/"); } window.scrollTo(0, 0); } });
     let tabContent;
     if (activeTab === "home") {
       tabContent = React.createElement(Dashboard, {
@@ -646,6 +705,7 @@ function AppInner() {
         onNav: scrollTo,
         onOpenCourse: setCourse,
         onOpenLdRequest: () => setLdRequest(true),
+        onOpenLdRequestStatus: () => setLdRequestStatus(true),
       });
     } else if (activeTab === "library") {
       tabContent = React.createElement("div", null,
@@ -691,6 +751,7 @@ function AppInner() {
           title: "Đóng",
         }, React.createElement(Icon, { name: "x", size: 15, color: "var(--ui-muted)" })))) : null,
     ldRequest ? React.createElement(LdRequestPopup, { onClose: () => setLdRequest(false) }) : null,
+    ldRequestStatus ? React.createElement(LdRequestStatusModal, { onClose: () => setLdRequestStatus(false) }) : null,
     showRating ? React.createElement(RatingModal, { onClose: () => setShowRating(false) }) : null,
     showAbout ? React.createElement(AboutModal, { onClose: () => setShowAbout(false) }) : null,
     showTutorial && phase === "app" ? React.createElement(Tutorial, { onClose: () => setShowTutorial(false) }) : null,
