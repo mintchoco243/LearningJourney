@@ -1,6 +1,7 @@
 import express from "express";
 import crypto from "node:crypto";
 import { setAuthCookie, signToken, verifyToken } from "./auth.js";
+import { SKILL_OPTIONS, canonicalSkill, canonicalizeFocusSkills } from "./lib/skillCatalog.js";
 
 const now = () => new Date().toISOString();
 const demoUser = {
@@ -10,7 +11,7 @@ const demoUser = {
   role: "strategist",
   team: "Product",
   rank: "rank_02",
-  focus_skills: ["data", "leadership"],
+  focus_skills: ["Analysis", "Team and Talent Management"],
   learning_formats: ["online", "offline"],
   weekly_hours: "1to2",
   preferred_trainers: ["L&D Team"],
@@ -141,11 +142,12 @@ const state = {
   ],
 };
 
-const skillCatalog = [
-  ["foundations", "Nền tảng Garena"], ["data", "Tư duy dữ liệu"], ["communication", "Giao tiếp"], ["product", "Tư duy sản phẩm"],
-  ["ai", "Ứng dụng AI"], ["analytics", "Phân tích"], ["leadership", "Kỹ năng lãnh đạo"], ["facilitation", "Điều phối"],
-  ["strategy", "Chiến lược"], ["ops_excellence", "Vận hành"], ["mentoring", "Dẫn dắt"],
-].map(([id, label], index) => ({ id, label, display_order: index + 1, is_active: true }));
+const skillCatalog = SKILL_OPTIONS.map((skill, index) => ({
+  id: skill,
+  label: skill,
+  display_order: index + 1,
+  is_active: true,
+}));
 
 const faqs = [
   { id: "mock-faq-1", topic: "Đăng ký & Lịch học", question: "Đăng ký khóa học mock hoạt động thế nào?", answer: "Chọn khóa học, xem chi tiết rồi xác nhận Đăng ký hoặc Đặt chỗ.", keywords: "đăng ký lịch học", status: "Published", display_order: 1 },
@@ -249,9 +251,15 @@ localMockApiRouter.put("/me", (req, res) => {
   res.json({ user: publicUser(req.user) });
 });
 localMockApiRouter.post("/me/onboarding", (req, res) => {
+  const rawSkills = Array.isArray(req.body.focus_skills)
+    ? [...new Set(req.body.focus_skills.map((skill) => String(skill || "").trim()).filter(Boolean))]
+    : [];
+  if (rawSkills.length > 3) return res.status(400).json({ error: "FOCUS_SKILLS_MAX_3" });
+  const focusSkills = canonicalizeFocusSkills(rawSkills);
+  if (rawSkills.some((skill) => !canonicalSkill(skill))) return res.status(400).json({ error: "UNKNOWN_FOCUS_SKILL" });
   Object.assign(req.user, {
     learning_formats: req.body.learning_formats || [], weekly_hours: req.body.weekly_hours || null,
-    preferred_trainers: req.body.preferred_trainers || [], focus_skills: req.body.focus_skills || [], onboarding_done: true,
+    preferred_trainers: req.body.preferred_trainers || [], focus_skills: focusSkills, onboarding_done: true,
   });
   res.json({ user: publicUser(req.user), xp_earned: 50 });
 });
@@ -275,7 +283,7 @@ localMockApiRouter.get("/courses/options", (_req, res) => res.json({
 }));
 localMockApiRouter.get("/courses/recommendations", (req, res) => {
   const available = courses.filter((course) => course.is_active && course.status !== "draft" && course.status !== "ended");
-  const quiz = (req.user.focus_skills || []).map((skill) => available.find((course) => course.skill_tags.includes(skill) && !courseForUser(course, req.user).is_enrolled && !courseForUser(course, req.user).is_reserved)).filter(Boolean).slice(0, 3);
+  const quiz = (req.user.focus_skills || []).map((skill) => available.find((course) => course.skill_tags.some((tag) => canonicalSkill(tag) === canonicalSkill(skill)) && !courseForUser(course, req.user).is_enrolled && !courseForUser(course, req.user).is_reserved)).filter(Boolean).slice(0, 3);
   const used = new Set(quiz.map((course) => course.id));
   const hr = available.filter((course) => course.is_hr_recommended && !used.has(course.id)).slice(0, 3);
   res.json({ quiz_skill_courses: quiz.map((course) => courseForUser(course, req.user)), hr_recommended_courses: hr.map((course) => courseForUser(course, req.user)), courses: [...quiz, ...hr].map((course) => courseForUser(course, req.user)) });

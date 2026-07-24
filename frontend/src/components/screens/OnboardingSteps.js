@@ -3,9 +3,8 @@
 import React from "react";
 import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
-import { GLH_DATA } from '@/data/glhData';
+import { SKILL_OPTIONS } from '@/lib/skillCatalog';
 
-const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
 const { useGame } = GLHEngine;
 
@@ -213,11 +212,11 @@ const { useGame } = GLHEngine;
       React.createElement("h2", { className: "qz-q" }, "Bạn muốn cải thiện kỹ năng nào?"),
       React.createElement("p", { style: { fontSize: 13, color: "var(--rpg-muted)", marginBottom: 20, marginTop: -8 } }, `Chọn tối đa 3 kỹ năng (${selected.length}/3)`),
       React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 } },
-        D.SKILLS.map((skill) => {
-          const active = selected.includes(skill.id);
+        SKILL_OPTIONS.map((skill) => {
+          const active = selected.includes(skill);
           return React.createElement("button", {
-            key: skill.id,
-            onClick: () => toggle(skill.id),
+            key: skill,
+            onClick: () => toggle(skill),
             disabled: !active && selected.length >= 3,
             style: {
               padding: "14px 12px", border: "1px solid", borderColor: active ? "var(--glh-accent)" : "var(--rpg-border)",
@@ -226,7 +225,7 @@ const { useGame } = GLHEngine;
               textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8,
             },
           },
-            React.createElement("span", null, skill.name),
+            React.createElement("span", null, skill),
             active ? React.createElement("span", { style: { color: "var(--glh-accent)", fontWeight: 800 } }, "✓") : null
           );
         })

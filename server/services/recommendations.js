@@ -1,4 +1,5 @@
 import { query } from "../db.js";
+import { canonicalSkill } from "../lib/skillCatalog.js";
 import { attachPublicCourseRatings } from "./publicCourseRatings.js";
 
 const RANK_ALIASES = {
@@ -115,9 +116,10 @@ export async function getRecommendationsForUser(userId) {
   const quizSkillCourses = [];
 
   for (const skill of skills) {
-    const skillKey = normalize(skill);
+    const skillKey = canonicalSkill(skill);
+    if (!skillKey) continue;
     const matches = candidates
-      .filter((course) => asList(course.skill_tags).some((tag) => normalize(tag) === skillKey))
+      .filter((course) => asList(course.skill_tags).some((tag) => canonicalSkill(tag) === skillKey))
       .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
       .sort(compareQuiz);
     const selected = matches.find((course) => !usedIds.has(String(course.id)));
