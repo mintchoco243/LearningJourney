@@ -24,11 +24,11 @@ const demoUser = {
 const courses = [
   {
     id: "mock-course-001", course_code: "MOCK-DATA-001", title: "Mock · Tư duy dữ liệu cho công việc", trainer: "Data Team",
-    trainer_type: "internal", format: "online", duration_hours: 1.5, skill_tags: ["data"], rank_targets: ["rank_01", "rank_02"], role_targets: ["strategist", "operator"], type: "scheduled", status: "open", session_status: "open", session_date: "2026-08-12", session_time: "10:00", location: "Online", max_participants: 30, current_count: 12, xp_reward: 60, rating: 4.8, is_active: true, is_hr_recommended: true, description: "Khóa mock để review recommendation, filter và flow đăng ký.", registration_url: "#",
+    trainer_type: "internal", format: "online", duration_hours: 1.5, skill_tags: ["data"], rank_targets: ["rank_01", "rank_02"], role_targets: ["strategist", "operator"], type: "scheduled", status: "open", session_status: "open", session_date: "2026-08-12", session_time: "10:00", location: "Online", max_participants: 30, current_count: 12, total_learners: 240, xp_reward: 60, rating: 4.8, is_active: true, is_hr_recommended: true, description: "Khóa mock để review recommendation, filter và flow đăng ký.", registration_url: "#",
   },
   {
     id: "mock-course-002", course_code: "MOCK-LEAD-002", title: "Mock · Nền tảng lãnh đạo", trainer: "L&D Team",
-    trainer_type: "internal", format: "offline", duration_hours: 2, skill_tags: ["leadership"], rank_targets: ["rank_02", "rank_03"], role_targets: ["strategist", "manager"], type: "scheduled", status: "open", session_status: "open", session_date: "2026-08-20", session_time: "09:00-11:00", location: "HCM Office", max_participants: 24, current_count: 8, xp_reward: 80, rating: 4.7, is_active: true, is_hr_recommended: true, description: "Khóa mock cho HR Recommend và Calendar board.", registration_url: "#",
+    trainer_type: "regional", format: "offline", duration_hours: 2, skill_tags: ["leadership"], rank_targets: ["rank_02", "rank_03"], role_targets: ["strategist", "manager"], type: "scheduled", status: "open", session_status: "open", session_date: "2026-08-20", session_time: "09:00-11:00", location: "HCM Office", max_participants: 24, current_count: 8, xp_reward: 80, rating: 4.7, is_active: true, is_hr_recommended: true, description: "Khóa mock cho HR Recommend, Regional trainer và Calendar board.", registration_url: "#",
   },
   {
     id: "mock-course-003", course_code: "MOCK-AI-003", title: "Mock · Ứng dụng AI hằng ngày", trainer: "AI Enablement",

@@ -7,12 +7,11 @@ import { GLHAvatar } from '../GLHAvatar';
 import { CourseCard } from '../GLHParts';
 import { AvatarEditModal } from './ProfilePolicy';
 import { Calendar } from './CatalogCalendar';
-import { GLH_DATA } from '@/data/glhData';
 import { getRecommendations } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
+import { SKILL_OPTIONS, courseHasSkill, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
-const D = GLH_DATA;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
@@ -28,12 +27,11 @@ export function Stat({ value, label, onClick }) {
     : React.createElement("div", { className: "dash-stat", style }, content);
 }
 
-function SectionRow({ title, action }) {
+function SectionRow({ title }) {
   return React.createElement("div", {
-    style: { display: "flex", alignItems: "center", justifyContent: "space-between", margin: "36px 0 16px", gap: 16 },
+    className: "dashboard-section-heading-row",
   },
-    React.createElement("h2", { className: "u-h2 dash-section-heading", style: { margin: 0 } }, title),
-    action && React.createElement("button", { className: "u-btn u-btn--ghost", style: { fontSize: 13 }, onClick: action.onClick }, action.label));
+    React.createElement("h2", { className: "u-h2 dash-section-heading", style: { margin: 0 } }, title));
 }
 
 const RANK_ALIASES = {
@@ -217,7 +215,9 @@ export function Dashboard(props) {
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
-  const [selectedSkills, setSelectedSkills] = React.useState(user.focus_skills || []);
+  const [selectedSkills, setSelectedSkills] = React.useState(() =>
+    [...new Set((user.focus_skills || []).map(skillLabel).filter(Boolean))]
+  );
   const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {
@@ -229,7 +229,7 @@ export function Dashboard(props) {
   }, []);
 
   const filterBySkill = React.useCallback((courses) => selectedSkills.length
-    ? courses.filter((course) => (course.skill_tags || []).some((skill) => selectedSkills.includes(skill)))
+    ? courses.filter((course) => courseHasSkill(course, selectedSkills))
     : courses, [selectedSkills]);
   const quizCourses = filterBySkill(recommendations.quiz_skill_courses || []);
   const hrCourses = filterBySkill(recommendations.hr_recommended_courses || []);
@@ -251,8 +251,8 @@ export function Dashboard(props) {
     }),
 
     // ── Hero ─────────────────────────────────────────────────────────────────
-    React.createElement("div", { className: "dash-hero" },
-      React.createElement("div", { className: "dash-hero__avatar", style: { position: "relative" } },
+    React.createElement("div", { className: "dash-hero", style: { padding: "8px 16px" } },
+      React.createElement("div", { className: "dash-hero__avatar", style: { position: "relative", padding: 4 } },
         React.createElement(Avatar, { opts: revealOpts, size: 80, crisp: props.crisp }),
         React.createElement("button", {
           onClick: () => setShowAvatarEdit(true),
@@ -288,8 +288,7 @@ export function Dashboard(props) {
 
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
-        title: "Gợi ý theo skill và rank của bạn",
-        action: progressTotal > 0 ? { label: "Xem tất cả →", onClick: () => props.onNav("library") } : null,
+        title: "Gợi ý dành cho bạn",
       }),
       completedAllRankCourses && React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, lineHeight: 1.6, margin: "-6px 0 16px" } },
         React.createElement("div", { style: { color: "var(--ui-heading)", fontWeight: 700 } }, "Bạn đã hoàn thành các khóa gợi ý cho rank này."),
@@ -300,6 +299,8 @@ export function Dashboard(props) {
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))
         : React.createElement(React.Fragment, null,
             React.createElement("div", { className: "rec-grid" }, [...quizCourses, ...hrCourses].map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+      progressTotal > 0 && React.createElement("div", { className: "dashboard-section-action" },
+        React.createElement("button", { type: "button", className: "u-btn u-btn--ghost my-learning-section__toggle", onClick: () => props.onNav("library") }, "Khám phá toàn bộ thư viện →")),
 
     React.createElement(MyLearningSection, { registeredCourses, completedCourses, reservedCourses, favoriteCourses, onOpenCourse: props.onOpenCourse }),
 
@@ -308,16 +309,27 @@ export function Dashboard(props) {
 
 function SkillFilterBar({ selected, onChange }) {
   const toggle = (id) => onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
-  return React.createElement("div", { className: "dash-filter-sticky", style: { padding: "10px 0", marginBottom: 18, background: "var(--ui-bg)", backdropFilter: "blur(10px)" } },
+  return React.createElement("div", { className: "dash-filter-sticky", style: { padding: "10px 0", background: "var(--ui-bg)", backdropFilter: "blur(10px)" } },
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
       React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700 } }, "Kỹ năng muốn cải thiện"),
-      D.SKILLS.map((skill) => React.createElement("button", {
-        key: skill.id,
+      SKILL_OPTIONS.map((skill) => {
+        const visual = getSkillVisual(skill);
+        const isSelected = selected.includes(skill);
+        return React.createElement("button", {
+        key: skill,
         type: "button",
-        onClick: () => toggle(skill.id),
-        className: selected.includes(skill.id) ? "u-chip is-active" : "u-chip",
-        style: { borderColor: selected.includes(skill.id) ? "var(--glh-accent)" : undefined, background: selected.includes(skill.id) ? "var(--glh-accent-soft)" : undefined },
-      }, selected.includes(skill.id) ? "✓ " : "", skill.name)),
+        onClick: () => toggle(skill),
+        className: isSelected ? "u-chip is-active" : "u-chip",
+        style: {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          borderColor: isSelected ? visual.color + "cc" : undefined,
+          background: isSelected ? visual.color + "20" : undefined,
+          color: isSelected ? visual.color : undefined,
+        },
+      }, React.createElement(Icon, { name: isSelected ? "check" : visual.icon, size: 13, color: isSelected ? visual.color : "currentColor" }), skill);
+      }),
       selected.length ? React.createElement("button", { type: "button", className: "u-btn u-btn--ghost", style: { fontSize: 12, padding: "5px 9px" }, onClick: () => onChange([]) }, "Xóa lọc") : null
     )
   );
@@ -335,7 +347,7 @@ function MyLearningSection({ registeredCourses, completedCourses, reservedCourse
   const summary = `${registeredCourses.length} đã đăng ký · ${completedCourses.length} đã học · ${reservedCourses.length} đặt chỗ · ${favoriteCourses.length} yêu thích`;
   const active = groups[activeTab];
 
-  return React.createElement("section", { id: "my-learning", className: "my-learning-section", style: { marginTop: 28, scrollMarginTop: 70 } },
+  return React.createElement("section", { id: "my-learning", className: "my-learning-section", style: { scrollMarginTop: 70 } },
     React.createElement("div", { className: "my-learning-section__header" },
       React.createElement("h2", { className: "u-h2 dash-section-heading", style: { margin: 0 } }, "Khóa học của bạn"),
       React.createElement("button", { type: "button", className: "u-btn u-btn--ghost my-learning-section__toggle", onClick: () => setOpen((value) => !value), "aria-expanded": open }, open ? "Ẩn danh sách ↑" : "Hiện danh sách ↓")),

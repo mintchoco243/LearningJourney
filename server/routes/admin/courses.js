@@ -117,7 +117,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, rating, is_active, status, material_url,
-      session_date, session_time, location, max_participants, is_hr_recommended,
+      session_date, session_time, location, max_participants, is_hr_recommended, total_learners,
     } = req.body;
     const course_code = String(id || bodyCourseCode || await nextCourseCode()).trim().toUpperCase();
 
@@ -129,6 +129,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
 
     const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
     const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+    const cleanTotalLearners = (total_learners === "" || total_learners === undefined || total_learners === null) ? null : Number(total_learners);
     const normalizedSkillTags = normalizeStringArray(skill_tags, "skill_tags");
     const normalizedRankTargets = normalizeStringArray(rank_targets, "rank_targets");
     const normalizedRoleTargets = normalizeStringArray(role_targets, "role_targets");
@@ -138,9 +139,9 @@ adminCoursesRouter.post("/", async (req, res, next) => {
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
           rating, skill_tags, rank_targets, role_targets, type, min_participants,
           registration_url, description, xp_reward, is_active, status, material_url,
-          session_date, session_time, location, max_participants, current_count, session_status, is_hr_recommended)
+          session_date, session_time, location, max_participants, current_count, session_status, is_hr_recommended, total_learners)
        VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, 0, $17, $23)`,
+          $18, $19, $20, $21, $22, 0, $17, $23, $24)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
         normalizedRating, normalizedSkillTags, normalizedRankTargets, normalizedRoleTargets, type, cleanMin,
@@ -148,7 +149,7 @@ adminCoursesRouter.post("/", async (req, res, next) => {
         normalizeBoolean(is_active, true),
         status || "open", material_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
-        normalizeBoolean(is_hr_recommended),
+        normalizeBoolean(is_hr_recommended), cleanTotalLearners,
       ]
     );
 
@@ -168,7 +169,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
       registration_url, description, xp_reward, rating, is_active, status, material_url,
-      session_date, session_time, location, max_participants, is_hr_recommended,
+      session_date, session_time, location, max_participants, is_hr_recommended, total_learners,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
@@ -182,6 +183,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
 
     const cleanMin = (min_participants === "" || min_participants === undefined || min_participants === null) ? null : Number(min_participants);
     const cleanMax = (max_participants === "" || max_participants === undefined || max_participants === null) ? null : Number(max_participants);
+    const cleanTotalLearners = (total_learners === "" || total_learners === undefined || total_learners === null) ? null : Number(total_learners);
     const normalizedSkillTags = normalizeStringArray(skill_tags, "skill_tags");
     const normalizedRankTargets = normalizeStringArray(rank_targets, "rank_targets");
     const normalizedRoleTargets = normalizeStringArray(role_targets, "role_targets");
@@ -193,7 +195,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
            min_participants = $13, registration_url = $14, description = $15,
            xp_reward = $16, is_active = $17, status = $18, material_url = $19,
            session_date = $20, session_time = $21, location = $22, max_participants = $23,
-           session_status = $18, is_hr_recommended = $24,
+           session_status = $18, is_hr_recommended = $24, total_learners = $25,
            updated_at = NOW()
        WHERE id = $1`,
       [
@@ -203,7 +205,7 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
         normalizeBoolean(is_active, true),
         status || "open", material_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
-        normalizeBoolean(is_hr_recommended),
+        normalizeBoolean(is_hr_recommended), cleanTotalLearners,
       ]
     );
 

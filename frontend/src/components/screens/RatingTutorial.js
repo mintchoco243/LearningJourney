@@ -199,17 +199,16 @@ const { useGame } = GLHEngine;
     const isLast = step === STEPS.length - 1;
     const spotlight = spotlights[0] || null;
 
-    const isDark = document.documentElement.getAttribute("data-theme") !== "light";
-    const overlayBg = isDark ? "rgba(0,0,0,0.72)" : "rgba(0,0,0,0.5)";
-    const tooltipBg = isDark ? "var(--rpg-panel-2, #1c2433)" : "#ffffff";
-    const tooltipColor = isDark ? "#fff" : "#111827";
-    const tooltipMuted = isDark ? "rgba(255,255,255,0.65)" : "#6B7280";
-    const tooltipBorder = isDark ? "rgba(228,30,38,0.4)" : "rgba(228,30,38,0.3)";
-    const stepColor = isDark ? "rgba(255,255,255,0.35)" : "#9CA3AF";
-    const inactiveProg = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.12)";
-    const prevBtnBorder = isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)";
-    const prevBtnColor = isDark ? "#fff" : "#374151";
-    const prevBtnBg = isDark ? "transparent" : "#F3F4F6";
+    const overlayBg = "rgba(0,0,0,0.72)";
+    const tooltipBg = "var(--rpg-panel-2, #1c2433)";
+    const tooltipColor = "#fff";
+    const tooltipMuted = "rgba(255,255,255,0.65)";
+    const tooltipBorder = "rgba(228,30,38,0.4)";
+    const stepColor = "rgba(255,255,255,0.35)";
+    const inactiveProg = "rgba(255,255,255,0.15)";
+    const prevBtnBorder = "rgba(255,255,255,0.15)";
+    const prevBtnColor = "#fff";
+    const prevBtnBg = "transparent";
 
     // Update spotlight when step changes
     React.useEffect(() => {

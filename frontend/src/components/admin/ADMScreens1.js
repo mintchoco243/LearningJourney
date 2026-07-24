@@ -4,6 +4,7 @@ import React from "react";
 import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
+import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -36,7 +37,11 @@ const COURSE_STATUSES = [
   }
 
   function toList(value) {
-    if (Array.isArray(value)) return value.map(item => String(item).trim()).filter(Boolean);
+    const itemValue = item => {
+      if (item && typeof item === "object") return item.id ?? item.value ?? item.name ?? item.label ?? "";
+      return item;
+    };
+    if (Array.isArray(value)) return value.map(itemValue).map(item => String(item).trim()).filter(Boolean);
     if (!value) return [];
     const raw = String(value).trim();
     if (!raw) return [];
@@ -47,7 +52,7 @@ const COURSE_STATUSES = [
       } catch (_) {
         parsed = null;
       }
-      if (Array.isArray(parsed)) return parsed.map(item => String(item).trim()).filter(Boolean);
+      if (Array.isArray(parsed)) return parsed.map(itemValue).map(item => String(item).trim()).filter(Boolean);
     }
     return raw.split(/[,;\n]/).map(item => item.trim()).filter(Boolean);
   }
@@ -55,6 +60,23 @@ const COURSE_STATUSES = [
   function catalogOptions(courses, key, list = false) {
     const values = (courses || []).flatMap((course) => list ? toList(course[key]) : [course[key]]);
     return [...new Set(values.map((value) => String(value || "").trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }
+
+  function courseFilterValues(course, field) {
+    return ["rank_targets", "role_targets", "skill_tags"].includes(field) ? toList(course[field]) : [String(course[field] ?? "")];
+  }
+
+  function matchesCourseFilter(course, field, filter) {
+    if (Array.isArray(filter)) return !filter.length || filter.some(value => courseFilterValues(course, field).includes(String(value)));
+    return !String(filter || "").trim() || courseFilterValues(course, field).some(value => value.toLowerCase().includes(String(filter).trim().toLowerCase()));
+  }
+
+  function courseSortValue(course, field) {
+    const value = course[field];
+    if (["rank_targets", "role_targets", "skill_tags"].includes(field)) return toList(value).join(", ").toLowerCase();
+    if (typeof value === "boolean") return value ? 1 : 0;
+    if (value == null) return "";
+    return typeof value === "number" ? value : String(value).toLowerCase();
   }
 
   function nextCourseCode(courses) {
@@ -71,7 +93,7 @@ const COURSE_STATUSES = [
       course_code: c.course_code || c.id,
       title: c.title,
       trainer: c.trainer || "",
-      trainer_type: c.trainer_type || "internal",
+      trainer_type: normalizeTrainerType(c.trainer_type),
       format: c.format,
       duration: Math.round((parseFloat(c.duration_hours) || 0) * 60),
       duration_hours: parseFloat(c.duration_hours) || 0,
@@ -94,6 +116,7 @@ const COURSE_STATUSES = [
       session_time: c.session_time || "",
       location: c.location || "",
       max_participants: c.max_participants ?? "",
+      total_learners: c.total_learners ?? "",
       current_count: Number(c.active_reservation_count ?? c.current_count ?? 0),
       active_reservation_count: Number(c.active_reservation_count ?? c.current_count ?? 0),
       reservation_count: Number(c.reservation_count ?? c.current_count ?? 0),
@@ -335,6 +358,10 @@ const COURSE_STATUSES = [
     const [saving, setSaving]     = React.useState(false);
     const [error, setError]       = React.useState("");
     const [copiedCourseId, setCopiedCourseId] = React.useState("");
+    const [inlineEdit, setInlineEdit] = React.useState(null);
+    const [inlineSaving, setInlineSaving] = React.useState(false);
+    const [columnFilters, setColumnFilters] = React.useState({});
+    const [sortConfig, setSortConfig] = React.useState({ field: "", direction: "asc" });
 
     function reloadCourses() {
       return apiFetch("/admin/api/courses")
@@ -348,15 +375,83 @@ const COURSE_STATUSES = [
       const q = search.toLowerCase();
       const matchQ = !search || c.title.toLowerCase().includes(q) || c.id.toLowerCase().includes(q) || c.course_code.toLowerCase().includes(q);
       const matchS = statusFilter === "all" || (statusFilter === "active" ? c.is_active : !c.is_active);
-      return matchQ && matchS;
+      const matchColumns = Object.entries(columnFilters).every(([field, filter]) => matchesCourseFilter(c, field, filter));
+      return matchQ && matchS && matchColumns;
     });
+    const trainerOptions = catalogOptions(courses, "trainer");
+    const locationOptions = catalogOptions(courses, "location");
+    const rankOptions = [...new Set(["All", ...RANKS_ALL.map(rank => rank.id), ...catalogOptions(courses, "rank_targets", true)])];
+    const roleOptions = catalogOptions(courses, "role_targets", true);
+    const skillOptions = catalogOptions(courses, "skill_tags", true);
 
-    const totalPages = Math.ceil(filtered.length / rowsPerPage);
+    const sorted = [...filtered].sort((a, b) => {
+      if (!sortConfig.field) return 0;
+      const left = courseSortValue(a, sortConfig.field);
+      const right = courseSortValue(b, sortConfig.field);
+      const result = typeof left === "number" && typeof right === "number" ? left - right : String(left).localeCompare(String(right), undefined, { numeric: true, sensitivity: "base" });
+      return sortConfig.direction === "desc" ? -result : result;
+    });
+    const totalPages = Math.ceil(sorted.length / rowsPerPage);
     const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
-    const paginatedRows = filtered.slice((validPage - 1) * rowsPerPage, validPage * rowsPerPage);
+    const paginatedRows = sorted.slice((validPage - 1) * rowsPerPage, validPage * rowsPerPage);
 
     function openEdit(c) { setEditTarget(c); setError(""); setEditModal(true); }
     function openCreate() { setEditTarget(null); setError(""); setEditModal(true); }
+
+    async function saveInlineField(course, field, value) {
+      const listFields = ["rank_targets", "role_targets", "skill_tags"];
+      const numberFields = ["duration_hours", "xp_reward", "rating"];
+      const nullableNumberFields = ["min_participants", "max_participants", "total_learners"];
+      let nextValue = value;
+      if (listFields.includes(field)) nextValue = toList(value);
+      if (numberFields.includes(field)) nextValue = parseFloat(value) || 0;
+      if (field === "duration_hours" && nextValue <= 0) nextValue = 0.5;
+      if (nullableNumberFields.includes(field)) nextValue = value === "" ? "" : (parseInt(value) || "");
+      if (["title", "course_code", "trainer"].includes(field) && !String(nextValue || "").trim()) return;
+      const previous = course[field];
+      const nextCourse = { ...course, [field]: nextValue };
+      setInlineSaving(true);
+      setCourses(cs => cs.map(item => item.id === course.id ? nextCourse : item));
+      try {
+        const payload = {
+          title: nextCourse.title,
+          course_code: nextCourse.course_code,
+          trainer: nextCourse.trainer,
+          trainer_type: nextCourse.trainer_type,
+          format: nextCourse.format,
+          duration_hours: nextCourse.duration_hours,
+          rank_targets: nextCourse.rank_targets,
+          role_targets: nextCourse.role_targets,
+          skill_tags: nextCourse.skill_tags,
+          type: nextCourse.type,
+          xp_reward: nextCourse.xp_reward,
+          rating: nextCourse.rating || 0,
+          description: nextCourse.description,
+          registration_url: nextCourse.registration_url,
+          status: nextCourse.status,
+          material_url: nextCourse.material_url,
+          min_participants: nextCourse.min_participants || null,
+          session_date: nextCourse.session_date || null,
+          session_time: nextCourse.session_time || null,
+          location: nextCourse.location || null,
+          max_participants: nextCourse.max_participants || null,
+          total_learners: nextCourse.total_learners || null,
+          is_active: nextCourse.is_active,
+          is_hr_recommended: nextCourse.is_hr_recommended,
+        };
+        const data = await apiFetch(`/admin/api/courses/${course.id}`, {
+          method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+        });
+        const saved = mapCourse(data.course);
+        setCourses(cs => cs.map(item => item.id === saved.id ? saved : item));
+        setInlineEdit(null);
+      } catch (e) {
+        setCourses(cs => cs.map(item => item.id === course.id ? { ...item, [field]: previous } : item));
+        alert("Cập nhật thất bại: " + e.message);
+      } finally {
+        setInlineSaving(false);
+      }
+    }
     function openImport(c = null) { setImportTarget(c); setImportModal(true); }
     function buildCourseDeepLink(c) {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -434,6 +529,7 @@ const COURSE_STATUSES = [
             session_time: course.session_time || null,
             location: course.location || null,
             max_participants: course.max_participants || null,
+            total_learners: course.total_learners || null,
             is_active: newVal,
             is_hr_recommended: course.is_hr_recommended,
           }),
@@ -470,6 +566,7 @@ const COURSE_STATUSES = [
           session_time: formData.session_time || null,
           location: formData.location || null,
           max_participants: parseInt(formData.max_participants) || null,
+          total_learners: parseInt(formData.total_learners) || null,
           is_hr_recommended: formData.is_hr_recommended === true,
         };
         if (!isEdit) payload.id = formData.id;
@@ -563,6 +660,7 @@ const COURSE_STATUSES = [
             session_time: course.session_time || null,
             location: course.location || null,
             max_participants: course.max_participants || null,
+            total_learners: course.total_learners || null,
             is_active: type === 'is_active' ? batchValue === 'true' : course.is_active,
             format: type === 'format' ? batchValue : course.format,
           };
@@ -599,6 +697,35 @@ const COURSE_STATUSES = [
       } catch (e) {
         alert("Hoàn tác thất bại: " + e.message);
       }
+    }
+
+    function renderInline(course, field, display, editorProps = {}) {
+      const editing = inlineEdit?.id === course.id && inlineEdit.field === field;
+      if (editing) {
+        return <InlineEditor key={`${course.id}:${field}`} value={course[field]} {...editorProps} onSave={value => saveInlineField(course, field, value)} onCancel={() => setInlineEdit(null)} saving={inlineSaving} />;
+      }
+      return (
+        <div onClick={() => setInlineEdit({ id: course.id, field })} style={{ cursor: "text", minHeight: 20 }} title="Click để sửa">
+          {display === "" || display == null ? <span style={{ color: "var(--rpg-muted)" }}>-</span> : display}
+        </div>
+      );
+    }
+
+    function setColumnFilter(field, value) {
+      setColumnFilters(current => {
+        const next = { ...current };
+        if ((Array.isArray(value) && value.length === 0) || (!Array.isArray(value) && !String(value || "").trim())) delete next[field];
+        else next[field] = value;
+        return next;
+      });
+      setCurrentPage(1);
+    }
+
+    function toggleSort(field) {
+      setSortConfig(current => current.field === field
+        ? { field, direction: current.direction === "asc" ? "desc" : "asc" }
+        : { field, direction: "asc" });
+      setCurrentPage(1);
     }
 
     return (
@@ -671,52 +798,69 @@ const COURSE_STATUSES = [
         )}
 
         <div className="adm-table-wrap">
-          <table className="adm-table">
+          <table className="adm-table adm-courses-table">
             <thead>
               <tr>
-                <th style={{ width: 40 }}>
+                <th className="adm-course-sticky-left adm-course-col-select">
                   <input type="checkbox" checked={paginatedRows.length > 0 && paginatedRows.every(c => selected.has(c.id))} onChange={() => paginatedRows.every(c => selected.has(c.id)) ? setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.delete(c.id)); return next; }) : setSelected(s => { const next = new Set(s); paginatedRows.forEach(c => next.add(c.id)); return next; })} />
                 </th>
-                <th style={{ width: 110 }}>Mã</th>
-                <th>Tên khóa học</th>
-                <th style={{ width: 104 }}>Type</th>
-                <th style={{ width: 120 }}>Ngày</th>
-                <th style={{ width: 108 }}>Format</th>
-                <th style={{ width: 118 }}>Status</th>
-                <th>Rank targets</th>
-                <th style={{ width: 104 }}>Đăng ký</th>
-                <th style={{ width: 92 }}>Hoàn thành</th>
-                <th style={{ width: 110 }}>Hiển thị</th>
-                <th style={{ width: 190 }}></th>
+                <CourseTableHeader className="adm-course-sticky-left adm-course-col-code" label="Mã" field="course_code" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.course_code} onFilter={value => setColumnFilter("course_code", value)} />
+                <CourseTableHeader className="adm-course-sticky-left adm-course-col-title" label="Tên khóa học" field="title" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.title} onFilter={value => setColumnFilter("title", value)} />
+                <CourseTableHeader label="Trainer" field="trainer" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.trainer} onFilter={value => setColumnFilter("trainer", value)} options={trainerOptions} />
+                <CourseTableHeader label="Loại trainer" field="trainer_type" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.trainer_type} onFilter={value => setColumnFilter("trainer_type", value)} options={[{ id: "internal", label: "Internal" }, { id: "external", label: "External" }]} />
+                <CourseTableHeader label="Type" field="type" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.type} onFilter={value => setColumnFilter("type", value)} options={COURSE_TYPES} />
+                <CourseTableHeader label="Format" field="format" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.format} onFilter={value => setColumnFilter("format", value)} options={["online", "offline", "elearning", "webinar", "workshop", "bootcamp", "talk"]} />
+                <CourseTableHeader label="Thời lượng" field="duration_hours" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.duration_hours} onFilter={value => setColumnFilter("duration_hours", value)} />
+                <CourseTableHeader label="Rating" field="rating" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.rating} onFilter={value => setColumnFilter("rating", value)} />
+                <CourseTableHeader label="Status" field="status" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.status} onFilter={value => setColumnFilter("status", value)} options={COURSE_STATUSES} />
+                <CourseTableHeader label="Rank targets" field="rank_targets" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.rank_targets} onFilter={value => setColumnFilter("rank_targets", value)} options={rankOptions} />
+                <CourseTableHeader label="Role targets" field="role_targets" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.role_targets} onFilter={value => setColumnFilter("role_targets", value)} options={roleOptions} />
+                <CourseTableHeader label="Skill tags" field="skill_tags" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.skill_tags} onFilter={value => setColumnFilter("skill_tags", value)} options={skillOptions} />
+                <CourseTableHeader label="Mô tả" field="description" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.description} onFilter={value => setColumnFilter("description", value)} />
+                <CourseTableHeader label="Link đăng ký" field="registration_url" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.registration_url} onFilter={value => setColumnFilter("registration_url", value)} />
+                <CourseTableHeader label="Link tài liệu" field="material_url" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.material_url} onFilter={value => setColumnFilter("material_url", value)} />
+                <CourseTableHeader label="Min participants" field="min_participants" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.min_participants} onFilter={value => setColumnFilter("min_participants", value)} />
+                <CourseTableHeader label="Ngày" field="session_date" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.session_date} onFilter={value => setColumnFilter("session_date", value)} />
+                <CourseTableHeader label="Giờ" field="session_time" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.session_time} onFilter={value => setColumnFilter("session_time", value)} />
+                <CourseTableHeader label="Địa điểm" field="location" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.location} onFilter={value => setColumnFilter("location", value)} options={locationOptions} />
+                <CourseTableHeader label="Max participants" field="max_participants" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.max_participants} onFilter={value => setColumnFilter("max_participants", value)} />
+                <CourseTableHeader label="Đã học (nhập tay)" field="total_learners" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.total_learners} onFilter={value => setColumnFilter("total_learners", value)} />
+                <CourseTableHeader label="XP" field="xp_reward" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.xp_reward} onFilter={value => setColumnFilter("xp_reward", value)} />
+                <CourseTableHeader label="Đăng ký" field="active_reservation_count" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.active_reservation_count} onFilter={value => setColumnFilter("active_reservation_count", value)} />
+                <CourseTableHeader label="Hoàn thành" field="enrollment_count" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.enrollment_count} onFilter={value => setColumnFilter("enrollment_count", value)} />
+                <th>Thao tác</th>
+                <CourseTableHeader className="adm-course-sticky-right adm-course-col-hr" label="HR đề xuất" field="is_hr_recommended" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.is_hr_recommended} onFilter={value => setColumnFilter("is_hr_recommended", value)} options={[{ id: "true", label: "Có" }, { id: "false", label: "Không" }]} />
+                <CourseTableHeader className="adm-course-sticky-right adm-course-col-visible" label="Hiển thị" field="is_active" sortConfig={sortConfig} onSort={toggleSort} filterValue={columnFilters.is_active} onFilter={value => setColumnFilter("is_active", value)} options={[{ id: "true", label: "Hiện" }, { id: "false", label: "Ẩn" }]} />
               </tr>
             </thead>
             <tbody>
               {paginatedRows.map(c => (
                 <tr key={c.id}>
-                  <td>
+                  <td className="adm-course-sticky-left adm-course-col-select">
                     <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleSelectCourse(c.id)} />
                   </td>
-                  <td><code style={{ fontSize: 11 }}>{c.course_code}</code></td>
-                  <td>
-                    <div style={{ fontWeight: 600, color: "#fff" }}>{c.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.trainer} · {c.duration} phút · row {String(c.id).slice(0, 8)}</div>
-                  </td>
-                  <td><Badge status={c.type} /></td>
-                  <td>
-                    <div style={{ fontSize: 12, color: c.session_date ? "#fff" : "var(--rpg-muted)", fontWeight: 600 }}>{c.session_date || "-"}</div>
-                    {c.session_time && <div style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.session_time}</div>}
-                  </td>
-                  <td><Badge status={c.format} /></td>
-                  <td><Badge status={c.status} /></td>
-                  <td>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {(c.rank_targets || []).map(r => (
-                        <span key={r} style={{ fontSize: 10, background: "rgba(255,255,255,.05)", border: "1px solid var(--rpg-border)", borderRadius: 4, padding: "2px 6px", color: "var(--rpg-muted)" }}>
-                          {RANK_NAMES[r] || r}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
+                  <td className="adm-course-sticky-left adm-course-col-code">{renderInline(c, "course_code", <code style={{ fontSize: 11 }}>{c.course_code}</code>)}</td>
+                  <td className="adm-course-sticky-left adm-course-col-title">{renderInline(c, "title", <strong style={{ color: "#fff" }}>{c.title}</strong>)}</td>
+                  <td>{renderInline(c, "trainer", c.trainer, { creatable: true, options: trainerOptions })}</td>
+                  <td>{renderInline(c, "trainer_type", c.trainer_type, { type: "select", options: [{ id: "internal", label: "Internal" }, { id: "external", label: "External" }] })}</td>
+                  <td>{renderInline(c, "type", <Badge status={c.type} />, { type: "select", options: COURSE_TYPES })}</td>
+                  <td>{renderInline(c, "format", <Badge status={c.format} />, { type: "select", options: ["online", "offline", "elearning", "webinar", "workshop", "bootcamp", "talk"] })}</td>
+                  <td>{renderInline(c, "duration_hours", `${c.duration_hours} giờ`, { type: "number" })}</td>
+                  <td>{renderInline(c, "rating", c.rating, { type: "number" })}</td>
+                  <td>{renderInline(c, "status", <Badge status={c.status} />, { type: "select", options: COURSE_STATUSES })}</td>
+                  <td>{renderInline(c, "rank_targets", (c.rank_targets || []).join(", "), { multi: true, options: rankOptions })}</td>
+                  <td>{renderInline(c, "role_targets", (c.role_targets || []).join(", "), { multi: true, options: roleOptions })}</td>
+                  <td>{renderInline(c, "skill_tags", (c.skill_tags || []).join(", "), { multi: true, options: skillOptions })}</td>
+                  <td>{renderInline(c, "description", <span title={c.description} className="adm-inline-truncate">{c.description}</span>)}</td>
+                  <td>{renderInline(c, "registration_url", <span title={c.registration_url} className="adm-inline-truncate">{c.registration_url}</span>, { type: "url" })}</td>
+                  <td>{renderInline(c, "material_url", <span title={c.material_url} className="adm-inline-truncate">{c.material_url}</span>, { type: "url" })}</td>
+                  <td>{renderInline(c, "min_participants", c.min_participants, { type: "number" })}</td>
+                  <td>{renderInline(c, "session_date", c.session_date, { type: "date" })}</td>
+                  <td>{renderInline(c, "session_time", c.session_time)}</td>
+                  <td>{renderInline(c, "location", c.location, { creatable: true, options: locationOptions })}</td>
+                  <td>{renderInline(c, "max_participants", c.max_participants, { type: "number" })}</td>
+                  <td>{renderInline(c, "total_learners", c.total_learners, { type: "number" })}</td>
+                  <td>{renderInline(c, "xp_reward", c.xp_reward, { type: "number" })}</td>
                   <td style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
                     {canReserve(c) ? (
                       <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setAttendeesModal(c)} title="Danh sach dat cho">
@@ -730,12 +874,6 @@ const COURSE_STATUSES = [
                         {completionCount(c)}
                       </button>
                     ) : "0"}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <Toggle value={c.is_active} onChange={() => toggleActive(c.id)} />
-                      <span style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.is_active ? "Hiện" : "Ẩn"}</span>
-                    </div>
                   </td>
                   <td>
                     <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -756,6 +894,15 @@ const COURSE_STATUSES = [
                       <button className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={() => handleDelete(c.id)} title="Xóa" style={{ color: "#E41E26" }}>
                         <Icon name="trash-2" size={14} />
                       </button>
+                    </div>
+                  </td>
+                  <td className="adm-course-sticky-right adm-course-col-hr">
+                    <Toggle value={c.is_hr_recommended} onChange={() => saveInlineField(c, "is_hr_recommended", !c.is_hr_recommended)} />
+                  </td>
+                  <td className="adm-course-sticky-right adm-course-col-visible">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Toggle value={c.is_active} onChange={() => toggleActive(c.id)} />
+                      <span style={{ fontSize: 11, color: "var(--rpg-muted)" }}>{c.is_active ? "Hiện" : "Ẩn"}</span>
                     </div>
                   </td>
                 </tr>
@@ -926,51 +1073,162 @@ const COURSE_STATUSES = [
   }
 
   function TickList({ options, value, onChange, multi = false }) {
+    const [open, setOpen] = React.useState(false);
+    const [term, setTerm] = React.useState("");
+    const wrapRef = React.useRef(null);
     const selected = multi ? toList(value) : (value ? [String(value)] : []);
-    const toggle = (option) => {
+    const allOptions = [...new Set([...(options || []), ...selected].map(String).map(item => item.trim()).filter(Boolean))];
+    const visible = allOptions.filter(option => !term.trim() || option.toLowerCase().includes(term.trim().toLowerCase()));
+    const exactMatch = allOptions.find(option => option.toLowerCase() === term.trim().toLowerCase());
+    const selectedLabel = multi
+      ? (selected.length ? `${selected.length} lựa chọn` : "Chọn nhiều giá trị")
+      : (selected[0] || "Chọn giá trị");
+
+    React.useEffect(() => {
+      if (!open) return undefined;
+      const close = (event) => {
+        if (wrapRef.current && !wrapRef.current.contains(event.target)) setOpen(false);
+      };
+      document.addEventListener("mousedown", close);
+      return () => document.removeEventListener("mousedown", close);
+    }, [open]);
+
+    const pick = (option) => {
       if (multi) {
-        onChange(selected.includes(option)
-          ? selected.filter(item => item !== option)
-          : [...selected, option]);
+        onChange(selected.includes(option) ? selected.filter(item => item !== option) : [...selected, option]);
       } else {
         onChange(selected.includes(option) ? "" : option);
+        setOpen(false);
       }
+      setTerm("");
+    };
+
+    const addTypedOption = () => {
+      const next = term.trim();
+      if (!next) return;
+      const option = exactMatch || next;
+      if (!multi) {
+        onChange(option);
+        setOpen(false);
+      } else if (!selected.includes(option)) {
+        onChange([...selected, option]);
+      }
+      setTerm("");
     };
 
     return (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {options.length ? options.map((option) => {
-          const checked = selected.includes(option);
-          return (
-            <label
-              key={option}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 7,
-                padding: "7px 10px",
-                border: `1px solid ${checked ? "var(--glh-accent)" : "var(--ui-box-border)"}`,
-                borderRadius: 7,
-                background: checked ? "var(--glh-accent-soft)" : "var(--ui-box)",
-                color: checked ? "var(--ui-heading)" : "var(--ui-muted)",
-                fontSize: 12,
-                fontWeight: checked ? 700 : 600,
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggle(option)}
-                style={{ accentColor: "var(--glh-accent)" }}
-              />
-              {option}
-            </label>
-          );
-        }) : (
-          <span style={{ color: "var(--ui-muted)", fontSize: 12 }}>Chưa có giá trị trong dữ liệu.</span>
+      <div ref={wrapRef} style={{ position: "relative", width: "100%" }}>
+        <button
+          type="button"
+          className={`adm-select${selected.length ? " is-active" : ""}`}
+          onClick={() => setOpen(current => !current)}
+          style={{ width: "100%", display: "inline-flex", alignItems: "center", justifyContent: "space-between", gap: 8, textAlign: "left", cursor: "pointer" }}
+        >
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedLabel}</span>
+          <span style={{ color: "var(--ui-muted)", fontSize: 12 }}>⌄</span>
+        </button>
+        {open && (
+          <div style={{ position: "absolute", zIndex: 40, top: "calc(100% + 5px)", left: 0, right: 0, minWidth: 220, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 8, boxShadow: "0 16px 40px rgba(0,0,0,.24)", padding: 6 }}>
+            <input
+              className="adm-input"
+              value={term}
+              onChange={event => setTerm(event.target.value)}
+              onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); addTypedOption(); } }}
+              autoFocus
+              placeholder="Gõ để tìm hoặc thêm option..."
+              style={{ width: "100%", boxSizing: "border-box", height: 34, marginBottom: 5, fontSize: 12 }}
+            />
+            <div style={{ maxHeight: 220, overflowY: "auto" }}>
+              {visible.map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => pick(option)}
+                  style={{ width: "100%", border: 0, background: selected.includes(option) ? "var(--glh-accent-soft)" : "transparent", color: "var(--ui-heading)", borderRadius: 6, padding: "8px 10px", textAlign: "left", cursor: "pointer", fontSize: 12, fontWeight: selected.includes(option) ? 700 : 600, display: "flex", justifyContent: "space-between", gap: 8 }}
+                >
+                  <span>{option}</span><span>{selected.includes(option) ? "✓" : ""}</span>
+                </button>
+              ))}
+              {term.trim() && !exactMatch && (
+                <button type="button" onClick={addTypedOption} style={{ width: "100%", border: 0, background: "transparent", color: "var(--glh-accent)", borderRadius: 6, padding: "8px 10px", textAlign: "left", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                  + Thêm “{term.trim()}”
+                </button>
+              )}
+              {!visible.length && !term.trim() && <span style={{ display: "block", padding: "8px 10px", color: "var(--ui-muted)", fontSize: 12 }}>Chưa có option. Gõ để thêm mới.</span>}
+            </div>
+          </div>
         )}
       </div>
+    );
+  }
+
+  function InlineEditor({ value, type = "text", options = [], multi = false, creatable = false, onSave, onCancel, saving }) {
+    const [draft, setDraft] = React.useState(value);
+    const inputRef = React.useRef(null);
+
+    React.useEffect(() => {
+      if (!multi && !creatable) inputRef.current?.focus();
+    }, [multi, creatable]);
+
+    return (
+      <div onClick={event => event.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 4, minWidth: multi ? 170 : 110 }}>
+        {multi || creatable ? (
+          <TickList options={options} value={draft} multi={multi} onChange={setDraft} />
+        ) : type === "select" ? (
+          <select className="adm-select" value={draft || ""} onChange={event => setDraft(event.target.value)} style={{ minWidth: 92, height: 32, padding: "4px 7px" }}>
+            {options.map(option => <option key={option.id || option} value={option.id || option}>{option.label || option}</option>)}
+          </select>
+        ) : (
+          <input ref={inputRef} className="adm-input" type={type} value={draft || ""} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter") onSave(draft); if (event.key === "Escape") onCancel(); }} style={{ minWidth: 88, height: 32, padding: "5px 7px", fontSize: 12 }} />
+        )}
+        <button type="button" className="adm-btn adm-btn--primary adm-btn--sm adm-btn--icon" onClick={() => onSave(draft)} disabled={saving} title="Lưu">✓</button>
+        <button type="button" className="adm-btn adm-btn--sec adm-btn--sm adm-btn--icon" onClick={onCancel} disabled={saving} title="Hủy">×</button>
+      </div>
+    );
+  }
+
+  function CourseTableHeader({ className = "", label, field, sortConfig, onSort, filterValue, onFilter, options = [] }) {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+    const isMulti = options.length > 0;
+    const selected = Array.isArray(filterValue) ? filterValue : [];
+    const active = Array.isArray(filterValue) ? filterValue.length > 0 : Boolean(String(filterValue || "").trim());
+
+    React.useEffect(() => {
+      if (!open) return undefined;
+      const close = event => { if (ref.current && !ref.current.contains(event.target)) setOpen(false); };
+      document.addEventListener("mousedown", close);
+      return () => document.removeEventListener("mousedown", close);
+    }, [open]);
+
+    const toggleOption = value => {
+      const next = selected.includes(value) ? selected.filter(item => item !== value) : [...selected, value];
+      onFilter(next);
+    };
+
+    return (
+      <th ref={ref} className={className} style={{ position: "relative" }}>
+        <span>{label}</span>
+        <button type="button" onClick={() => onSort(field)} aria-label={`Sort ${label}`} style={{ border: 0, background: "transparent", color: sortConfig.field === field ? "var(--glh-accent)" : "var(--rpg-muted)", cursor: "pointer", marginLeft: 5, padding: 0 }}>
+          {sortConfig.field === field ? (sortConfig.direction === "asc" ? "↑" : "↓") : "↕"}
+        </button>
+        <button type="button" onClick={() => setOpen(value => !value)} aria-label={`Filter ${label}`} style={{ border: 0, background: "transparent", color: active ? "var(--glh-accent)" : "var(--rpg-muted)", cursor: "pointer", marginLeft: 3, padding: 0 }}>⌕</button>
+        {open && (
+          <div style={{ position: "absolute", zIndex: 50, top: "calc(100% + 4px)", left: 8, minWidth: 190, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 8, boxShadow: "0 16px 40px rgba(0,0,0,.28)", textTransform: "none", letterSpacing: 0 }}>
+            {isMulti ? (
+              <div style={{ maxHeight: 210, overflowY: "auto" }}>
+                {options.map(option => {
+                  const item = typeof option === "object" ? option : { id: option, label: option };
+                  return <label key={item.id} style={{ display: "flex", alignItems: "center", gap: 7, padding: "5px 2px", color: "var(--ui-text)", fontSize: 12, cursor: "pointer" }}><input type="checkbox" checked={selected.includes(item.id)} onChange={() => toggleOption(item.id)} />{item.label}</label>;
+                })}
+              </div>
+            ) : (
+              <input className="adm-input" autoFocus value={filterValue || ""} onChange={event => onFilter(event.target.value)} placeholder={`Lọc ${label.toLowerCase()}...`} style={{ width: "100%", boxSizing: "border-box", height: 32, fontSize: 12 }} />
+            )}
+            {active && <button type="button" onClick={() => onFilter(isMulti ? [] : "")} style={{ marginTop: 7, border: 0, background: "transparent", color: "var(--glh-accent)", cursor: "pointer", fontSize: 11, padding: 0 }}>Xóa bộ lọc</button>}
+          </div>
+        )}
+      </th>
     );
   }
 
@@ -984,7 +1242,7 @@ const COURSE_STATUSES = [
       id: course?.course_code || nextCourseCode(courses),
       title: course?.title || "",
       trainer: course?.trainer || "",
-      trainer_type: course?.trainer_type || "internal",
+      trainer_type: normalizeTrainerType(course?.trainer_type),
       format: course?.format || "online",
       duration_hours: course ? (course.duration_hours || (course.duration / 60) || 1) : 1,
       rank_targets: course?.rank_targets || [],
@@ -1003,6 +1261,7 @@ const COURSE_STATUSES = [
       session_time: course?.session_time || "",
       location: course?.location || "",
       max_participants: course?.max_participants || "",
+      total_learners: course?.total_learners || "",
       is_hr_recommended: Boolean(course?.is_hr_recommended),
     });
 
@@ -1034,8 +1293,9 @@ const COURSE_STATUSES = [
           <div className="adm-form-group">
             <label className="adm-label">Loại trainer</label>
             <select className="adm-select" value={form.trainer_type} onChange={e => set("trainer_type", e.target.value)}>
-              <option value="internal">Internal</option>
-              <option value="external">External</option>
+              {TRAINER_TYPE_OPTIONS.map(option => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -1121,6 +1381,13 @@ const COURSE_STATUSES = [
           <div className="adm-form-group">
             <label className="adm-label">Số người tối đa</label>
             <input className="adm-input" type="number" min="1" value={form.max_participants} onChange={e => set("max_participants", e.target.value)} placeholder="Không bắt buộc" />
+          </div>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+          <div className="adm-form-group">
+            <label className="adm-label">Số người đã học (nhập tay)</label>
+            <input className="adm-input" type="number" min="0" value={form.total_learners} onChange={e => set("total_learners", e.target.value)} placeholder="Không bắt buộc" />
           </div>
         </div>
 

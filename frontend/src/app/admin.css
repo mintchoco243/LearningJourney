@@ -856,6 +856,84 @@ textarea {
   min-width: 1540px;
 }
 
+.adm-courses-table {
+  min-width: 4300px;
+}
+
+.adm-courses-table th,
+.adm-courses-table td {
+  min-width: 132px;
+}
+
+.adm-courses-table th:first-child,
+.adm-courses-table td:first-child {
+  min-width: 40px;
+  width: 40px;
+}
+
+.adm-courses-table .adm-course-sticky-left,
+.adm-courses-table .adm-course-sticky-right {
+  position: sticky !important;
+  z-index: 2;
+  background: var(--rpg-panel);
+}
+
+.adm-courses-table th.adm-course-sticky-left,
+.adm-courses-table th.adm-course-sticky-right {
+  z-index: 3;
+  background: #171d29;
+}
+
+.adm-courses-table .adm-course-col-select {
+  left: 0;
+  min-width: 40px;
+  width: 40px;
+  max-width: 40px;
+}
+
+.adm-courses-table .adm-course-col-code {
+  left: 40px;
+  min-width: 132px;
+  width: 132px;
+  max-width: 132px;
+}
+
+.adm-courses-table .adm-course-col-title {
+  left: 172px;
+  min-width: 260px;
+  width: 260px;
+  max-width: 260px;
+  box-shadow: 12px 0 18px rgba(7, 10, 16, 0.42);
+}
+
+.adm-courses-table .adm-course-col-visible {
+  right: 0;
+  min-width: 132px;
+  width: 132px;
+  max-width: 132px;
+}
+
+.adm-courses-table .adm-course-col-hr {
+  right: 132px;
+  min-width: 132px;
+  width: 132px;
+  max-width: 132px;
+  box-shadow: -12px 0 18px rgba(7, 10, 16, 0.42);
+}
+
+.adm-courses-table tbody tr:hover .adm-course-sticky-left,
+.adm-courses-table tbody tr:hover .adm-course-sticky-right {
+  background: #171d29;
+}
+
+.adm-inline-truncate {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .adm-table th {
   font-size: 10px;
   font-weight: 700;

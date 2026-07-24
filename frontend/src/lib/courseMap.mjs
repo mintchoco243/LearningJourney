@@ -1,5 +1,6 @@
 // Pure mappers: backend API shape -> Dashboard card shape.
 // Kept framework-free so courseMap.test.mjs can run under bare `node`.
+import { normalizeTrainerType } from "./trainerCatalog.mjs";
 
 // Backend `format` is Workshop/Video/Coaching/... — the cards only style
 // offline/online/elearning, so collapse to those three buckets.
@@ -14,10 +15,11 @@ export function normalizeFormat(f) {
 }
 
 export const COURSE_JOIN_OPTIONS = [
-  { id: "upcoming_scheduled", label: "Có lịch sắp tới", bg: "rgba(43,182,163,0.18)", color: "#2BB6A3" },
+  { id: "upcoming_scheduled", label: "Khóa học nội bộ", bg: "rgba(43,182,163,0.18)", color: "#2BB6A3" },
   { id: "interest", label: "Đặt chỗ trước", bg: "rgba(255,158,0,0.18)", color: "#FFB340", isNew: true },
   { id: "sponsor", label: "Hỗ trợ Learning Budget Sponsor", bg: "rgba(122,92,255,0.18)", color: "#A38BFF" },
-  { id: "self_learning", label: "Tự học qua video / tài liệu", bg: "rgba(59,130,246,0.16)", color: "#60A5FA" },
+  { id: "elearning", label: "E-learning", bg: "rgba(59,130,246,0.16)", color: "#60A5FA" },
+  { id: "material_only", label: "Tài liệu / recording", bg: "rgba(59,130,246,0.16)", color: "#60A5FA" },
   { id: "unscheduled", label: "Chưa có lịch", bg: "rgba(138,147,168,0.14)", color: "#A7B0C3" },
   { id: "ended", label: "Đã kết thúc", bg: "rgba(107,114,128,0.14)", color: "#9CA3AF" },
 ];
@@ -37,20 +39,30 @@ const courseUrl = (row) => {
 };
 const isExternalCourse = (row) => {
   const type = courseType(row);
-  const source = String(row.course_source || row.trainer_type || "").trim().toLowerCase();
+  const source = normalizeTrainerType(row.course_source || row.trainer_type || (row.trainer === "External" ? "external" : "internal"));
   return type === "external" || source === "external" || row.trainer === "External";
 };
 const displayCourseUrl = (row) => isExternalCourse(row) ? LEARNING_BUDGET_SPONSOR_URL : courseUrl(row);
+// Hình thức (join-flow) "Sponsor" case: unlike isExternalCourse() above (used only for URL
+// resolution), this requires Loại khóa AND Loại trainer to both be external — kept as its own
+// helper so it never changes displayCourseUrl's existing (broader) external detection.
+const isSponsorCourse = (row) => {
+  const trainerType = normalizeTrainerType(row.trainer_type || row.course_source || (row.trainer === "External" ? "external" : "internal"));
+  return courseType(row) === "external" && trainerType === "external";
+};
 
+// Hình thức (loại khóa) drives both the join-method chip and the CTA button — `format` is no
+// longer part of this decision.
 export function getCourseJoinMeta(course = {}) {
   const type = courseType(course);
   const date = dateOnly(course.start_date || course.session_date);
   const rawStatus = normalizeSessionStatus(course.status || course.session_status);
   const status = effectiveLifecycle(course.course_status || course.status, date);
-  if (isExternalCourse(course)) return JOIN_OPTION_BY_ID.sponsor;
-  if (type === "interest") return JOIN_OPTION_BY_ID.interest;
-  if (type === "elearning" || type === "material_only" || course.format === "elearning") return JOIN_OPTION_BY_ID.self_learning;
   if (status === "ended") return JOIN_OPTION_BY_ID.ended;
+  if (isSponsorCourse(course)) return JOIN_OPTION_BY_ID.sponsor;
+  if (type === "interest") return JOIN_OPTION_BY_ID.interest;
+  if (type === "elearning") return JOIN_OPTION_BY_ID.elearning;
+  if (type === "material_only") return JOIN_OPTION_BY_ID.material_only;
   if ((type === "scheduled" || !type) && date && rawStatus !== "cancelled" && status !== "cancelled") return JOIN_OPTION_BY_ID.upcoming_scheduled;
   return JOIN_OPTION_BY_ID.unscheduled;
 }
@@ -137,10 +149,11 @@ export function mapSessionToUpcoming(s, today = new Date()) {
     min_participants: s.min_participants ?? null,
     max_participants: s.max_participants ?? null,
     current_count: s.current_count ?? null,
+    total_learners: s.total_learners ?? null,
     class_ids: listValue(s.class_ids || s.role_targets),
     rank_ids: listValue(s.rank_ids || s.rank_targets),
     target_ranks: listValue(s.target_ranks || s.rank_ids || s.rank_targets),
-    trainer_type: String(s.trainer_type || s.course_source || (s.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
+    trainer_type: normalizeTrainerType(s.trainer_type || s.course_source || (s.trainer === "External" ? "external" : "internal")),
     skill_tags: listValue(s.skill_tags),
     start_date: date,
     start_time: times[0] || null,
@@ -184,7 +197,7 @@ export function mapCourseToCard(c, today = new Date()) {
     class_ids: listValue(c.class_ids || c.role_targets),
     rank_ids: listValue(c.rank_ids || c.rank_targets),
     target_ranks: listValue(c.target_ranks || c.rank_ids || c.rank_targets),
-    trainer_type: String(c.trainer_type || c.course_source || (c.trainer === "External" ? "external" : "internal")).trim().toLowerCase(),
+    trainer_type: normalizeTrainerType(c.trainer_type || c.course_source || (c.trainer === "External" ? "external" : "internal")),
     url: displayCourseUrl(c),
     registration_url: c.registration_url || null,
     fit_tag: c.fit_tag || null,
@@ -200,6 +213,7 @@ export function mapCourseToCard(c, today = new Date()) {
     status,
     material_url: c.material_url || c.materials_url || null,
     min_participants: c.min_participants ?? null,
+    total_learners: c.total_learners ?? null,
     audience: c.audience || "Mọi cấp độ",
     rating: publicCourseRating(c),
     featured_testimonial_count: Number(c.featured_testimonial_count || 0),
@@ -209,9 +223,24 @@ export function mapCourseToCard(c, today = new Date()) {
   };
 }
 
+// No button at all — used whenever the data needed for a case is missing (no url/material/
+// session_id) or the Hình thức isn't one of the known types. `hidden` tells the UI to omit the
+// primary CTA entirely rather than render it disabled.
+const HIDDEN_CTA = { key: "hidden", text: "", modalText: "", tone: "muted", action: "none", disabled: true, hidden: true };
+
 export function getCourseCta(course, user = {}) {
   const c = course || {};
-  const type = isExternalCourse(c) ? "external" : (courseType(c) || (c.format === "elearning" ? "elearning" : "scheduled"));
+  // Mirrors getCourseJoinMeta's Hình thức resolution: "external" only when isSponsorCourse's
+  // AND rule passes (Loại khóa = external AND Loại trainer = external); a bare `type: "external"`
+  // without a matching trainer type resolves to "unknown" (hidden CTA), same as the chip would.
+  const rawType = courseType(c);
+  const type =
+    rawType === "interest" ? "interest" :
+    rawType === "elearning" ? "elearning" :
+    rawType === "material_only" ? "material_only" :
+    rawType === "external" ? (isSponsorCourse(c) ? "external" : "unknown") :
+    (rawType === "scheduled" || !rawType) ? "scheduled" :
+    "unknown";
   const rowId = c._id || c.id || c.course_row_id;
   const completed = rowId
     ? (user.completed_courses || []).includes(rowId)
@@ -224,55 +253,58 @@ export function getCourseCta(course, user = {}) {
   if (status === "cancelled" || c.session_status === "cancelled") {
     return { key: "cancelled", text: "Đã hủy", modalText: "Khóa đã hủy", tone: "muted", action: "none", disabled: true };
   }
-  if (type === "external") {
-    return { key: "external_register", text: "Đăng ký →", modalText: "Đăng ký", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
-  }
   if (completed) {
-    if ((type === "elearning" || c.format === "elearning") && hasUrl) {
+    if (type === "elearning" && hasUrl) {
       return { key: "review", text: "Xem lại →", modalText: "Xem lại", tone: "purple", action: "url", disabled: false };
     }
     return hasMaterial
       ? { key: "completed_material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "purple", action: "material", disabled: false }
       : { key: "completed", text: "Đã hoàn thành", modalText: "Đã hoàn thành", tone: "success", action: "none", disabled: true };
   }
+  // Ended overrides every Hình thức: always "Xem tài liệu" (or hidden if there's nothing to view).
   if (status === "ended") {
-    if (type === "elearning" || c.format === "elearning") {
-      return hasUrl
-        ? { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: "url", disabled: false }
-        : { key: "complete", text: "Đánh dấu đã hoàn thành", modalText: "Đánh dấu đã hoàn thành", tone: "success", action: "complete", disabled: false };
-    }
-    if (hasMaterial) {
-      return { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false };
-    }
-    return { key: "ended", text: "Đã kết thúc", modalText: "Đã kết thúc", tone: "muted", action: "none", disabled: true };
+    return hasMaterial
+      ? { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
+      : HIDDEN_CTA;
   }
   if (reserved) {
     return { key: "reserved", text: type === "interest" ? "Đã đặt chỗ" : "Đã đăng ký", modalText: type === "interest" ? "Đã đặt chỗ" : "Đã đăng ký", tone: "success", action: "none", disabled: true };
   }
+  if (type === "external") {
+    return hasUrl
+      ? { key: "external_register", text: "Đăng ký trên Gigi", modalText: "Đăng ký trên Gigi", tone: "accent", action: "url", disabled: false }
+      : HIDDEN_CTA;
+  }
   if (type === "material_only") {
     return hasMaterial
       ? { key: "material", text: "Xem tài liệu →", modalText: "Xem tài liệu", tone: "muted", action: "material", disabled: false }
-      : { key: "detail", text: "Xem chi tiết →", modalText: "Xem chi tiết", tone: "muted", action: "none", disabled: true };
+      : HIDDEN_CTA;
   }
-  if (type === "elearning" || c.format === "elearning") {
-    return { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: hasUrl ? "url" : "none", disabled: !hasUrl };
+  if (type === "elearning") {
+    return hasUrl
+      ? { key: "learn", text: "Học ngay →", modalText: "Học ngay", tone: "purple", action: "url", disabled: false }
+      : HIDDEN_CTA;
   }
   if (type === "interest") {
     if (status === "upcoming_closed" || status === "full" || c.session_status === "full") {
       return { key: "interest_full", text: "Đã đủ nhu cầu", modalText: "Đã đủ nhu cầu", tone: "warning", action: "none", disabled: true };
     }
-    return { key: "interest", text: "Đặt chỗ →", modalText: "Đặt chỗ", tone: "accent", action: "reserve", disabled: !c.session_id };
+    return c.session_id
+      ? { key: "interest", text: "Đặt chỗ →", modalText: "Đặt chỗ", tone: "accent", action: "reserve", disabled: false }
+      : HIDDEN_CTA;
   }
-  if (status === "upcoming_closed" || c.session_status === "full") {
-    return { key: "full", text: "Đã đủ slot", modalText: "Đã đủ slot", tone: "warning", action: "none", disabled: true };
+  if (type === "scheduled") {
+    if (status === "upcoming_closed" || c.session_status === "full") {
+      return { key: "full", text: "Đã đủ slot", modalText: "Đã đủ slot", tone: "warning", action: "none", disabled: true };
+    }
+    if (status === "upcoming_open" || c.session_id) {
+      return c.session_id
+        ? { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: "reserve", disabled: false }
+        : HIDDEN_CTA;
+    }
+    return HIDDEN_CTA;
   }
-  if (status === "upcoming_open" || c.session_id) {
-    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: "reserve", disabled: !c.session_id };
-  }
-  if (c.format === "online" || c.format === "offline") {
-    return { key: "register", text: "Đăng ký →", modalText: "Đăng ký tham gia", tone: "accent", action: hasUrl ? "url" : "none", disabled: !hasUrl };
-  }
-  return { key: "detail", text: "Xem chi tiết →", modalText: "Xem chi tiết", tone: "muted", action: hasUrl ? "url" : "none", disabled: !hasUrl };
+  return HIDDEN_CTA;
 }
 
 // Upcoming = future, non-cancelled sessions, soonest first, max 5.

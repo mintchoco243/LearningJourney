@@ -71,45 +71,66 @@ assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, 
 assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "2026-07-15", material_url: "https://docs.example" }, TODAY).course_status, "upcoming_open");
 
 // shared CTA logic
-assert.equal(getCourseCta({ course_id: "LC-001", format: "elearning", url: "https://learn.example" }).key, "learn");
+assert.equal(getCourseCta({ course_id: "LC-001", type: "elearning", url: "https://learn.example" }).key, "learn");
 assert.equal(getCourseCta({ course_id: "LC-002", type: "scheduled", session_id: "s2", course_status: "upcoming_open" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-003", type: "scheduled", session_id: "s3", course_status: "upcoming_closed" }).key, "full");
 assert.equal(getCourseCta({ course_id: "LC-004", course_status: "ended", material_url: "https://docs.example" }).key, "material");
-assert.equal(getCourseCta({ course_id: "LC-004", type: "scheduled", course_status: "ended", start_date: "2026-07-15", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
+// Pre-existing test, unrelated to this change: getCourseCta has no `today` param, so it reads
+// the real wall clock — start_date must stay far in the future or this goes flaky as time passes.
+assert.equal(getCourseCta({ course_id: "LC-004", type: "scheduled", course_status: "ended", start_date: "2099-01-01", material_url: "https://docs.example", session_id: "LC-004" }).key, "register");
 assert.equal(getCourseCta({ course_id: "LC-005" }, { completed_courses: ["LC-005"] }).key, "completed");
-assert.equal(getCourseCta({ course_id: "LC-005", format: "elearning", url: "https://learn.example" }, { completed_courses: ["LC-005"] }).key, "review");
+assert.equal(getCourseCta({ course_id: "LC-005", type: "elearning", url: "https://learn.example" }, { completed_courses: ["LC-005"] }).key, "review");
 assert.equal(getCourseCta({ course_id: "LC-006", session_id: "s6" }, { registered_events: ["s6"] }).key, "reserved");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-007", type: "interest", status: "open" }, TODAY)).key, "interest");
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-008", type: "interest", status: "full" }, TODAY)).key, "interest_full");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "external_register");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", status: "ended" }, TODAY)).key, "external_register");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", format: "video", status: "ended", registration_url: "https://learn.example", material_url: "https://docs.example" }, TODAY)).key, "learn");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C2", type: "external", format: "elearning", status: "open", registration_url: "https://learn.example" }, TODAY)).key, "external_register");
-assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C3", type: "external", format: "offline", status: "open" }, TODAY), { completed_courses: ["LC-009C3"] }).key, "external_register");
+// Ended overrides every Hình thức (incl. sponsor/elearning) to the material CTA, or hides it if there's nothing to view.
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009", type: "external", trainer_type: "external", status: "ended", material_url: "https://docs.example" }, TODAY)).key, "material");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009B", type: "external", trainer_type: "external", status: "ended" }, TODAY)).key, "hidden");
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C", type: "elearning", status: "ended", registration_url: "https://learn.example", material_url: "https://docs.example" }, TODAY)).key, "material");
+// Sponsor requires Loại khóa = external AND Loại trainer = external (format is no longer part of this decision).
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C2", type: "external", trainer_type: "external", status: "open", registration_url: "https://learn.example" }, TODAY)).key, "external_register");
+// Completed keeps its own CTA regardless of Hình thức — sponsor no longer bypasses it like before.
+assert.equal(getCourseCta(mapCourseToCard({ id: "LC-009C3", type: "external", trainer_type: "external", status: "open" }, TODAY), { completed_courses: ["LC-009C3"] }).key, "completed");
 {
+  // KNOWN GAP (flagged for review): a course flagged external only via course_source/trainer,
+  // without an explicit `type: "external"`, no longer qualifies as Sponsor under the new AND
+  // rule — it now falls through to the plain "scheduled" register/reserve flow, even though its
+  // `url` field (from the untouched isExternalCourse/displayCourseUrl helper) still points at the
+  // Gigi sponsor form. If any real course rows rely on course_source/trainer alone (no literal
+  // type: "external"), their CTA will try to reserve an internal session instead of opening that
+  // link. Needs checking against actual data.
+  // getCourseCta has no `today` param (pre-existing), so session_date must stay far in the
+  // future — otherwise it reads as "ended" against the real wall clock, not the TODAY fixture.
   const externalLinked = mapCourseToCard({
     id: "LC-009D",
     course_source: "external",
     status: "open",
-    session_date: "2026-07-20",
+    session_date: "2099-01-01",
     registration_url: "https://vendor.example/register",
   }, TODAY);
   assert.equal(externalLinked.url, LEARNING_BUDGET_SPONSOR_URL);
   const externalCta = getCourseCta(externalLinked);
-  assert.equal(externalCta.key, "external_register");
-  assert.equal(externalCta.action, "url");
+  assert.equal(externalCta.key, "register");
+  assert.equal(externalCta.action, "reserve");
 }
 assert.equal(mapCourseToCard({ id: "LC-009E", type: "external", registration_url: "vendor.example/path" }, TODAY).url, LEARNING_BUDGET_SPONSOR_URL);
 assert.equal(getCourseCta(mapCourseToCard({ id: "LC-010", type: "material_only", material_url: "https://docs.example" }, TODAY)).key, "material");
 
 // join-method badge/filter meta
-assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-1", type: "scheduled", status: "open", session_date: "2026-07-20" }, TODAY)).id, "upcoming_scheduled");
+// getCourseJoinMeta has no `today` param (pre-existing), so it reads the real wall clock —
+// session_date must stay far in the future here or this goes flaky as time passes.
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-1", type: "scheduled", status: "open", session_date: "2099-01-01" }, TODAY)).id, "upcoming_scheduled");
 assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-2", type: "interest", status: "open" }, TODAY)).id, "interest");
-assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-3", type: "external", format: "offline", status: "ended" }, TODAY)).id, "sponsor");
-assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-4", type: "elearning", format: "video", status: "open" }, TODAY)).id, "self_learning");
+// Ended overrides Hình thức, so an ended sponsor course now shows the "ended" chip, not "sponsor".
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-3", type: "external", trainer_type: "external", status: "ended" }, TODAY)).id, "ended");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-4", type: "elearning", status: "open" }, TODAY)).id, "elearning");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-4B", type: "material_only", status: "open" }, TODAY)).id, "material_only");
 assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-5", type: "scheduled", status: "ended" }, TODAY)).id, "ended");
 assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-6", type: "scheduled", status: "open" }, TODAY)).id, "unscheduled");
-assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-7", type: "scheduled", status: "cancelled", session_date: "2026-07-20" }, TODAY)).id, "unscheduled");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-7", type: "scheduled", status: "cancelled", session_date: "2099-01-01" }, TODAY)).id, "unscheduled");
+// Sponsor chip only when BOTH Loại khóa = external AND Loại trainer = external.
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-8", type: "external", trainer_type: "external", status: "open" }, TODAY)).id, "sponsor");
+assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-9", type: "external", status: "open" }, TODAY)).id, "unscheduled");
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([

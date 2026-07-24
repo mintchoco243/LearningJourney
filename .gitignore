@@ -15,3 +15,6 @@ courses-unified-template.csv
 !sample-data/data-prep/
 !sample-data/data-prep/*.csv
 frontend/src/components/screens/LdRequestChatBot.js
+.codex-pets/lumi/decoded/idle.png
+*.png
+.codex-pets/lumi/prompts/row-retries/running-left.md

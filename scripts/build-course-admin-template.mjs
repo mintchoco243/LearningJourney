@@ -25,7 +25,7 @@ const rows = [
 ];
 
 const options = {
-  trainer_type: ["internal", "external"],
+  trainer_type: ["internal", "regional", "external"],
   format: ["online", "offline", "elearning", "webinar", "workshop", "bootcamp", "talk"],
   type: ["scheduled", "interest", "elearning", "external", "material_only"],
   is_active: ["true", "false"],

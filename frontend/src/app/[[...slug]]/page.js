@@ -174,22 +174,6 @@ function AppBar(props) {
     ["qa", "FAQ", "help-circle"],
   ];
 
-  const [isDark, setIsDark] = React.useState(() => {
-    try { if (typeof window !== "undefined") { return localStorage.getItem("glh_theme") !== "light"; } } catch (e) { } return true;
-  });
-
-  const toggleTheme = () => {
-    const next = !isDark;
-    setIsDark(next);
-    document.documentElement.setAttribute("data-theme", next ? "dark" : "light");
-    localStorage.setItem("glh_theme", next ? "dark" : "light");
-  };
-
-  React.useEffect(() => {
-    const saved = localStorage.getItem("glh_theme") || "dark";
-    document.documentElement.setAttribute("data-theme", saved);
-  }, []);
-
   return React.createElement(React.Fragment, null,
     // Desktop header (only visible >= 1160px)
     React.createElement("header", { className: "appbar desktop-only" },
@@ -227,12 +211,6 @@ function AppBar(props) {
             title: "Đánh giá site",
             style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
           }, React.createElement(Icon, { name: "star", size: 16, color: "var(--amber)" })),
-          // Theme toggle
-          React.createElement("button", {
-            onClick: toggleTheme,
-            title: isDark ? "Chuyển sang Light Mode" : "Chuyển sang Dark Mode",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 200ms" }
-          }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 16, color: "var(--ui-heading)" })),
           React.createElement("div", { style: { position: "relative", flex: "0 0 auto" } },
             React.createElement("button", { className: "appbar__mini", "data-tour": "profile", onClick: () => setProfileOpen((value) => !value), title: "Mở menu cá nhân", style: { cursor: "pointer" } },
               React.createElement("div", { style: { width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "#0a0e15", display: "grid", placeItems: "center" } },
@@ -308,10 +286,7 @@ function AppBar(props) {
           }, React.createElement(Icon, { name: "info", size: 18, color: "var(--rpg-muted)" })),
           React.createElement("button", {
             className: "tool-btn", onClick: () => props.onOpenRating && props.onOpenRating(), title: "Đánh giá"
-          }, React.createElement(Icon, { name: "star", size: 18, color: "var(--amber)" })),
-          React.createElement("button", {
-            className: "tool-btn", onClick: toggleTheme, title: "Đổi Theme"
-          }, React.createElement(Icon, { name: isDark ? "sun" : "moon", size: 18, color: "var(--rpg-muted)" }))
+          }, React.createElement(Icon, { name: "star", size: 18, color: "var(--amber)" }))
         ),
 
         React.createElement("div", { className: "app-sidebar__profile", onClick: () => handleNav("profile") },
@@ -426,10 +401,20 @@ function BackToTop() {
   if (!visible) return null;
   return React.createElement("button", {
     type: "button",
-    onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }),
+    onClick: () => {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo(0, 0);
+    },
     title: "Lên đầu trang",
-    style: { position: "fixed", right: 122, bottom: 47, zIndex: 90, width: 40, height: 40, borderRadius: "50%", border: "1px solid var(--ui-box-border)", background: "var(--ui-surface, var(--rpg-panel))", color: "var(--glh-accent)", display: "grid", placeItems: "center", cursor: "pointer", boxShadow: "0 8px 20px rgba(0,0,0,.16)" },
-  }, React.createElement(Icon, { name: "chevron-up", size: 18, color: "currentColor" }));
+    style: {
+      position: "fixed", right: 220, bottom: 47, zIndex: 110,
+      width: 40, height: 40, borderRadius: "50%",
+      border: "2px solid #ff3b30", background: "var(--ui-surface, var(--rpg-panel, #14181f))",
+      color: "#ff3b30", display: "grid", placeItems: "center", cursor: "pointer",
+      boxShadow: "0 0 0 3px rgba(255,59,48,.25), 0 0 16px rgba(255,59,48,.65)",
+    },
+  }, React.createElement(Icon, { name: "chevron-up", size: 26, color: "currentColor" }));
 }
 
 /* ---------- Root App ---------- */
