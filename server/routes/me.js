@@ -4,6 +4,31 @@ import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 
 export const meRouter = express.Router();
 
+const onboardingSkillCatalog = [
+  ["foundations", "Foundations", 10],
+  ["data", "Data", 20],
+  ["communication", "Communication", 30],
+  ["product", "Product", 40],
+  ["ai", "AI", 50],
+  ["analytics", "Analytics", 60],
+  ["leadership", "Leadership", 70],
+  ["facilitation", "Facilitation", 80],
+  ["strategy", "Strategy", 90],
+  ["ops_excellence", "Operations Excellence", 100],
+  ["mentoring", "Mentoring", 110],
+];
+
+async function ensureOnboardingSkillCatalog() {
+  for (const [id, label, displayOrder] of onboardingSkillCatalog) {
+    await query(
+      `INSERT INTO skill_catalog (id, label, display_order, is_active)
+       VALUES ($1, $2, $3, TRUE)
+       ON DUPLICATE KEY UPDATE is_active = TRUE`,
+      [id, label, displayOrder],
+    );
+  }
+}
+
 meRouter.get("/", async (req, res) => {
   const profile = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
   const enrollments = await query(
@@ -68,6 +93,9 @@ meRouter.post("/onboarding", async (req, res) => {
     return res.status(400).json({ error: "FOCUS_SKILLS_MAX_3" });
   }
   if (requestedSkills.length) {
+    // The onboarding UI has a stable built-in taxonomy. Ensure older deployments
+    // have it before validating, instead of rejecting valid user selections.
+    await ensureOnboardingSkillCatalog();
     const skillRows = await query(
       "SELECT id FROM skill_catalog WHERE is_active = TRUE AND JSON_CONTAINS($1, JSON_QUOTE(id))",
       [requestedSkills],
