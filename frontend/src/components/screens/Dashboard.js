@@ -9,7 +9,7 @@ import { AvatarEditModal } from './ProfilePolicy';
 import { Calendar } from './CatalogCalendar';
 import { getRecommendations } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
-import { SKILL_OPTIONS, courseHasSkill, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS, courseHasSkill, getSkillVisual } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
@@ -215,9 +215,7 @@ export function Dashboard(props) {
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
-  const [selectedSkills, setSelectedSkills] = React.useState(() =>
-    [...new Set((user.focus_skills || []).map(skillLabel).filter(Boolean))]
-  );
+  const [selectedSkills, setSelectedSkills] = React.useState([]);
   const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {

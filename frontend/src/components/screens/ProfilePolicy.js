@@ -126,7 +126,7 @@ function MyLdRequestsPanel() {
 }
 
 export function AvatarEditModal({ initialChar, onClose, onSave, crisp }) {
-  const [c, setC] = React.useState(initialChar || { hair: "short", outfit: "red", accessory: "none", skin: "s1" });
+  const [c, setC] = React.useState(initialChar || { hair: "short", hairColor: "espresso", outfit: "red", accessory: "none", skin: "s1" });
   const set = (k, v) => setC((p) => Object.assign({}, p, { [k]: v }));
   return React.createElement("div", { className: "modal-bg", onClick: onClose, style: { zIndex: 9999 } },
     React.createElement("div", { className: "modal", onClick: e => e.stopPropagation(), style: { width: "100%", maxWidth: 580, padding: 24 } },
@@ -145,6 +145,15 @@ export function AvatarEditModal({ initialChar, onClose, onSave, crisp }) {
               D.CHAR_OPTIONS.hair.map(o => React.createElement("button", {
                 key: o.id, className: "u-chip" + (c.hair === o.id ? " is-active" : ""), onClick: () => set("hair", o.id), style: { padding: "4px 10px", fontSize: 12 }
               }, o.name))
+            )
+          ),
+          React.createElement("div", { style: { marginBottom: 14 } },
+            React.createElement("div", { style: { fontSize: 12, fontWeight: 700, color: "var(--ui-muted)", marginBottom: 6 } }, "Màu tóc"),
+            React.createElement("div", { style: { display: "flex", gap: 8 } },
+              D.CHAR_OPTIONS.hairColor.map(o => React.createElement("button", {
+                key: o.id, onClick: () => set("hairColor", o.id), title: o.name, "aria-label": o.name,
+                style: { width: 30, height: 30, borderRadius: "50%", background: o.color, border: (c.hairColor || "espresso") === o.id ? "3px solid var(--glh-accent)" : "2px solid var(--ui-box-border)", cursor: "pointer" }
+              }))
             )
           ),
           React.createElement("div", { style: { marginBottom: 14 } },

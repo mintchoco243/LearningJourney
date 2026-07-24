@@ -19,7 +19,7 @@ import { AboutModal } from '@/components/screens/AboutModal';
 import { trackEvent, trackPageView } from '@/lib/analytics';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
 
-import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
+import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
 const { useGame, rankForUser } = GLHEngine;
 const { Icon } = GLHUI;
@@ -34,12 +34,6 @@ const { CourseModal, ConfirmPopup } = GLHParts;
 
 
 const ACCENTS = { red: { v: "#E41E26", soft: "rgba(228,30,38,0.16)" }, amber: { v: "#FF9E00", soft: "rgba(255,158,0,0.18)" } };
-const FONTS = {
-  "Chakra Petch": '"Chakra Petch", "Be Vietnam Pro", sans-serif',
-  "Oxanium": '"Oxanium", "Be Vietnam Pro", sans-serif',
-  "Press Start 2P": '"Press Start 2P", "Be Vietnam Pro", sans-serif',
-};
-
 function seededNoise(seed) {
   const x = Math.sin(seed * 999) * 10000;
   return x - Math.floor(x);
@@ -322,8 +316,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "red",
   "spriteScale": 1,
   "crisp": false,
-  "anim": "normal",
-  "displayFont": "Chakra Petch"
+  "anim": "normal"
 }/*EDITMODE-END*/;
 
 function TweaksUI(props) {
@@ -334,10 +327,6 @@ function TweaksUI(props) {
     React.createElement(TweakRadio, {
       label: "Màu nhấn", value: t.accent, options: ["red", "amber"],
       onChange: (v) => setTweak("accent", v),
-    }),
-    React.createElement(TweakSelect, {
-      label: "Font hiển thị", value: t.displayFont, options: ["Chakra Petch", "Oxanium", "Press Start 2P"],
-      onChange: (v) => setTweak("displayFont", v),
     }),
     React.createElement(TweakSection, { label: "Nhân vật pixel" }),
     React.createElement(TweakSlider, {
@@ -428,9 +417,15 @@ function AppInner() {
   const { user, actions } = useGame();
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const verifiedSessionRef = React.useRef(false);
+  const previewPhase = (() => {
+    if (process.env.NODE_ENV === "production" || typeof window === "undefined") return "";
+    const value = new URLSearchParams(window.location.search).get("preview");
+    return ["onboarding", "character", "reveal", "home", "qa"].includes(value) ? value : "";
+  })();
 
   // initial phase - now starts with login check
   const [phase, setPhase] = React.useState(() => {
+    if (previewPhase) return previewPhase;
     if (!user.email && !user.onboarded) return "login";
     if (!user.quiz_result) return "onboarding";
     if (typeof window !== "undefined") {
@@ -476,6 +471,7 @@ function AppInner() {
 
   // On mount: verify server session without destroying local learning progress.
   React.useEffect(() => {
+    if (previewPhase) return;
     if (verifiedSessionRef.current) return;
     verifiedSessionRef.current = true;
     fetch("/api/me", { credentials: "include" })
@@ -507,7 +503,7 @@ function AppInner() {
         }
       })
       .catch(() => { });
-  }, [actions, user.email, user.onboarded, user.quiz_result, syncRouteState]);
+  }, [actions, user.email, user.onboarded, user.quiz_result, syncRouteState, previewPhase]);
 
   const [course, setCourse] = React.useState(null);
   const [ldRequest, setLdRequest] = React.useState(false);
@@ -602,8 +598,7 @@ function AppInner() {
     r.setProperty("--glh-accent", acc.v);
     r.setProperty("--glh-accent-soft", acc.soft);
     r.setProperty("--glh-sprite-scale", String(t.spriteScale));
-    r.setProperty("--glh-display", FONTS[t.displayFont] || FONTS["Chakra Petch"]);
-  }, [t.accent, t.spriteScale, t.displayFont]);
+  }, [t.accent, t.spriteScale]);
 
   const crisp = t.crisp;
   const closeCourse = React.useCallback(() => {

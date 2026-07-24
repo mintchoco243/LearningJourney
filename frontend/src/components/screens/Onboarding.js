@@ -29,9 +29,12 @@ const { Avatar } = GLHAvatar;
         React.createElement("div", { className: "ob-hero-avatar" },
           React.createElement(Avatar, { opts: user.character, size: 160, crisp: props.crisp })),
         React.createElement("h1", { className: "ob-title" },
-          "Hành trình học tập của bạn ", React.createElement("span", { className: "accent" }, "bắt đầu từ đây")),
+          React.createElement("span", { className: "ob-title__line" }, "Hành trình học tập của bạn"),
+          React.createElement("span", { className: "ob-title__line accent" }, "bắt đầu từ đây")),
         React.createElement("p", { className: "ob-sub" },
-          "Tạo nhân vật của riêng bạn, bắt đầu với la bàn nội dung đào tạo và tích lũy những kỹ năng, kiến thức giúp bạn chiến đấu mạnh mẽ hơn!"),
+          "Tạo nhân vật của riêng bạn, bắt đầu cùng ",
+          React.createElement("span", { className: "accent" }, "LEARNING COMPASS"),
+          " - chiếc la bàn giúp bạn lựa chọn những nội dung đào tạo phù hợp với nhu cầu bản thân, tích lũy kiến thức, kỹ năng và phát triển - chiến đấu mạnh mẽ hơn"),
         React.createElement("button", {
           className: "glh-btn glh-btn--primary glh-btn--lg",
           onClick: () => { trackEvent("onboarding_start", { returning }); props.onStart(returning); },
@@ -54,20 +57,21 @@ const { Avatar } = GLHAvatar;
 
   export function CharacterCreation(props) {
     const { user, actions } = useGame();
-    const [c, setC] = React.useState(user.character || { hair: "short", outfit: "red", accessory: "none", skin: "s1" });
+    const [c, setC] = React.useState(user.character || { hair: "short", hairColor: "espresso", outfit: "red", accessory: "none", skin: "s1" });
     const set = (k, v) => setC((p) => Object.assign({}, p, { [k]: v }));
 
     const randomize = () => {
       const pick = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
       setC({
         hair: pick(D.CHAR_OPTIONS.hair),
+        hairColor: pick(D.CHAR_OPTIONS.hairColor),
         outfit: pick(D.CHAR_OPTIONS.outfit),
         accessory: pick(D.CHAR_OPTIONS.accessory),
         skin: pick(D.CHAR_OPTIONS.skin),
       });
     };
     const cont = () => {
-      trackEvent("character_creation_complete", { hair: c.hair, outfit: c.outfit, skin: c.skin });
+      trackEvent("character_creation_complete", { hair: c.hair, hairColor: c.hairColor || "espresso", outfit: c.outfit, accessory: c.accessory, skin: c.skin });
       actions.setCharacter(c);
       props.onNext();
     };
@@ -88,6 +92,11 @@ const { Avatar } = GLHAvatar;
               D.CHAR_OPTIONS.hair.map((o) => React.createElement("button", {
                 key: o.id, className: "cc-chip" + (c.hair === o.id ? " is-active" : ""), onClick: () => set("hair", o.id),
               }, o.name))),
+            React.createElement(OptionRow, { label: "Màu tóc" },
+              D.CHAR_OPTIONS.hairColor.map((o) => React.createElement("button", {
+                key: o.id, className: "cc-swatch" + ((c.hairColor || "espresso") === o.id ? " is-active" : ""),
+                style: { background: o.color }, onClick: () => set("hairColor", o.id), "aria-label": o.name, title: o.name,
+              }))),
             React.createElement(OptionRow, { label: "Tông da" },
               D.CHAR_OPTIONS.skin.map((o) => React.createElement("button", {
                 key: o.id, className: "cc-swatch" + (c.skin === o.id ? " is-active" : ""),

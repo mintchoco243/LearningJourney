@@ -30,7 +30,7 @@ export function AboutModal({ onClose }) {
       React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 14, marginBottom: 20 } },
         React.createElement("img", { src: "/assets/logo_icon.png", alt: "Garena", style: { height: 40, width: 40, objectFit: "contain" } }),
         React.createElement("div", null,
-          React.createElement("h3", { style: { margin: 0, fontSize: 22, fontWeight: 800, color: "var(--ui-heading)" } }, "Về Garena Learning Compass"),
+          React.createElement("h3", { style: { margin: 0, fontSize: 22, fontWeight: 700, color: "var(--ui-heading)" } }, "Về Garena Learning Compass"),
           React.createElement("div", { style: { fontSize: 13, color: "var(--glh-accent)", fontWeight: 700 } }, "Nền tảng đào tạo nội bộ · Garena Vietnam L&D")
         )
       ),

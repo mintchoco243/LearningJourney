@@ -221,9 +221,6 @@ const { Avatar } = GLHAvatar;
       { label: "Buổi đã học", value: Number(user.completed_sessions_count || 0) },
     ];
 
-    const renderChip = (label, i) =>
-      React.createElement("span", { key: i, style: { fontSize: 11, fontWeight: 700, color: "#fff", background: "rgba(255,255,255,0.08)", border: "1px solid var(--rpg-border)", borderRadius: 999, padding: "6px 10px" } }, label);
-
     return React.createElement("div", { className: "glh-screen glh-dark glh-center glh-pad", style: { position: "relative", overflowY: "auto" } },
       React.createElement(Starfield),
       React.createElement("div", { className: "rv-wrap", style: { maxWidth: 760, width: "100%", textAlign: "left", paddingTop: 24, paddingBottom: 24 } },
@@ -274,18 +271,7 @@ const { Avatar } = GLHAvatar;
           )
         ),
 
-        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".62s", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10, marginBottom: 24 } },
-          React.createElement("div", { style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 16 } },
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 10 } }, "Hình thức học phù hợp"),
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, (learningStyles.length ? learningStyles : [emptyText]).map(renderChip))
-          ),
-          React.createElement("div", { style: { background: "rgba(255,255,255,0.045)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: 16 } },
-            React.createElement("div", { style: { fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 10 } }, "Trainer yêu thích"),
-            React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 8 } }, (trainerPrefs.length ? trainerPrefs : [emptyText]).map(renderChip))
-          )
-        ),
-
-        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".7s", textAlign: "center" } },
+        React.createElement("div", { className: "rv-rise", style: { animationDelay: ".62s", textAlign: "center" } },
           React.createElement("button", { className: "glh-btn glh-btn--primary glh-btn--lg", onClick: () => { trackEvent("onboarding_complete", {}); props.onNext(); }, style: { width: "100%" } },
             "Vào trang học tập", React.createElement(Icon, { name: "arrow-right", size: 18, color: "#fff" })
           )

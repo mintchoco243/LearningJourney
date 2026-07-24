@@ -19,7 +19,15 @@ export const OUTFIT = {
     s2: { base: "#E0A878", dark: "#C2855A" },
     s3: { base: "#B97A4E", dark: "#965C36" },
   };
-  const HAIR_COLOR = { base: "#2B2330", dark: "#171219", light: "#4A3D52" };
+  export const HAIR_COLORS = {
+    espresso: { base: "#2B2330", dark: "#171219", light: "#4A3D52" },
+    black:    { base: "#151318", dark: "#08070A", light: "#38333D" },
+    auburn:   { base: "#7A3528", dark: "#4D211A", light: "#A9503B" },
+    blonde:   { base: "#D9A441", dark: "#9C6E20", light: "#F2C969" },
+    blue:     { base: "#285A86", dark: "#183A5A", light: "#4E83B0" },
+    pink:     { base: "#E85D9E", dark: "#A92F68", light: "#FF91C2" },
+    white:    { base: "#F1F1F4", dark: "#B9BBC5", light: "#FFFFFF" },
+  };
 
   function r(x, y, w, h, fill, rad) {
     return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rad || 0}" fill="${fill}"/>`;
@@ -63,14 +71,19 @@ export const OUTFIT = {
         );
       case "curly":
         return (
-          r(28, 20, 44, 20, c.base, 10) + // base curly
-          r(24, 28, 10, 18, c.base, 5) +  // left curls
-          r(66, 28, 10, 18, c.base, 5) +  // right curls
-          r(24, 32, 6, 12, c.dark, 3) +   // left curls shading
-          r(70, 32, 6, 12, c.dark, 3) +   // right curls shading
-          r(34, 16, 12, 12, c.base, 6) +
-          r(54, 16, 12, 12, c.base, 6) +
-          r(44, 14, 12, 12, c.dark, 6)
+          `<circle cx="29" cy="31" r="9" fill="${c.base}"/>` +
+          `<circle cx="31" cy="22" r="9" fill="${c.base}"/>` +
+          `<circle cx="39" cy="17" r="9" fill="${c.base}"/>` +
+          `<circle cx="49" cy="15" r="10" fill="${c.base}"/>` +
+          `<circle cx="59" cy="17" r="9" fill="${c.base}"/>` +
+          `<circle cx="68" cy="22" r="9" fill="${c.base}"/>` +
+          `<circle cx="71" cy="31" r="9" fill="${c.base}"/>` +
+          `<circle cx="27" cy="40" r="8" fill="${c.base}"/>` +
+          `<circle cx="73" cy="40" r="8" fill="${c.base}"/>` +
+          `<circle cx="36" cy="25" r="5" fill="${c.light}"/>` +
+          `<circle cx="53" cy="21" r="5" fill="${c.light}"/>` +
+          `<circle cx="64" cy="29" r="5" fill="${c.dark}"/>` +
+          `<circle cx="31" cy="38" r="4" fill="${c.dark}"/>`
         );
       case "bald":
         return (
@@ -93,15 +106,15 @@ export const OUTFIT = {
     switch (kind) {
       case "glasses":
         return (
-          r(34, 42, 13, 10, "none", 3).replace("/>", ` stroke="#1c1c1c" stroke-width="2.5"/>`) +
-          r(53, 42, 13, 10, "none", 3).replace("/>", ` stroke="#1c1c1c" stroke-width="2.5"/>`) +
-          r(47, 45, 6, 2.5, "#1c1c1c", 1)
+          r(34, 42, 13, 10, "rgba(255,255,255,.12)", 3).replace("/>", ` stroke="#F7FAFC" stroke-width="2.5"/>`) +
+          r(53, 42, 13, 10, "rgba(255,255,255,.12)", 3).replace("/>", ` stroke="#F7FAFC" stroke-width="2.5"/>`) +
+          r(47, 45, 6, 2.5, "#F7FAFC", 1)
         );
       case "headset":
         return (
-          `<path d="M30 40 Q30 18 50 18 Q70 18 70 40" fill="none" stroke="#1c1c1c" stroke-width="4"/>` +
-          r(26, 38, 9, 16, "#1c1c1c", 3) +
-          r(65, 38, 9, 16, "#1c1c1c", 3) +
+          `<path d="M30 40 Q30 18 50 18 Q70 18 70 40" fill="none" stroke="#DDE7FF" stroke-width="4"/>` +
+          r(26, 38, 9, 16, "#B9C8E8", 3) +
+          r(65, 38, 9, 16, "#B9C8E8", 3) +
           r(28, 41, 4, 10, accent, 2) +
           r(67, 41, 4, 10, accent, 2)
         );
@@ -117,15 +130,29 @@ export const OUTFIT = {
         );
       case "cap":
         return (
-          r(28, 22, 44, 16, "#222831", 8) +  // cap starts at head top y:22
-          r(26, 36, 48, 7, "#222831", 3) +   // brim full-width symmetric
-          r(36, 24, 28, 6, "#3A4250", 3)
+          r(28, 22, 44, 16, "#DDE7F8", 8) +  // cap starts at head top y:22
+          r(26, 36, 48, 7, "#B9C8E8", 3) +   // brim full-width symmetric
+          r(36, 24, 28, 6, "#F7FAFC", 3)
+        );
+      case "backpack":
+        return (
+          `<path d="M35 61 Q39 55 44 58 L44 83" fill="none" stroke="${accent}" stroke-width="3"/>` +
+          `<path d="M65 61 Q61 55 56 58 L56 83" fill="none" stroke="${accent}" stroke-width="3"/>`
+        );
+      case "pencil":
+        return (
+          `<g transform="rotate(-18 28 82)">` +
+          r(26.5, 72, 3.5, 16, "#F5C542", 1) +
+          r(26.5, 72, 3.5, 3, "#E97B76", 1) +
+          `<polygon points="26.5,88 30,88 28.25,92" fill="#E8C9A0"/>` +
+          `<polygon points="27.65,90.4 28.85,90.4 28.25,92" fill="#2B2330"/>` +
+          `</g>`
         );
       case "controller":
         return (
-          r(41, 77, 18, 11, "#2D3748", 4) + // main body
-          r(39, 81, 6, 8, "#2D3748", 2) +   // left grip extension
-          r(55, 81, 6, 8, "#2D3748", 2) +   // right grip extension
+          r(41, 77, 18, 11, "#DDE7F8", 4) + // main body
+          r(39, 81, 6, 8, "#B9C8E8", 2) +   // left grip extension
+          r(55, 81, 6, 8, "#B9C8E8", 2) +   // right grip extension
           // D-pad (gray cross)
           r(42.5, 81.5, 4, 1.5, "#A0AEC0") +
           r(43.75, 80.25, 1.5, 4, "#A0AEC0") +
@@ -146,8 +173,8 @@ export const OUTFIT = {
         );
       case "keyboard":
         return (
-          r(34, 75, 32, 12, "#1A202C", 2) + // keyboard frame
-          r(35.5, 76.5, 29, 9, "#4A5568", 1) + // plate
+          r(34, 75, 32, 12, "#DDE7F8", 2) + // keyboard frame
+          r(35.5, 76.5, 29, 9, "#879CC0", 1) + // plate
           // keycaps grid pattern or simple key clusters
           r(37, 78, 22, 2.2, "#EDF2F7", 0.5) + // upper row
           r(39, 81.5, 20, 2.2, "#EDF2F7", 0.5) + // lower row
@@ -158,9 +185,9 @@ export const OUTFIT = {
       case "mouse":
         return (
           // Mouse is held/near the character's right hand (left side of screen)
-          r(25, 77, 9, 12, "#1A202C", 4) + // mouse body
-          r(25, 77, 4.2, 5, "#2D3748", 1.5) + // left button
-          r(29.8, 77, 4.2, 5, "#2D3748", 1.5) + // right button
+          r(25, 77, 9, 12, "#DDE7F8", 4) + // mouse body
+          r(25, 77, 4.2, 5, "#A7B8D5", 1.5) + // left button
+          r(29.8, 77, 4.2, 5, "#A7B8D5", 1.5) + // right button
           r(29.2, 78.5, 0.6, 2, accent) + // glowing scroll wheel
           r(24.5, 81, 0.5, 5, accent) + // glowing side strip left
           r(34, 81, 0.5, 5, accent)    // glowing side strip right
@@ -168,8 +195,8 @@ export const OUTFIT = {
       case "laptop":
         return (
           // screen portion
-          r(32, 63, 36, 15, "#1A202C", 2) + // screen lid frame
-          r(33.5, 64.5, 33, 12, "#2D3748") + // display background
+          r(32, 63, 36, 15, "#DDE7F8", 2) + // screen lid frame
+          r(33.5, 64.5, 33, 12, "#526987") + // display background
           // coding screen text lines or chart mockups
           r(36, 67, 10, 2, "#4FD1C5") + // teal code block/title
           r(36, 70, 18, 1.5, "#E2E8F0") + // text line 1
@@ -177,12 +204,22 @@ export const OUTFIT = {
           r(58, 67, 6, 8, "#3182CE") + // a small blue bar graph/chart
           r(52, 69, 4, 6, "#DD6B20") + // a orange bar
           // base keyboard portion
-          r(28, 77, 44, 9, "#4A5568", 1.5) + // bottom laptop body
-          r(45, 82, 10, 2.5, "#2D3748", 0.5) // trackpad
+          r(28, 77, 44, 9, "#B9C8E8", 1.5) + // bottom laptop body
+          r(45, 82, 10, 2.5, "#F7FAFC", 0.5) // trackpad
         );
       default:
         return "";
     }
+  }
+
+  function accessoryBack(kind, accent) {
+    if (kind !== "backpack") return "";
+    return (
+      r(23, 58, 54, 31, "#B9C8E8", 9) +
+      r(26, 62, 48, 8, accent, 4) +
+      r(20, 68, 8, 16, "#E5EDFA", 4) +
+      r(72, 68, 8, 16, "#E5EDFA", 4)
+    );
   }
 
   // rank-based gear layered over the body (x 30–70, torso y 56–94)
@@ -211,17 +248,20 @@ export const OUTFIT = {
 
   export function svg(opts) {
     const o = Object.assign(
-      { hair: "short", outfit: "red", accessory: "none", skin: "s1", rank: 1, classColor: null },
+      { hair: "short", hairColor: "espresso", outfit: "red", accessory: "none", skin: "s1", rank: 1, classColor: null },
       opts || {}
     );
     const oc = OUTFIT[o.outfit] || OUTFIT.red;
     const sc = SKIN[o.skin] || SKIN.s1;
+    const hc = HAIR_COLORS[o.hairColor] || HAIR_COLORS.espresso;
     const accent = o.classColor || oc.light;
+    const accessoryAccent = "#7DD3FC";
     const rank = o.rank || 1;
 
     const parts = [];
     // soft ground shadow
     parts.push(`<ellipse cx="50" cy="95" rx="22" ry="4" fill="rgba(0,0,0,0.18)"/>`);
+    parts.push(accessoryBack(o.accessory, accessoryAccent));
     // cape (rank 5) sits behind body, handled in gear with prepend
     // body / torso
     parts.push(r(32, 56, 36, 38, oc.base, 8));
@@ -248,9 +288,9 @@ export const OUTFIT = {
     parts.push(`<ellipse cx="38" cy="50" rx="3" ry="2" fill="${oc.light}" opacity="0.45"/>`);
     parts.push(`<ellipse cx="62" cy="50" rx="3" ry="2" fill="${oc.light}" opacity="0.45"/>`);
     // hair on top
-    parts.push(hair(o.hair, HAIR_COLOR));
+    parts.push(hair(o.hair, hc));
     // accessory
-    parts.push(accessory(o.accessory, accent));
+    parts.push(accessory(o.accessory, accessoryAccent));
     // crown for top ranks
     parts.push(crown(rank, accent));
 
@@ -270,4 +310,4 @@ export const OUTFIT = {
     });
   }
 
-  export const GLHAvatar = { svg, Avatar, OUTFIT, SKIN };
+  export const GLHAvatar = { svg, Avatar, OUTFIT, SKIN, HAIR_COLORS };

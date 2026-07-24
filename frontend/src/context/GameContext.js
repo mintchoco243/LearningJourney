@@ -18,7 +18,7 @@ const D = GLH_DATA;
     learning_formats: [],
     weekly_hours: "",
     preferred_trainers: [],
-    character: { hair: "short", outfit: "red", accessory: "none", skin: "s1" },
+    character: { hair: "short", hairColor: "espresso", outfit: "red", accessory: "none", skin: "s1" },
     quiz_result: null, // { rank_id, completed_at }
     quiz_extended: null, // { learning_style[], availability, trainers[] }
     xp: 0,
