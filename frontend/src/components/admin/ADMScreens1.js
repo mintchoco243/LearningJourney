@@ -5,6 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
 import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
+import { SKILL_OPTIONS, skillLabel } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -100,7 +101,7 @@ const COURSE_STATUSES = [
       rating: c.rating == null ? "" : parseFloat(c.rating),
       rank_targets: toList(c.rank_targets),
       role_targets: toList(c.role_targets),
-      skill_tags: toList(c.skill_tags),
+      skill_tags: [...new Set(toList(c.skill_tags).map(skillLabel).filter(Boolean))],
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),
@@ -382,7 +383,7 @@ const COURSE_STATUSES = [
     const locationOptions = catalogOptions(courses, "location");
     const rankOptions = [...new Set(["All", ...RANKS_ALL.map(rank => rank.id), ...catalogOptions(courses, "rank_targets", true)])];
     const roleOptions = catalogOptions(courses, "role_targets", true);
-    const skillOptions = catalogOptions(courses, "skill_tags", true);
+    const skillOptions = SKILL_OPTIONS;
 
     const sorted = [...filtered].sort((a, b) => {
       if (!sortConfig.field) return 0;
@@ -850,7 +851,7 @@ const COURSE_STATUSES = [
                   <td>{renderInline(c, "status", <Badge status={c.status} />, { type: "select", options: COURSE_STATUSES })}</td>
                   <td>{renderInline(c, "rank_targets", (c.rank_targets || []).join(", "), { multi: true, options: rankOptions })}</td>
                   <td>{renderInline(c, "role_targets", (c.role_targets || []).join(", "), { multi: true, options: roleOptions })}</td>
-                  <td>{renderInline(c, "skill_tags", (c.skill_tags || []).join(", "), { multi: true, options: skillOptions })}</td>
+                  <td>{renderInline(c, "skill_tags", (c.skill_tags || []).join(", "), { multi: true, options: skillOptions, allowCustom: false })}</td>
                   <td>{renderInline(c, "description", <span title={c.description} className="adm-inline-truncate">{c.description}</span>)}</td>
                   <td>{renderInline(c, "registration_url", <span title={c.registration_url} className="adm-inline-truncate">{c.registration_url}</span>, { type: "url" })}</td>
                   <td>{renderInline(c, "material_url", <span title={c.material_url} className="adm-inline-truncate">{c.material_url}</span>, { type: "url" })}</td>
@@ -1072,7 +1073,7 @@ const COURSE_STATUSES = [
     );
   }
 
-  function TickList({ options, value, onChange, multi = false }) {
+  function TickList({ options, value, onChange, multi = false, allowCustom = true }) {
     const [open, setOpen] = React.useState(false);
     const [term, setTerm] = React.useState("");
     const wrapRef = React.useRef(null);
@@ -1106,6 +1107,7 @@ const COURSE_STATUSES = [
     const addTypedOption = () => {
       const next = term.trim();
       if (!next) return;
+      if (!allowCustom && !exactMatch) return;
       const option = exactMatch || next;
       if (!multi) {
         onChange(option);
@@ -1135,7 +1137,7 @@ const COURSE_STATUSES = [
               onChange={event => setTerm(event.target.value)}
               onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); addTypedOption(); } }}
               autoFocus
-              placeholder="Gõ để tìm hoặc thêm option..."
+              placeholder={allowCustom ? "Gõ để tìm hoặc thêm option..." : "Gõ để tìm..."}
               style={{ width: "100%", boxSizing: "border-box", height: 34, marginBottom: 5, fontSize: 12 }}
             />
             <div style={{ maxHeight: 220, overflowY: "auto" }}>
@@ -1149,12 +1151,16 @@ const COURSE_STATUSES = [
                   <span>{option}</span><span>{selected.includes(option) ? "✓" : ""}</span>
                 </button>
               ))}
-              {term.trim() && !exactMatch && (
+              {allowCustom && term.trim() && !exactMatch && (
                 <button type="button" onClick={addTypedOption} style={{ width: "100%", border: 0, background: "transparent", color: "var(--glh-accent)", borderRadius: 6, padding: "8px 10px", textAlign: "left", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
                   + Thêm “{term.trim()}”
                 </button>
               )}
-              {!visible.length && !term.trim() && <span style={{ display: "block", padding: "8px 10px", color: "var(--ui-muted)", fontSize: 12 }}>Chưa có option. Gõ để thêm mới.</span>}
+              {!visible.length && (
+                <span style={{ display: "block", padding: "8px 10px", color: "var(--ui-muted)", fontSize: 12 }}>
+                  {term.trim() ? "Không tìm thấy giá trị phù hợp." : (allowCustom ? "Chưa có option. Gõ để thêm mới." : "Chưa có giá trị để chọn.")}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -1162,7 +1168,7 @@ const COURSE_STATUSES = [
     );
   }
 
-  function InlineEditor({ value, type = "text", options = [], multi = false, creatable = false, onSave, onCancel, saving }) {
+  function InlineEditor({ value, type = "text", options = [], multi = false, creatable = false, allowCustom = true, onSave, onCancel, saving }) {
     const [draft, setDraft] = React.useState(value);
     const inputRef = React.useRef(null);
 
@@ -1173,7 +1179,7 @@ const COURSE_STATUSES = [
     return (
       <div onClick={event => event.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 4, minWidth: multi ? 170 : 110 }}>
         {multi || creatable ? (
-          <TickList options={options} value={draft} multi={multi} onChange={setDraft} />
+          <TickList options={options} value={draft} multi={multi} allowCustom={allowCustom} onChange={setDraft} />
         ) : type === "select" ? (
           <select className="adm-select" value={draft || ""} onChange={event => setDraft(event.target.value)} style={{ minWidth: 92, height: 32, padding: "4px 7px" }}>
             {options.map(option => <option key={option.id || option} value={option.id || option}>{option.label || option}</option>)}
@@ -1237,7 +1243,7 @@ const COURSE_STATUSES = [
     const locationOptions = catalogOptions(courses, "location");
     const rankOptions = catalogOptions(courses, "rank_targets", true);
     const roleOptions = catalogOptions(courses, "role_targets", true);
-    const skillOptions = catalogOptions(courses, "skill_tags", true);
+    const skillOptions = SKILL_OPTIONS;
     const [form, setForm] = React.useState({
       id: course?.course_code || nextCourseCode(courses),
       title: course?.title || "",
@@ -1342,7 +1348,7 @@ const COURSE_STATUSES = [
           </div>
           <div className="adm-form-group">
             <label className="adm-label">Skill tags</label>
-            <TickList options={skillOptions} value={form.skill_tags} multi onChange={value => set("skill_tags", value)} />
+            <TickList options={skillOptions} value={form.skill_tags} multi allowCustom={false} onChange={value => set("skill_tags", value)} />
           </div>
         </div>
 

@@ -7,6 +7,7 @@ import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { Step4LearningStyle, Step5Availability, Step6TrainerPreference, Step7FocusSkills } from './OnboardingSteps';
 import { trackEvent } from '@/lib/analytics';
+import { getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const D = GLH_DATA;
 const { Icon, Starfield } = GLHUI;
@@ -208,6 +209,9 @@ const { Avatar } = GLHAvatar;
     const learningStyles = learningFormatsRaw.map((s) => learningStyleLabels[s] || s);
     const weeklyHours = user.weekly_hours || quizExt.availability;
     const trainerPrefs = asList(user.preferred_trainers).length ? asList(user.preferred_trainers) : asList(quizExt.trainers);
+    const focusSkills = (asList(user.focus_skills).length ? asList(user.focus_skills) : asList(quizExt.focus_skills))
+      .map(skillLabel)
+      .filter(Boolean);
     const summaryItems = [
       user.db_rank ? { icon: "bar-chart-2", label: "Rank", value: user.db_rank } : null,
       user.db_role ? { icon: "briefcase", label: "Role", value: user.db_role } : null,
@@ -215,6 +219,7 @@ const { Avatar } = GLHAvatar;
       { icon: "clock", label: "Thời gian học", value: weeklyHours ? (availabilityLabel[weeklyHours] || weeklyHours) : emptyText },
       { icon: "book-open", label: "Hình thức học", value: learningStyles.length ? learningStyles.join(", ") : emptyText },
       { icon: "user-check", label: "Trainer yêu thích", value: trainerPrefs.length ? trainerPrefs.join(", ") : emptyText },
+      { icon: "target", label: "Kỹ năng muốn cải thiện", value: focusSkills.length ? focusSkills.join(", ") : emptyText, skills: focusSkills, fullRow: true },
     ].filter(Boolean);
     const statItems = [
       { label: "Giờ học", value: Number(user.hours_total || 0) + "h" },
@@ -258,14 +263,23 @@ const { Avatar } = GLHAvatar;
             React.createElement("div", {
               key: i,
               className: "rv-rise",
-              style: { animationDelay: (0.3 + i * 0.05) + "s", background: "rgba(255,255,255,0.05)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }
+              style: { animationDelay: (0.3 + i * 0.05) + "s", gridColumn: item.fullRow ? "1 / -1" : undefined, background: "rgba(255,255,255,0.05)", border: "1px solid var(--rpg-border)", borderRadius: 8, padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, minWidth: 0 }
             },
               React.createElement("div", { style: { width: 34, height: 34, borderRadius: 6, background: "rgba(228,30,38,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 } },
                 React.createElement(Icon, { name: item.icon, size: 17, color: "var(--glh-accent)" })
               ),
               React.createElement("div", { style: { minWidth: 0 } },
                 React.createElement("div", { style: { fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--rpg-muted)", marginBottom: 3 } }, item.label),
-                React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", overflowWrap: "anywhere" } }, item.value)
+                item.skills?.length
+                  ? React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+                      item.skills.map((skill) => {
+                        const visual = getSkillVisual(skill);
+                        return React.createElement("span", {
+                          key: skill,
+                          style: { fontSize: 11, fontWeight: 700, color: visual.color, background: visual.color + "20", border: "1px solid " + visual.color + "66", borderRadius: 999, padding: "4px 8px" }
+                        }, skill);
+                      }))
+                  : React.createElement("div", { style: { fontSize: 13, fontWeight: 700, color: "#fff", overflowWrap: "anywhere" } }, item.value)
               )
             )
           )

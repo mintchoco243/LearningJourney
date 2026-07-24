@@ -9,7 +9,7 @@ import { AvatarEditModal } from './ProfilePolicy';
 import { Calendar } from './CatalogCalendar';
 import { getRecommendations } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
-import { SKILL_OPTIONS, courseHasSkill, getSkillVisual } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS, courseHasSkill, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
@@ -212,6 +212,24 @@ export function Dashboard(props) {
   const hasSurvey   = !!(qr?._answers?.length > 0);
   const totalHours  = Number(user.hours_total || 0);
   const completedSessions = Number(user.completed_sessions_count ?? user.completed_courses?.length ?? 0);
+  const directFocusSkills = Array.isArray(user.focus_skills) ? user.focus_skills : [];
+  const fallbackFocusSkills = Array.isArray(qr?.quiz_extended?.focus_skills) ? qr.quiz_extended.focus_skills : [];
+  const savedFocusSkills = [...new Set((directFocusSkills.length ? directFocusSkills : fallbackFocusSkills)
+    .map(skillLabel)
+    .filter((skill) => SKILL_OPTIONS.includes(skill)))];
+  const quizPreferences = user.quiz_extended || qr?.quiz_extended || {};
+  const directLearningFormats = Array.isArray(user.learning_formats) ? user.learning_formats : [];
+  const fallbackLearningFormats = Array.isArray(quizPreferences.learning_style) ? quizPreferences.learning_style : [];
+  const learningFormatLabels = { video: "Video tự học", workshop: "Workshop", coaching: "Coaching 1-1", reading: "Reading / Tài liệu" };
+  const availabilityLabels = { under1: "Dưới 1 giờ/tuần", "1to2": "1-2 giờ/tuần", "3plus": "3+ giờ/tuần" };
+  const learningFormats = (directLearningFormats.length ? directLearningFormats : fallbackLearningFormats)
+    .map((format) => learningFormatLabels[format] || format)
+    .filter(Boolean);
+  const weeklyHours = user.weekly_hours || quizPreferences.availability;
+  const heroPreferences = [
+    weeklyHours ? { icon: "clock", value: availabilityLabels[weeklyHours] || weeklyHours } : null,
+    learningFormats.length ? { icon: "book-open", value: learningFormats.join(", ") } : null,
+  ].filter(Boolean);
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
@@ -275,11 +293,27 @@ export function Dashboard(props) {
       ),
       React.createElement("div", { style: { minWidth: 0 } },
         React.createElement("div", { className: "dash-rank" }, profileMeta),
-        React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayName)),
-    React.createElement("div", { className: "dash-quick-stats" },
+        React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayName),
+        savedFocusSkills.length ? React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 } },
+          React.createElement("span", { style: { alignSelf: "center", color: "var(--ui-muted)", fontSize: 10, fontWeight: 700 } }, "Kỹ năng ưu tiên"),
+          savedFocusSkills.map((skill) => {
+            const visual = getSkillVisual(skill);
+            return React.createElement("span", {
+              key: skill,
+              style: { display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10, fontWeight: 700, color: visual.color, background: visual.color + "18", border: "1px solid " + visual.color + "55", borderRadius: 999, padding: "4px 7px" }
+            }, React.createElement(Icon, { name: visual.icon, size: 11, color: visual.color }), skill);
+          })) : null),
+    React.createElement("div", { className: "dash-hero__stats" },
+      React.createElement("div", { className: "dash-quick-stats" },
         [[completedCourses.length || completedSessions, "Khóa đã học"], [`${Number.isInteger(totalHours) ? totalHours : totalHours.toFixed(1)}h`, "Giờ học tích lũy"], [requestCount, "Yêu cầu"]].map(([value, label]) =>
           React.createElement(Stat, { key: label, value, label, onClick: label === "Yêu cầu" ? props.onOpenLdRequestStatus : undefined }))
-      )),
+      ),
+      heroPreferences.length ? React.createElement("div", { className: "dash-hero__preferences" },
+          heroPreferences.map((item) => React.createElement("span", {
+            key: item.icon,
+            style: { display: "inline-flex", alignItems: "center", gap: 5, color: "var(--ui-muted)", fontSize: 10, fontWeight: 600 }
+          }, React.createElement(Icon, { name: item.icon, size: 12, color: "var(--amber)" }), item.value))
+        ) : null)),
 
     React.createElement(SkillFilterBar, { selected: selectedSkills, onChange: setSelectedSkills }),
     React.createElement(Calendar, { embedded: true, selectedSkills, onOpenCourse: props.onOpenCourse }),
@@ -309,7 +343,7 @@ function SkillFilterBar({ selected, onChange }) {
   const toggle = (id) => onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
   return React.createElement("div", { className: "dash-filter-sticky", style: { padding: "10px 0", background: "var(--ui-bg)", backdropFilter: "blur(10px)" } },
     React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-      React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700 } }, "Kỹ năng muốn cải thiện"),
+      React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700 } }, "Lọc Kỹ năng"),
       SKILL_OPTIONS.map((skill) => {
         const visual = getSkillVisual(skill);
         const isSelected = selected.includes(skill);
