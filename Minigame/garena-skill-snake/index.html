@@ -1193,7 +1193,7 @@
       particlePool.push({ x: 0, y: 0, vx: 0, vy: 0, color: '#FFF', radius: 2, alpha: 0, life: 0, active: false });
     }
 
-    const MAX_POPUPS = 3;
+    const MAX_POPUPS = 2;
     const popupPool = [];
     for (let i = 0; i < MAX_POPUPS; i++) {
       popupPool.push({ text: '', x: 0, y: 0, color: '#FFF', alpha: 0, vy: 0, life: 0, active: false });
@@ -1378,8 +1378,8 @@
           pop.y = Math.max(28, y - 12);
           pop.color = chest.color;
           pop.alpha = 1.0;
-          pop.vy = -1.2;
-          pop.life = 22; // ~2.2s fast snappy fade
+          pop.vy = -0.25; // Gentle float
+          pop.life = 300; // Exactly 5.0 seconds duration at 60 FPS
           pop.active = true;
           break;
         }
