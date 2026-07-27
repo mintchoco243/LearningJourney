@@ -71,11 +71,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* DEFAULT DESKTOP FIT (520px Width - Perfect 90% auto-scaled feel) */
+    /* PERFECT DESKTOP FIT MODAL FRAME (520px Width x Compact 650px Height) */
     .game-modal {
       width: 520px;
-      max-width: 96vw;
-      max-height: 92vh;
+      max-width: 98vw;
+      max-height: 96vh;
       background: var(--card-bg);
       border: 1.5px solid var(--card-border);
       border-radius: 22px;
@@ -88,29 +88,14 @@
       animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    /* Auto-scale on Laptop screens (< 820px height) so ZERO browser zoom is needed! */
-    @media (max-height: 820px) {
-      .game-modal {
-        transform: scale(0.92);
-        transform-origin: center center;
-      }
-    }
-
-    @media (max-height: 720px) {
-      .game-modal {
-        transform: scale(0.85);
-        transform-origin: center center;
-      }
-    }
-
     @keyframes modalFadeIn {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     /* Header & Close Button */
     .modal-header {
-      padding: 12px 20px;
+      padding: 12px 18px;
       background: rgba(17, 24, 39, 0.7);
       border-bottom: 1px solid var(--card-border);
       display: flex;
@@ -125,17 +110,17 @@
       gap: 10px;
       font-family: var(--font-brand);
       font-weight: 700;
-      font-size: 1.2rem;
+      font-size: 1.18rem;
       letter-spacing: 0.5px;
     }
 
     .brand-badge {
       background: var(--primary-red-gradient);
       color: #fff;
-      padding: 3px 9px;
+      padding: 3px 8px;
       border-radius: 7px;
       font-family: var(--font-brand);
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 800;
       box-shadow: var(--red-glow);
       letter-spacing: 1px;
@@ -148,7 +133,7 @@
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-secondary);
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -167,7 +152,7 @@
       display: flex;
       background: rgba(15, 23, 42, 0.85);
       border-bottom: 1px solid var(--card-border);
-      padding: 3px 14px 0 14px;
+      padding: 2px 12px 0 12px;
       flex-shrink: 0;
     }
 
@@ -181,7 +166,7 @@
       color: var(--text-secondary);
       font-family: var(--font-brand);
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       letter-spacing: 0.3px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -210,7 +195,7 @@
       display: grid;
       grid-template-columns: 0.85fr 1fr 1.35fr;
       gap: 8px;
-      padding: 10px 14px;
+      padding: 8px 14px;
       background: rgba(15, 23, 42, 0.4);
       border-bottom: 1px solid var(--card-border);
       flex-shrink: 0;
@@ -265,7 +250,7 @@
       display: none;
       flex-direction: column;
       align-items: center;
-      padding: 14px;
+      padding: 12px 14px;
       position: relative;
       flex: 1;
     }
@@ -274,7 +259,7 @@
       display: flex;
     }
 
-    /* 360x360 Canvas Frame (20x20 Grid, 18px cell) */
+    /* Perfect 360x360 Canvas Frame (Fits Desktop 100% Zoom) */
     .canvas-container {
       position: relative;
       width: 360px;
@@ -296,7 +281,7 @@
 
     /* SPACIOUS ERGONOMIC TOUCH D-PAD */
     .dpad-container {
-      margin-top: 10px;
+      margin-top: 8px;
       margin-bottom: 6px;
       display: grid;
       grid-template-columns: repeat(3, 44px);
@@ -312,7 +297,7 @@
       border: 1.5px solid rgba(255, 255, 255, 0.16);
       border-radius: 12px;
       color: white;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -330,13 +315,13 @@
 
     /* Bottom Micro-Ticker Notification Bar */
     .lj-ticker-bar {
-      width: 400px;
+      width: 380px;
       max-width: 100%;
-      margin-top: 6px;
+      margin-top: 4px;
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--card-border);
       border-radius: 10px;
-      padding: 6px 12px;
+      padding: 5px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -348,7 +333,7 @@
 
     .lj-ticker-badge {
       font-family: var(--font-brand);
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 800;
       padding: 2px 7px;
       border-radius: 5px;
@@ -359,7 +344,7 @@
 
     .lj-ticker-text {
       font-family: var(--font-body);
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-primary);
       white-space: nowrap;
@@ -370,7 +355,7 @@
 
     .lj-ticker-xp {
       font-family: var(--font-brand);
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: 800;
       color: var(--gold-yellow);
       white-space: nowrap;
@@ -378,16 +363,15 @@
 
     /* Controls Hint */
     .controls-hint {
-      margin-top: 8px;
-      margin-bottom: 2px;
+      margin-top: 6px;
       font-size: 0.75rem;
       color: var(--text-muted);
       display: flex;
-      gap: 14px;
+      gap: 12px;
       flex-shrink: 0;
     }
 
-    /* OVERLAYS INSIDE 360x360 CANVAS (ZERO TEXT CUT OFF) */
+    /* OVERLAYS INSIDE 360x360 CANVAS */
     .canvas-overlay {
       position: absolute;
       top: 0;
@@ -412,7 +396,7 @@
       font-family: var(--font-brand);
       font-size: 1.6rem;
       font-weight: 800;
-      letter-spacing: 0.8px;
+      letter-spacing: 1px;
       margin-bottom: 3px;
       background: linear-gradient(135deg, #FFF 0%, var(--text-secondary) 100%);
       -webkit-background-clip: text;
@@ -434,7 +418,7 @@
       padding: 10px 24px;
       border-radius: 12px;
       font-family: var(--font-brand);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 800;
       border: none;
       cursor: pointer;
@@ -444,7 +428,7 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       letter-spacing: 0.4px;
       white-space: nowrap;
     }
@@ -478,7 +462,7 @@
       justify-content: space-between;
       align-items: center;
       margin: 2px 0;
-      font-size: 0.84rem;
+      font-size: 0.82rem;
       font-family: var(--font-body);
     }
 
@@ -526,8 +510,8 @@
       font-family: var(--font-body);
       font-size: 0.8rem;
       color: var(--text-primary);
-      line-height: 1.38;
-      min-height: 36px;
+      line-height: 1.35;
+      min-height: 38px;
       display: block;
       text-align: left;
     }
@@ -547,7 +531,7 @@
       font-family: var(--font-brand);
       font-size: 0.72rem;
       font-weight: 700;
-      padding: 3px 9px;
+      padding: 3px 8px;
       border-radius: 6px;
       cursor: pointer;
     }
@@ -591,7 +575,7 @@
 
     .knowledge-modal-title {
       font-family: var(--font-brand);
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       font-weight: 800;
       color: var(--gold-yellow);
     }
@@ -670,7 +654,7 @@
       font-family: var(--font-brand);
       padding: 7px 12px;
       font-size: 0.78rem;
-      border-radius: 7px;
+      border-radius: 8px;
       border: none;
       font-weight: 700;
       cursor: pointer;
@@ -708,7 +692,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
@@ -718,7 +702,7 @@
       background: rgba(30, 41, 59, 0.5);
       border: 1px solid var(--card-border);
       border-radius: 10px;
-      padding: 10px 14px;
+      padding: 10px 12px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -815,7 +799,7 @@
       </div>
       <div class="hud-card clickable" id="hudCardCompass" title="Bấm để xem tất cả thông điệp Learning Compass đã mở khóa!">
         <span class="hud-label" style="color: var(--electric-blue);">BẬT MÍ COMPASS 🔍</span>
-        <span class="hud-value" id="hudLastChest" style="font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 175px; color: var(--text-primary);">🧭 --</span>
+        <span class="hud-value" id="hudLastChest" style="font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 165px; color: var(--text-primary);">🧭 --</span>
       </div>
     </div>
 
@@ -888,7 +872,7 @@
         <div class="knowledge-modal-overlay hidden" id="fullKnowledgeModal">
           <div class="knowledge-modal-header">
             <div class="knowledge-modal-title">💡 KHO THÔNG ĐIỆP LEARNING COMPASS</div>
-            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 2px 10px; font-size: 0.72rem;">Đóng ✕</button>
+            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 2px 10px; font-size: 0.75rem;">Đóng ✕</button>
           </div>
           <div class="knowledge-modal-list" id="fullKnowledgeList">
             <!-- Full Cards Rendered via JS -->
@@ -946,8 +930,8 @@
        ========================================== */
     const ASSET_B64 = {
       head: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAEqElEQVR4nNWZz09UVxTHCQt2bkbkDQw8FSvdzp6Fi/kPZseCHQt2kLg2Llz4P3TdWhFhTAUEFRhQHBopGkn9GRpTRmPTNGlM000Xr+czfq9cbmCYh5o8X/JNXu4995wv59c982hr+8SnHg8cM0SG2NAvxFo79qn6j0Ko3VAwFA0lQ9kwbBgxjAojWitLpqgz7V+SWIdhQAYxft5w+ftc17c/5KLylVw0ZrggjLHGHjKSHdZZdHR8bnKxlOOZS2a8ZCS+u5qL6hO5KLlmmMzl94A19pBBljOclQ7e489BrEPhGTJcxCs/5qIahieP55Mpw7ShYrgRoKI9ZJDlDGfRgS7pLB7Zm0r+QXLKQpU35RMYuS7DkPjpeHdys7M7mTHMBmCNPWRu6Mz1XaIT6FS+DqYuJpE7ZxgnNISJsDliN0VizjDf2ZMsGG4HYI29OclyxhFFFzoV9nHZao2kwjoocuWr8lpFHsPYLRG4c6InWTxRSJYMywFYYw8ZZDkzK49W5E10K+Tjsnl4uJUXo/JcQ5HzGt7A2F0zCoGqYdVwr6s3uR+AtVXJIHtXROc8b3okSwp38TByVOsQ+UEIfHK3FLpFR6yrkKwZiQeGdcPPXX17sK49ZJCtyqO35c2AZF05OXRgdSu0/CUXSWLypOKTk9dWDHioJlIPo77kF8NmANbYQ6Ymr67Im+hyJCvKSWyqukv7hloNdIScoNKmlXOEhL96SeHEI/7zOIqTJ/k42QrAGnuQ9Z9VR1Lhxsa0qlv5SJ8cCMm1i/klepUL7axyblGe88l1dsYf35/mTybPA7D2q2E/+RWFe0GF40KNbTXz0p5rUffkMMnqvOdCS3JXFVbfmIN7trtP7cErQzP5qgrHhdrzortKC2HlnudKmgy8t6SCqImgb8w3+nvP6WRH4P21CB4kj86lwIvYhoPu7qJPENaXqaYpL/fuyHtrKohmHnlrpN719DfAe93QTB6dVfVJl4tTqmgNGCVHjlujMXn44Z1X7pHUtAsqkqTfL6f+KPQnfxr+KpxpgHfW3gQk3YOuB+qT2JgPwqwpqNy4XTRYkn9lJhDKfsYL7z31OdoGlfnUS3xHDlJ/955J3gu8s8ae70kedKBrXc3chXlGLefabjWTh5FrziPMcPQjl3+0gWUVB+GlXdA+nhtBioA8I5R4C0L/9H6T/Cvwzhp7b5WTnOEsOjbVH9G9rJbzMQ9zjTwcU7uJ2zSijzJopiG4o5zDU3gNYv/1nW2A9/fyIjI76Qle0NXX/1UQzHyIUxcJTZg+RwG0UiSv1bg5e5QiSdVmuL5edO968Y1IHtRmnPc4w1l0pGozaRr1pufFl2bwN5GsK9xho2YPGWSd91x4W27Uaa46/vJH0Ydp5ZlIbivc+1112yL3TLn3SN6raUZMc9W1NCyQNxsK9ZY8SeheBYOCGxZeyHNbGr02lHv35b00w0LL4xbh2ZAnCRl51WzceiLPbXihTT1upR1Y1xXuTXnzsIH1oTy3psJIPbB+FSO/SGb3R1NQ0dn82emFOrs/3EUyu58+ApLZ/Hjkkczu57eAaDY/YAYks/sJOCCazY/oTQh/0X9D/A/z/ieuD+mJzgAAAABJRU5ErkJggg==',
-      chest_lvl1: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZElEQVR4nGNgGAVAsG372l/39+mD4/XA+N0wdpG+0w0j1wEDfhp1wKgDRh0w/BwwoJURPTBOB4yCEQxAADA58yYI21h9AAAAAElEQVR42mNgGAWjYDCBm+VsAfTAeB0wyYHvPy0xUQ4A0igYSTNRGJf6UQeMOmDoOGDAs+GOVFYUDNOMLo4L41JPVQf8+9CFgkcdMPIcMOCJcNQBow4Y3g4Y0MqIHhinA0bBiAQAIBbJEYS/2+0AAAAASUVORK5CYII=',
-      chest_lvl2: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZ0lEQVR4nGNgGAVA4OD0tV/2D98D4/XA+N0wdpG+0w0j1wEDfhp1wKgDRh0w/BwwoJURPTBOB4yCEQxAADuF9t0+q1z7AAAAAElEQVR42mNgGAWjYDCB01cfBtAD43WAe2jmf1piohwApFEwkmaiMC71ow4YdcDQccCAZ8M1W/ejYJhmdHFcGJd6qjoAHYw6YOQ5YMAT4agDRh0wvB0woJURPTBOB4yCEQxAADned4fP97CQAAAAASUVORK5CYII='
+      chest_lvl1: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZElEQVR4nGNgGAVAsG3nfwYgBhM4ee42AxCDCUzfuY8BiMEEpu/cxwDEYAIT524DgRggxkB2wYgEAJ64I788tUe+AAAAAElFTkSuQmCC',
+      chest_lvl2: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZ0lEQVR4nGNgGAVA4NzN/wxADCYwcuY2AxCDCYyev48BiMEERk7fxwDEYAIjZ+/DQBCQYSA7YNQBow4YdQAZDhhwV4w6YNQBow7AR0DCAyNn7oMw/pE0gxgH0BqMSAAAk4gkvYw26i4AAAAASUVORK5CYII='
     };
 
     /* ==========================================
@@ -1502,7 +1486,7 @@
           ctx.strokeStyle = '#94A3B8';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.roundRect(sx + 1.5, sy + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 6);
+          ctx.roundRect(sx + 1.5, sy + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 5);
           ctx.fill();
           ctx.stroke();
           ctx.restore();
@@ -1522,21 +1506,21 @@
       floatingTexts.forEach(ft => {
         ctx.save();
         ctx.globalAlpha = ft.alpha;
-        ctx.font = '600 12px "Be Vietnam Pro", "Inter", sans-serif';
+        ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
         
         const textWidth = ctx.measureText(ft.text).width;
-        const pillWidth = textWidth + 18;
-        const pillHeight = 22;
+        const pillWidth = textWidth + 16;
+        const pillHeight = 20;
 
         const halfPill = pillWidth / 2;
-        const safeX = Math.max(halfPill + 10, Math.min(canvas.width - halfPill - 10, ft.x));
-        const safeY = Math.max(24, Math.min(canvas.height - 12, ft.y));
+        const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
+        const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
 
         ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
         ctx.strokeStyle = ft.color;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.roundRect(safeX - halfPill, safeY - 15, pillWidth, pillHeight, 11);
+        ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
         ctx.fill();
         ctx.stroke();
 
@@ -1549,10 +1533,10 @@
       if (isWaitingForInput) {
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-        ctx.fillRect(15, 150, 330, 56);
+        ctx.fillRect(10, 150, 340, 56);
         ctx.strokeStyle = '#E41E26';
         ctx.lineWidth = 1.8;
-        ctx.strokeRect(15, 150, 330, 56);
+        ctx.strokeRect(10, 150, 340, 56);
 
         ctx.fillStyle = '#FFFFFF';
         ctx.font = '700 12px "Chakra Petch", "Be Vietnam Pro", sans-serif';
