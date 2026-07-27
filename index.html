@@ -193,9 +193,9 @@
     /* Spacious HUD Bar */
     .hud-bar {
       display: grid;
-      grid-template-columns: 0.85fr 1fr 1.35fr;
-      gap: 8px;
-      padding: 8px 14px;
+      grid-template-columns: 0.8fr 1fr 0.9fr 1.3fr;
+      gap: 6px;
+      padding: 8px 12px;
       background: rgba(15, 23, 42, 0.4);
       border-bottom: 1px solid var(--card-border);
       flex-shrink: 0;
@@ -794,12 +794,16 @@
         <span class="hud-value highlight-red" id="hudPlays">⚡ ∞</span>
       </div>
       <div class="hud-card">
-        <span class="hud-label">Điểm Cao Nhất</span>
-        <span class="hud-value highlight-gold" id="hudHighScore">🏆 0</span>
+        <span class="hud-label">Điểm Hiện Tại</span>
+        <span class="hud-value highlight-gold" id="hudCurrentScore">⭐ 0 XP</span>
+      </div>
+      <div class="hud-card">
+        <span class="hud-label">Kỷ Lục</span>
+        <span class="hud-value" id="hudHighScore">🏆 0</span>
       </div>
       <div class="hud-card clickable" id="hudCardCompass" title="Bấm để xem tất cả thông điệp Learning Compass đã mở khóa!">
         <span class="hud-label" style="color: var(--electric-blue);">BẬT MÍ COMPASS 🔍</span>
-        <span class="hud-value" id="hudLastChest" style="font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 165px; color: var(--text-primary);">🧭 --</span>
+        <span class="hud-value" id="hudLastChest" style="font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; color: var(--text-primary);">🧭 --</span>
       </div>
     </div>
 
@@ -1548,6 +1552,7 @@
        ========================================== */
     function updateHUD() {
       document.getElementById('hudPlays').textContent = `⚡ ${gameState.playsLeft}`;
+      document.getElementById('hudCurrentScore').textContent = `⭐ ${currentScore} XP`;
       document.getElementById('hudHighScore').textContent = `🏆 ${gameState.highScore} XP`;
       document.getElementById('hudLastChest').textContent = lastChestName === '--' ? '🧭 --' : `🧭 ${lastChestName}`;
       
