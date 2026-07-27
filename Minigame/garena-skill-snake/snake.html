@@ -1347,41 +1347,38 @@
        VISUAL FX (OPTIMIZED 60 FPS)
        ========================================== */
     function createChestFX(x, y, chest, promoText) {
-      for (let i = 0; i < 18; i++) {
+      for (let i = 0; i < 14; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 4.5 + 1.5;
+        const speed = Math.random() * 4.0 + 1.2;
         particles.push({
           x: x,
           y: y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
           color: chest.color,
-          radius: Math.random() * 3 + 2,
+          radius: Math.random() * 2.5 + 1.5,
           alpha: 1.0,
-          life: 25 + Math.floor(Math.random() * 10)
+          life: 20 + Math.floor(Math.random() * 8)
         });
       }
 
       const rawX = x;
       const displayText = promoText ? `+${chest.xp} XP • ${promoText}` : `+${chest.xp} XP ${chest.name}!`;
 
-      let spawnY = y - 10;
-      floatingTexts.forEach(ft => {
-        if (Math.abs(ft.y - spawnY) < 24) {
-          spawnY = ft.y - 26;
-        }
-      });
+      // Cap max floating popups to 2 so eating chests fast never clutters the screen!
+      if (floatingTexts.length >= 2) {
+        floatingTexts.shift();
+      }
 
-      spawnY = Math.max(30, spawnY);
-
+      let spawnY = y - 12;
       floatingTexts.push({
         text: displayText,
         x: rawX,
         y: spawnY,
         color: chest.color,
         alpha: 1.0,
-        vy: -0.7,
-        life: 65
+        vy: -1.2,
+        life: 25 // Snappy ~2.5s duration (3x faster fade out)
       });
     }
 
