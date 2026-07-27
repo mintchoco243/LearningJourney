@@ -71,12 +71,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* FIXED SPACIOUS MODAL FRAME (580px Width x 760px Height) */
+    /* PERFECTLY PROPORTIONED MODAL FRAME (540px Width x Auto Height - Max 96vh) */
     .game-modal {
-      width: 580px;
-      height: 760px;
+      width: 540px;
       max-width: 98vw;
-      max-height: 98vh;
+      max-height: 96vh;
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 24px;
@@ -95,7 +94,7 @@
 
     /* Header & Close Button */
     .modal-header {
-      padding: 16px 24px;
+      padding: 14px 20px;
       background: rgba(17, 24, 39, 0.6);
       border-bottom: 1px solid var(--card-border);
       display: flex;
@@ -107,33 +106,33 @@
     .brand-title {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       font-family: var(--font-brand);
       font-weight: 700;
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       letter-spacing: 0.5px;
     }
 
     .brand-badge {
       background: var(--primary-red-gradient);
       color: #fff;
-      padding: 4px 10px;
-      border-radius: 8px;
+      padding: 3px 8px;
+      border-radius: 7px;
       font-family: var(--font-brand);
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 800;
       box-shadow: var(--red-glow);
       letter-spacing: 1px;
     }
 
     .close-btn {
-      width: 34px;
-      height: 34px;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-secondary);
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -152,13 +151,13 @@
       display: flex;
       background: rgba(15, 23, 42, 0.8);
       border-bottom: 1px solid var(--card-border);
-      padding: 4px 16px 0 16px;
+      padding: 4px 14px 0 14px;
       flex-shrink: 0;
     }
 
     .tab-btn {
       flex: 1;
-      padding: 12px 8px;
+      padding: 10px 6px;
       text-align: center;
       background: transparent;
       border: none;
@@ -166,7 +165,7 @@
       color: var(--text-secondary);
       font-family: var(--font-brand);
       font-weight: 700;
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       letter-spacing: 0.3px;
       cursor: pointer;
       transition: all 0.2s ease;
@@ -184,9 +183,9 @@
     .tab-badge {
       background: var(--garena-red);
       color: white;
-      font-size: 0.72rem;
-      padding: 2px 7px;
-      border-radius: 10px;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 9px;
       font-weight: 800;
     }
 
@@ -194,8 +193,8 @@
     .hud-bar {
       display: grid;
       grid-template-columns: 0.85fr 1fr 1.35fr;
-      gap: 10px;
-      padding: 12px 18px;
+      gap: 8px;
+      padding: 10px 14px;
       background: rgba(15, 23, 42, 0.4);
       border-bottom: 1px solid var(--card-border);
       flex-shrink: 0;
@@ -204,8 +203,8 @@
     .hud-card {
       background: rgba(30, 41, 59, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 8px 10px;
+      border-radius: 10px;
+      padding: 6px 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -221,15 +220,15 @@
     .hud-card.clickable:hover {
       background: rgba(59, 130, 246, 0.25);
       border-color: var(--electric-blue);
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
     }
 
     .hud-label {
       font-family: var(--font-brand);
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: 700;
       color: var(--text-secondary);
-      margin-bottom: 3px;
+      margin-bottom: 2px;
       text-transform: uppercase;
       letter-spacing: 0.4px;
       white-space: nowrap;
@@ -237,7 +236,7 @@
 
     .hud-value {
       font-family: var(--font-brand);
-      font-size: 1.15rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: var(--text-primary);
     }
@@ -245,30 +244,30 @@
     .hud-value.highlight-red { color: var(--garena-red); }
     .hud-value.highlight-gold { color: var(--gold-yellow); }
 
-    /* FIXED FLEX TAB CONTENT AREA */
+    /* FLEX TAB CONTENT AREA WITH COMPACT SPACING */
     .tab-content {
       display: none;
       flex-direction: column;
       align-items: center;
-      padding: 16px;
+      padding: 12px 14px 14px 14px;
       position: relative;
+      overflow-y: auto;
       flex: 1;
-      overflow: hidden;
     }
 
     .tab-content.active {
       display: flex;
     }
 
-    /* Spacious 400x400 Canvas Frame */
+    /* Perfect 360x360 Canvas Frame */
     .canvas-container {
       position: relative;
-      width: 400px;
-      height: 400px;
-      border-radius: 18px;
+      width: 360px;
+      height: 360px;
+      border-radius: 16px;
       overflow: hidden;
       border: 2px solid var(--card-border);
-      box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.8);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
       background: #111827;
       touch-action: none;
       flex-shrink: 0;
@@ -280,14 +279,14 @@
       height: 100%;
     }
 
-    /* ELEGANT SPACIOUS D-PAD (SPACED OUT NATIVE FEEL) */
+    /* SPACIOUS TOUCH D-PAD */
     .dpad-container {
-      margin-top: 12px;
-      margin-bottom: 8px;
+      margin-top: 8px;
+      margin-bottom: 6px;
       display: grid;
-      grid-template-columns: repeat(3, 48px);
-      grid-template-rows: repeat(2, 44px);
-      gap: 6px;
+      grid-template-columns: repeat(3, 44px);
+      grid-template-rows: repeat(2, 40px);
+      gap: 5px;
       justify-content: center;
       align-items: center;
       flex-shrink: 0;
@@ -296,15 +295,15 @@
     .dpad-btn {
       background: rgba(30, 41, 59, 0.85);
       border: 1.5px solid rgba(255, 255, 255, 0.16);
-      border-radius: 14px;
+      border-radius: 12px;
       color: white;
-      font-size: 1.3rem;
+      font-size: 1.15rem;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
       transition: all 0.15s ease;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
       -webkit-tap-highlight-color: transparent;
     }
 
@@ -316,28 +315,28 @@
 
     /* Bottom Micro-Ticker Notification Bar */
     .lj-ticker-bar {
-      width: 440px;
+      width: 380px;
       max-width: 100%;
-      margin-top: 6px;
+      margin-top: 4px;
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 6px 14px;
+      border-radius: 10px;
+      padding: 5px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       transition: all 0.25s ease;
-      min-height: 38px;
+      min-height: 36px;
       flex-shrink: 0;
     }
 
     .lj-ticker-badge {
       font-family: var(--font-brand);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 800;
-      padding: 3px 8px;
-      border-radius: 6px;
+      padding: 2px 7px;
+      border-radius: 5px;
       background: var(--primary-red-gradient);
       color: white;
       white-space: nowrap;
@@ -345,7 +344,7 @@
 
     .lj-ticker-text {
       font-family: var(--font-body);
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 600;
       color: var(--text-primary);
       white-space: nowrap;
@@ -356,7 +355,7 @@
 
     .lj-ticker-xp {
       font-family: var(--font-brand);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       font-weight: 800;
       color: var(--gold-yellow);
       white-space: nowrap;
@@ -364,11 +363,11 @@
 
     /* Controls Hint */
     .controls-hint {
-      margin-top: 8px;
-      font-size: 0.78rem;
+      margin-top: 6px;
+      font-size: 0.72rem;
       color: var(--text-muted);
       display: flex;
-      gap: 16px;
+      gap: 12px;
       flex-shrink: 0;
     }
 
@@ -385,7 +384,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 20px;
+      padding: 16px;
       text-align: center;
       z-index: 10;
       transition: opacity 0.3s ease;
@@ -393,10 +392,10 @@
 
     .overlay-title {
       font-family: var(--font-brand);
-      font-size: 2.2rem;
+      font-size: 1.9rem;
       font-weight: 800;
       letter-spacing: 1px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       background: linear-gradient(135deg, #FFF 0%, var(--text-secondary) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -404,19 +403,19 @@
 
     .overlay-subtitle {
       font-family: var(--font-body);
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       color: var(--text-secondary);
-      margin-bottom: 22px;
+      margin-bottom: 18px;
       max-width: 90%;
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     /* PROMINENT PLAY BUTTON STYLING */
     .btn-action {
-      padding: 14px 36px;
-      border-radius: 16px;
+      padding: 12px 30px;
+      border-radius: 14px;
       font-family: var(--font-brand);
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 800;
       border: none;
       cursor: pointer;
@@ -432,32 +431,32 @@
 
     .btn-action:hover {
       transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 0 30px rgba(228, 30, 38, 0.8);
+      box-shadow: 0 0 25px rgba(228, 30, 38, 0.8);
     }
 
     .btn-secondary {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.15);
       box-shadow: none;
-      font-size: 1rem;
-      padding: 14px 28px;
+      font-size: 0.92rem;
+      padding: 12px 24px;
     }
 
     /* Score summary inside Game Over */
     .score-summary {
       background: rgba(30, 41, 59, 0.7);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 10px 20px;
-      margin-bottom: 12px;
+      border-radius: 12px;
+      padding: 8px 16px;
+      margin-bottom: 10px;
       width: 94%;
     }
 
     .score-row {
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
-      font-size: 0.88rem;
+      margin: 2px 0;
+      font-size: 0.82rem;
       font-family: var(--font-body);
     }
 
@@ -465,14 +464,14 @@
     .smart-knowledge-card {
       background: rgba(15, 23, 42, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 14px;
-      padding: 12px 14px;
-      margin-bottom: 16px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
       width: 94%;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
     }
 
     .smart-card-header {
@@ -483,7 +482,7 @@
 
     .smart-card-title {
       font-family: var(--font-brand);
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: var(--gold-yellow);
       text-transform: uppercase;
@@ -492,20 +491,20 @@
 
     .smart-card-counter {
       font-family: var(--font-brand);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 800;
       background: rgba(255, 255, 255, 0.1);
-      padding: 2px 7px;
-      border-radius: 8px;
+      padding: 2px 6px;
+      border-radius: 6px;
       color: var(--text-secondary);
     }
 
     .smart-card-body {
       font-family: var(--font-body);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-primary);
-      line-height: 1.4;
-      min-height: 42px;
+      line-height: 1.35;
+      min-height: 38px;
       display: flex;
       align-items: center;
       text-align: left;
@@ -516,7 +515,7 @@
       justify-content: space-between;
       align-items: center;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
-      padding-top: 8px;
+      padding-top: 6px;
     }
 
     .btn-nav-arrow {
@@ -524,22 +523,22 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       color: white;
       font-family: var(--font-brand);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 8px;
+      padding: 3px 8px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
     .btn-expand-all {
       font-family: var(--font-brand);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       font-weight: 700;
       color: var(--electric-blue);
       background: rgba(59, 130, 246, 0.15);
       border: 1px solid rgba(59, 130, 246, 0.3);
-      padding: 4px 12px;
-      border-radius: 8px;
+      padding: 3px 10px;
+      border-radius: 6px;
       cursor: pointer;
     }
 
@@ -555,7 +554,7 @@
       z-index: 50;
       display: flex;
       flex-direction: column;
-      padding: 20px;
+      padding: 16px;
       box-sizing: border-box;
     }
 
@@ -563,14 +562,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
       border-bottom: 1px solid var(--card-border);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
     }
 
     .knowledge-modal-title {
       font-family: var(--font-brand);
-      font-size: 1.05rem;
+      font-size: 0.95rem;
       font-weight: 800;
       color: var(--gold-yellow);
     }
@@ -580,29 +579,29 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .full-knowledge-card {
       background: rgba(30, 41, 59, 0.6);
       border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 12px 14px;
+      border-radius: 10px;
+      padding: 10px 12px;
       text-align: left;
     }
 
     .full-card-badge {
       font-family: var(--font-brand);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       font-weight: 800;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .full-card-text {
       font-family: var(--font-body);
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       color: var(--text-primary);
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     /* Missions Tab Styling */
@@ -610,7 +609,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
@@ -619,8 +618,8 @@
     .mission-card {
       background: rgba(30, 41, 59, 0.6);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 14px 18px;
+      border-radius: 14px;
+      padding: 12px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -629,27 +628,27 @@
     .mission-info {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
       max-width: 65%;
     }
 
     .mission-title {
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 600;
     }
 
     .mission-reward {
       font-family: var(--font-brand);
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       color: var(--gold-yellow);
       font-weight: 700;
     }
 
     .btn-claim {
       font-family: var(--font-brand);
-      padding: 8px 14px;
-      font-size: 0.82rem;
-      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      border-radius: 8px;
       border: none;
       font-weight: 700;
       cursor: pointer;
@@ -660,12 +659,12 @@
     .btn-claim.pending { background: rgba(59, 130, 246, 0.2); color: var(--electric-blue); border: 1px solid rgba(59, 130, 246, 0.4); }
 
     .missions-footer-action {
-      margin-top: 12px;
+      margin-top: 10px;
       width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
       flex-shrink: 0;
     }
@@ -675,10 +674,10 @@
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid rgba(239, 68, 68, 0.3);
       color: #FCA5A5;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 700;
-      padding: 5px 14px;
-      border-radius: 10px;
+      padding: 4px 12px;
+      border-radius: 8px;
       cursor: pointer;
     }
 
@@ -687,7 +686,7 @@
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
@@ -696,11 +695,11 @@
     .leaderboard-card {
       background: rgba(30, 41, 59, 0.5);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 12px 16px;
+      border-radius: 12px;
+      padding: 10px 14px;
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
     }
 
     .leaderboard-card.current-user {
@@ -711,9 +710,9 @@
     .lb-rank {
       font-family: var(--font-brand);
       font-weight: 800;
-      font-size: 0.95rem;
-      width: 32px;
-      height: 32px;
+      font-size: 0.88rem;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
@@ -731,28 +730,28 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 3px;
+      gap: 2px;
     }
 
     .lb-name {
-      font-size: 0.92rem;
+      font-size: 0.88rem;
       font-weight: 700;
     }
 
     .lb-dept {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: var(--text-muted);
     }
 
     .lb-score {
       font-family: var(--font-brand);
       font-weight: 800;
-      font-size: 1.05rem;
+      font-size: 0.98rem;
       color: var(--gold-yellow);
     }
 
     /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
   </style>
@@ -794,14 +793,14 @@
       </div>
       <div class="hud-card clickable" id="hudCardCompass" title="Bấm để xem tất cả thông điệp Learning Compass đã mở khóa!">
         <span class="hud-label" style="color: var(--electric-blue);">BẬT MÍ COMPASS 🔍</span>
-        <span class="hud-value" id="hudLastChest" style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 165px; color: var(--text-primary);">🧭 --</span>
+        <span class="hud-value" id="hudLastChest" style="font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; color: var(--text-primary);">🧭 --</span>
       </div>
     </div>
 
     <!-- TAB 1: GAME PLAY -->
     <div class="tab-content active" id="gameTabContent">
       <div class="canvas-container" id="canvasContainer">
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <canvas id="gameCanvas" width="360" height="360"></canvas>
 
         <!-- START OVERLAY -->
         <div class="canvas-overlay" id="startOverlay">
@@ -829,7 +828,7 @@
           <div class="score-summary">
             <div class="score-row">
               <span>Tổng XP:</span>
-              <strong id="finalScore" style="color: var(--gold-yellow); font-size: 1.15rem; font-family: var(--font-brand);">0 XP</strong>
+              <strong id="finalScore" style="color: var(--gold-yellow); font-size: 1.1rem; font-family: var(--font-brand);">0 XP</strong>
             </div>
             <div class="score-row">
               <span>Kỷ Lục:</span>
@@ -853,7 +852,7 @@
             </div>
           </div>
 
-          <div style="display: flex; gap: 12px;">
+          <div style="display: flex; gap: 10px;">
             <button class="btn-action" id="btnReplay">
               🔄 CHƠI LẠI (SPACE)
             </button>
@@ -867,7 +866,7 @@
         <div class="knowledge-modal-overlay hidden" id="fullKnowledgeModal">
           <div class="knowledge-modal-header">
             <div class="knowledge-modal-title">💡 KHO THÔNG ĐIỆP LEARNING COMPASS</div>
-            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 4px 14px; font-size: 0.82rem;">Đóng ✕</button>
+            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 3px 12px; font-size: 0.78rem;">Đóng ✕</button>
           </div>
           <div class="knowledge-modal-list" id="fullKnowledgeList">
             <!-- Full Cards Rendered via JS -->
@@ -1079,7 +1078,7 @@
        ========================================== */
     const STORAGE_KEY = 'garena_snake_state';
     const GRID_SIZE = 20;
-    const CELL_SIZE = 20;
+    const CELL_SIZE = 18; // 20x20 grid in 360x360 canvas
     const GAME_SPEED_MS = 110;
     const IS_TEST_MODE = true;
 
@@ -1097,7 +1096,6 @@
     const assetsLoaded = { head: false, chest_lvl1: false, chest_lvl2: false };
 
     function loadAssets() {
-      // 100% Fail-safe Base64 Image Loading (0ms latency, zero HTTP requests)
       assets.head.onload = () => assetsLoaded.head = true;
       assets.head.src = ASSET_B64.head;
 
@@ -1479,7 +1477,7 @@
           ctx.strokeStyle = '#94A3B8';
           ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.roundRect(sx + 1.5, sy + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 7);
+          ctx.roundRect(sx + 1.5, sy + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 6);
           ctx.fill();
           ctx.stroke();
           ctx.restore();
@@ -1499,21 +1497,21 @@
       floatingTexts.forEach(ft => {
         ctx.save();
         ctx.globalAlpha = ft.alpha;
-        ctx.font = '600 12.5px "Be Vietnam Pro", "Inter", sans-serif';
+        ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
         
         const textWidth = ctx.measureText(ft.text).width;
-        const pillWidth = textWidth + 18;
-        const pillHeight = 22;
+        const pillWidth = textWidth + 16;
+        const pillHeight = 20;
 
         const halfPill = pillWidth / 2;
-        const safeX = Math.max(halfPill + 10, Math.min(canvas.width - halfPill - 10, ft.x));
-        const safeY = Math.max(24, Math.min(canvas.height - 12, ft.y));
+        const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
+        const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
 
         ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
         ctx.strokeStyle = ft.color;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.roundRect(safeX - halfPill, safeY - 15, pillWidth, pillHeight, 11);
+        ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
         ctx.fill();
         ctx.stroke();
 
@@ -1526,15 +1524,15 @@
       if (isWaitingForInput) {
         ctx.save();
         ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-        ctx.fillRect(15, 170, 370, 60);
+        ctx.fillRect(10, 150, 340, 56);
         ctx.strokeStyle = '#E41E26';
         ctx.lineWidth = 1.8;
-        ctx.strokeRect(15, 170, 370, 60);
+        ctx.strokeRect(10, 150, 340, 56);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = '700 13px "Chakra Petch", "Be Vietnam Pro", sans-serif';
+        ctx.font = '700 12px "Chakra Petch", "Be Vietnam Pro", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🎮 BẤM PHÍM MŨI TÊN HOẶC SPACE ĐỂ BẮT ĐẦU!', 200, 205);
+        ctx.fillText('🎮 BẤM PHÍM MŨI TÊN HOẶC SPACE ĐỂ BẮT ĐẦU!', 180, 183);
         ctx.restore();
       }
     }
