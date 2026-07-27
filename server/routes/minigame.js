@@ -6,12 +6,12 @@ export const minigameRouter = express.Router();
 
 const TASKS = [
   { id: "task_daily_login", title: "Đăng nhập hằng ngày", reward: 1 },
-  { id: "task_fav_3", title: "Yêu thích 3 khóa học", reward: 1 },
+  { id: "task_fav_3", title: "Yêu thích 3 khóa học", reward: 1, path: "/library" },
   { id: "task_1", title: "Lướt Trang chủ 30s", reward: 1, activity: "home", seconds: 30, path: "/" },
   { id: "task_2", title: "Lướt Thư viện đào tạo 30s", reward: 1, activity: "library", seconds: 30, path: "/library" },
   { id: "task_3", title: "Xem 1 khóa học bất kỳ 15s", reward: 1, activity: "course", seconds: 15, path: "/library" },
-  { id: "task_4", title: "Hoàn thành 1 khóa học", reward: 2 },
-  { id: "task_onboarding", title: "Hoàn thành Onboarding Quiz", reward: 1 },
+  { id: "task_4", title: "Đánh dấu hoàn thành 1 khóa học", reward: 2, path: "/library" },
+  { id: "task_onboarding", title: "Hoàn thành Onboarding Quiz", reward: 1, path: "/" },
 ];
 
 function parseClaims(value) {
@@ -81,19 +81,21 @@ async function autoClaimTasks(user, mode = "production") {
     const state = claimState(currentUser[column]);
     const states = await taskState(currentUser, mode);
     let reward = 0;
+    const claimed = [];
     const now = new Date().toISOString();
     for (const task of states) {
       const key = task.id === "task_daily_login" ? `${task.id}:${todayKey()}` : task.id;
       if (task.status === "READY_TO_CLAIM" && !state.claims[key]) {
         state.claims[key] = now;
         reward += task.reward;
+        claimed.push({ id: task.id, title: task.title, reward: task.reward });
       }
     }
-    if (!reward) return { state, states };
+    if (!reward) return { state, states, claimed };
     await client.query(`UPDATE users SET ${column} = $2, ${playsColumn} = ${playsColumn} + $3 WHERE id = $1`, [user.id, JSON.stringify(state), reward]);
     currentUser[column] = JSON.stringify(state);
     currentUser[playsColumn] = Number(currentUser[playsColumn] || 0) + reward;
-    return { state, states: await taskState(currentUser, mode) };
+    return { state, states: await taskState(currentUser, mode), claimed };
   });
 }
 
@@ -123,6 +125,7 @@ minigameRouter.get("/bootstrap", async (req, res, next) => {
       mode,
       user: { id: user.id, full_name: user.full_name, email: user.email, team: user.team, high_score: mode === "test" ? (user.minigame_test_high_score || 0) : (user.minigame_high_score || 0), total_runs: mode === "test" ? (user.minigame_test_total_runs || 0) : (user.minigame_total_runs || 0), plays: mode === "test" ? "∞" : (user.minigame_plays ?? 0) },
       tasks: synced.states,
+      claimed: synced.claimed || [],
       leaderboard: leaderboard.rows,
     });
   } catch (error) { next(error); }
@@ -187,7 +190,7 @@ minigameRouter.post("/activity", async (req, res, next) => {
     await query(`UPDATE users SET ${column} = $2 WHERE id = $1`, [req.user.id, JSON.stringify(state)]);
     user[column] = JSON.stringify(state);
     const synced = await autoClaimTasks(user, mode);
-    res.json({ task_id: task.id, progress: state.progress[task.id], status: synced.states.find((item) => item.id === task.id)?.status });
+    res.json({ task_id: task.id, progress: state.progress[task.id], status: synced.states.find((item) => item.id === task.id)?.status, claimed: synced.claimed || [] });
   } catch (error) { next(error); }
 });
 

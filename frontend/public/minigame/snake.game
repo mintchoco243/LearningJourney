@@ -1115,6 +1115,9 @@
       backendUserId = data.user.id;
       gameState.tasks = data.tasks.map(task => ({ ...task, progress: Number(task.progress || 0), reqTime: Number(task.seconds || 0) }));
       backendLeaderboard = data.leaderboard || [];
+      (data.claimed || []).forEach(task => {
+        window.parent.postMessage({ type: 'GARENA_TASK_COMPLETED', title: task.title, reward: task.reward }, window.location.origin);
+      });
       const userLb = officeLeaderboard.find(x => x.isUser);
       if (userLb) userLb.score = gameState.highScore;
     }
@@ -1150,12 +1153,12 @@
       unlockedTipsHistory: [],
       tasks: [
         { id: 'task_daily_login', title: '📅 Đăng nhập hằng ngày', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
         { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED', path: '/library' },
-        { id: 'task_4', title: '✅ Hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
+        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/' }
       ]
     };
 

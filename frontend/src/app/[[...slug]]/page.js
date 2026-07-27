@@ -545,6 +545,10 @@ function AppInner() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ activity, seconds: 5 }),
+      }).then((response) => response.ok ? response.json() : null).then((data) => {
+        (data?.claimed || []).forEach((task) => {
+          window.dispatchEvent(new CustomEvent("minigame:task-completed", { detail: { title: task.title, reward: task.reward } }));
+        });
       }).catch(() => {});
     }, 5000);
     return () => window.clearInterval(timer);

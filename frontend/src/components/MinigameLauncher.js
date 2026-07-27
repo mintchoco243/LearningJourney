@@ -5,7 +5,15 @@ import React from "react";
 export function MinigameLauncher({ authenticated }) {
   const [open, setOpen] = React.useState(false);
   const [enabled, setEnabled] = React.useState(false);
+  const [taskNotice, setTaskNotice] = React.useState(null);
   const iframeRef = React.useRef(null);
+  const noticeTimerRef = React.useRef(null);
+
+  function showTaskNotice(title, reward) {
+    setTaskNotice({ title, reward });
+    if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
+    noticeTimerRef.current = window.setTimeout(() => setTaskNotice(null), 5000);
+  }
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -21,10 +29,16 @@ export function MinigameLauncher({ authenticated }) {
     const onMessage = (event) => {
       if (event.origin !== window.location.origin || !event.data?.type) return;
       if (event.data.type === "GARENA_CLOSE_GAME") setOpen(false);
+      if (event.data.type === "GARENA_TASK_COMPLETED") showTaskNotice(event.data.title, event.data.reward);
       if (event.data.type === "GARENA_NAVIGATE" && typeof event.data.path === "string" && event.data.path.startsWith("/")) {
         setOpen(false);
         window.location.href = event.data.path;
       }
+    };
+    const onTaskCompleted = (event) => {
+      const title = event.detail?.title;
+      const reward = event.detail?.reward;
+      if (typeof title === "string" && Number.isFinite(Number(reward))) showTaskNotice(title, reward);
     };
     const onActivity = (event) => {
       const activity = event.detail?.activity;
@@ -34,9 +48,12 @@ export function MinigameLauncher({ authenticated }) {
     };
     window.addEventListener("message", onMessage);
     window.addEventListener("minigame:activity", onActivity);
+    window.addEventListener("minigame:task-completed", onTaskCompleted);
     return () => {
       window.removeEventListener("message", onMessage);
       window.removeEventListener("minigame:activity", onActivity);
+      window.removeEventListener("minigame:task-completed", onTaskCompleted);
+      if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
     };
   }, [authenticated, enabled]);
 
@@ -50,18 +67,22 @@ export function MinigameLauncher({ authenticated }) {
   }
 
   return React.createElement(React.Fragment, null,
-    enabled ? React.createElement("button", {
+    enabled ? React.createElement("div", {
+      style: { position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "grid", justifyItems: "end", gap: 8 },
+    }, taskNotice ? React.createElement("div", {
+      role: "status",
+      style: { maxWidth: 260, padding: "10px 14px", borderRadius: 12, background: "#172235", border: "1px solid rgba(245,158,11,.7)", color: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.28)", fontSize: 12, fontWeight: 800, textAlign: "right" },
+    }, `✅ ${taskNotice.title} · +${taskNotice.reward} lượt chơi — Chơi tiếp ngay!`) : null, React.createElement("button", {
       type: "button",
       onClick: launch,
       title: "Mở Mini Game Skill Snake",
       style: {
-        position: "fixed", right: 28, bottom: 122, zIndex: 99,
-        border: "1px solid rgba(255,190,70,.55)", borderRadius: 999,
+        border: "1px solid rgba(255,190,70,.65)", borderRadius: 999,
         background: "linear-gradient(135deg, #e41e26, #ff8a00)", color: "#fff",
         boxShadow: "0 8px 24px rgba(228,30,38,.32)", padding: "11px 16px",
-        fontWeight: 800, fontSize: 12, cursor: "pointer", letterSpacing: ".02em",
+        fontWeight: 800, fontSize: 12, cursor: "pointer", letterSpacing: ".02em", display: "inline-flex", alignItems: "center", gap: 8,
       },
-    }, "🎮 Chơi Mini Game") : null,
+    }, React.createElement("img", { src: "/minigame/assets/head.png", alt: "Skill Snake", style: { width: 30, height: 30, objectFit: "contain" } }), "Chơi minigame ngay!")) : null,
     open && authenticated ? React.createElement("div", {
       role: "dialog", "aria-modal": "true", onClick: () => setOpen(false),
       style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(11,14,20,.85)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 16 },
