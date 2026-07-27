@@ -269,32 +269,37 @@
 
     /* SPACIOUS ERGONOMIC TOUCH D-PAD */
     .dpad-container {
-      margin-top: 8px;
-      margin-bottom: 6px;
+      margin-top: 10px;
+      margin-bottom: 8px;
       display: grid;
-      grid-template-columns: repeat(3, 44px);
-      grid-template-rows: repeat(2, 40px);
-      gap: 5px;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(2, 50px);
+      gap: 8px;
       justify-content: center;
       align-items: center;
       flex-shrink: 0;
     }
 
     .dpad-btn {
-      background: rgba(30, 41, 59, 0.85);
-      border: 1.5px solid rgba(255, 255, 255, 0.16);
-      border-radius: 12px;
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
       color: white;
-      font-size: 1.15rem;
+      font-size: 1.4rem;
+      font-weight: bold;
       display: flex;
       justify-content: center;
       align-items: center;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s ease, transform 0.1s ease;
     }
 
     .dpad-btn:active {
       background: var(--garena-red);
+      transform: scale(0.92);
+      border-color: var(--garena-red);
     }
 
     /* Bottom Micro-Ticker Notification Bar */
@@ -877,7 +882,7 @@
 
       <!-- Controls Hint -->
       <div class="controls-hint">
-        <span>🎮 Phím Mũi Tên hoặc Vuốt Màn Hình để di chuyển</span>
+        <span>📱 Vuốt Màn Hình (Swipe) hoặc Dùng Phím ◄ ▲ ▼ ►</span>
         <span>⚡ Bấm phím SPACE / ENTER để Chơi Ngay / Chơi Lại</span>
       </div>
     </div>
@@ -976,8 +981,15 @@
       const promo = pool[nextIndex];
       lastChestName = promo.shortText;
 
+      // Add to session tips for current carousel
       if (!sessionUnlockedTips.some(t => t.fullDetail === promo.fullDetail)) {
         sessionUnlockedTips.push(promo);
+      }
+
+      // PERMANENT PLAYER HISTORY COLLECTION IN LOCALSTORAGE
+      if (!gameState.unlockedTipsHistory.some(t => t.fullDetail === promo.fullDetail)) {
+        gameState.unlockedTipsHistory.push(promo);
+        saveState();
       }
 
       const tickerBar = document.getElementById('ljTickerBar');
@@ -1016,7 +1028,12 @@
       const container = document.getElementById('fullKnowledgeList');
       container.innerHTML = '';
 
-      sessionUnlockedTips.forEach((tip) => {
+      // Use cumulative history list if available, fallback to session tips
+      const tipsList = (gameState.unlockedTipsHistory && gameState.unlockedTipsHistory.length > 0) 
+        ? gameState.unlockedTipsHistory 
+        : (sessionUnlockedTips.length > 0 ? sessionUnlockedTips : LEARNING_JOURNEY_PROMOS.level1.slice(0, 1));
+
+      tipsList.forEach((tip) => {
         const card = document.createElement('div');
         card.className = 'full-knowledge-card';
         card.innerHTML = `
@@ -1090,6 +1107,7 @@
       playsLeft: '∞',
       highScore: 0,
       lastResetDate: new Date().toISOString().slice(0, 10),
+      unlockedTipsHistory: [],
       tasks: [
         { id: 'task_daily_login', title: '📅 Đăng nhập hàng ngày', reward: 1, reqTime: 0, progress: 1, status: 'READY_TO_CLAIM' },
         { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học bất kỳ', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
@@ -1143,6 +1161,9 @@
           gameState.playsLeft = IS_TEST_MODE ? '∞' : (parsed.playsLeft ?? 3);
           gameState.highScore = parsed.highScore ?? 0;
           gameState.lastResetDate = parsed.lastResetDate ?? new Date().toISOString().slice(0, 10);
+          if (parsed.unlockedTipsHistory && Array.isArray(parsed.unlockedTipsHistory)) {
+            gameState.unlockedTipsHistory = parsed.unlockedTipsHistory;
+          }
           if (parsed.tasks && Array.isArray(parsed.tasks)) {
             parsed.tasks.forEach(st => {
               const t = gameState.tasks.find(x => x.id === st.id);
