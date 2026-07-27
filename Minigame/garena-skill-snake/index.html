@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garena Skill Snake - Learning Compass Campaign</title>
+  <!-- Google Fonts: Chakra Petch (Garena Esports/Gaming Brand), Be Vietnam Pro & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Chakra+Petch:wght@500;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================
+       GARENA BRAND BOOK DESIGN SYSTEM & TOKENS
+       Per Garena Brand Book 2023-02 & Learning Compass
+       ========================================== */
+    :root {
+      --garena-red: #E41E26; /* PANTONE 485 C */
+      --primary-red-gradient: linear-gradient(135deg, #E41E26 0%, #B30006 100%);
+      --red-glow: 0 0 20px rgba(228, 30, 38, 0.5);
+      
+      --bg-overlay: rgba(11, 14, 20, 0.85);
+      --card-bg: #131924;
+      --card-border: #222D3F;
+      
+      /* Typography System */
+      --font-brand: "Chakra Petch", "Be Vietnam Pro", -apple-system, sans-serif;
+      --font-body: "Be Vietnam Pro", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      
+      --bronze-gold: #D97706;
+      --bronze-gradient: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
+      --silver-color: #CBD5E1;
+      --silver-gradient: linear-gradient(135deg, #E2E8F0 0%, #64748B 100%);
+      
+      --emerald-green: #16A34A;
+      --emerald-gradient: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+      --electric-blue: #3B82F6;
+      --blue-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      --gold-yellow: #F59E0B;
+      --gold-gradient: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      
+      --text-primary: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      
+      --shadow-glow: 0 20px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* GLOBAL UTILITY FOR HIDDEN OVERLAYS */
+    .hidden {
+      display: none !important;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-overlay);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Modal Container */
+    .game-modal {
+      width: 480px;
+      max-width: 95vw;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: var(--shadow-glow);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* Header & Close Button */
+    .modal-header {
+      padding: 14px 20px;
+      background: rgba(17, 24, 39, 0.6);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-brand);
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-badge {
+      background: var(--primary-red-gradient);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: var(--font-brand);
+      font-size: 0.78rem;
+      font-weight: 800;
+      box-shadow: var(--red-glow);
+      letter-spacing: 1px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      font-size: 1.2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+      background: rgba(228, 30, 38, 0.2);
+      color: var(--garena-red);
+      border-color: var(--garena-red);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.8);
+      border-bottom: 1px solid var(--card-border);
+      padding: 4px 12px 0 12px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 6px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-brand);
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--garena-red);
+    }
+
+    .tab-badge {
+      background: var(--garena-red);
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 10px;
+      font-weight: 800;
+    }
+
+    /* HUD Bar */
+    .hud-bar {
+      display: grid;
+      grid-template-columns: 0.8fr 1fr 1.35fr;
+      gap: 6px;
+      padding: 10px 14px;
+      background: rgba(15, 23, 42, 0.4);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .hud-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hud-card.clickable {
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .hud-card.clickable:hover {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: var(--electric-blue);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .hud-label {
+      font-family: var(--font-brand);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .hud-value {
+      font-family: var(--font-brand);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .hud-value.highlight-red { color: var(--garena-red); }
+    .hud-value.highlight-gold { color: var(--gold-yellow); }
+
+    /* Tab Content Areas */
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 14px;
+      position: relative;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Canvas Frame */
+    .canvas-container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid var(--card-border);
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+      background: #111827;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* Bottom Micro-Ticker Notification Bar (Non-intrusive bottom strip) */
+    .lj-ticker-bar {
+      width: 400px;
+      margin-top: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: all 0.25s ease;
+      min-height: 36px;
+    }
+
+    .lj-ticker-badge {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: var(--primary-red-gradient);
+      color: white;
+      white-space: nowrap;
+    }
+
+    .lj-ticker-text {
+      font-family: var(--font-body);
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .lj-ticker-xp {
+      font-family: var(--font-brand);
+      font-size: 0.78rem;
+      font-weight: 800;
+      color: var(--gold-yellow);
+      white-space: nowrap;
+    }
+
+    /* Overlays inside Canvas Container */
+    .canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 14, 20, 0.94);
+      backdrop-filter: blur(8px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      text-align: center;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    .overlay-title {
+      font-family: var(--font-brand);
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+      background: linear-gradient(135deg, #FFF 0%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .overlay-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      max-width: 88%;
+      line-height: 1.4;
+    }
+
+    /* PROMINENT PLAY BUTTON STYLING */
+    .btn-action {
+      padding: 12px 32px;
+      border-radius: 14px;
+      font-family: var(--font-brand);
+      font-size: 1.05rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary-red-gradient);
+      box-shadow: var(--red-glow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 30px rgba(228, 30, 38, 0.8);
+    }
+
+    .btn-action:disabled {
+      background: var(--text-muted);
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: none;
+      font-size: 0.95rem;
+      padding: 12px 24px;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: none;
+    }
+
+    /* Score summary inside Game Over */
+    .score-summary {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      margin-bottom: 10px;
+      width: 92%;
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 2px 0;
+      font-size: 0.82rem;
+      font-family: var(--font-body);
+    }
+
+    /* SMART CAROUSEL KNOWLEDGE CONTAINER IN GAME OVER */
+    .smart-knowledge-card {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      width: 92%;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .smart-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .smart-card-title {
+      font-family: var(--font-brand);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--gold-yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .smart-card-counter {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 1px 6px;
+      border-radius: 8px;
+      color: var(--text-secondary);
+    }
+
+    .smart-card-body {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      color: var(--text-primary);
+      line-height: 1.35;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      text-align: left;
+    }
+
+    .smart-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 6px;
+    }
+
+    .btn-nav-arrow {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: white;
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav-arrow:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-expand-all {
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--electric-blue);
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 3px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-expand-all:hover {
+      background: rgba(59, 130, 246, 0.3);
+      color: white;
+    }
+
+    /* FULL KNOWLEDGE MODAL OVERLAY */
+    .knowledge-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 14, 20, 0.96);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    .knowledge-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 12px;
+    }
+
+    .knowledge-modal-title {
+      font-family: var(--font-brand);
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--gold-yellow);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .knowledge-modal-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-right: 4px;
+    }
+
+    .full-knowledge-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: left;
+    }
+
+    .full-card-badge {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .full-card-text {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      line-height: 1.4;
+    }
+
+    /* Controls Hint / Touch D-Pad */
+    .controls-hint {
+      margin-top: 8px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 16px;
+    }
+
+    .dpad-container {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 38px);
+      grid-template-rows: repeat(2, 38px);
+      gap: 5px;
+    }
+
+    .dpad-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .dpad-btn:active {
+      background: var(--garena-red);
+    }
+
+    /* Missions Tab Styling */
+    .missions-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 330px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .mission-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: border-color 0.2s ease;
+    }
+
+    .mission-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .mission-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 65%;
+    }
+
+    .mission-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .mission-reward {
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      color: var(--gold-yellow);
+      font-weight: 700;
+    }
+
+    .mission-progress {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .btn-claim {
+      font-family: var(--font-brand);
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-claim.ready {
+      background: var(--emerald-gradient);
+      color: white;
+      box-shadow: 0 0 12px rgba(22, 163, 74, 0.4);
+    }
+
+    .btn-claim.done {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .btn-claim.pending {
+      background: rgba(59, 130, 246, 0.2);
+      color: var(--electric-blue);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .missions-footer-action {
+      margin-top: 8px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .btn-reset-test {
+      font-family: var(--font-brand);
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #FCA5A5;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-reset-test:hover {
+      background: rgba(239, 68, 68, 0.3);
+      color: #FFFFFF;
+    }
+
+    /* Leaderboard Tab Styling */
+    .leaderboard-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .leaderboard-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .leaderboard-card.current-user {
+      background: rgba(228, 30, 38, 0.15);
+      border-color: var(--garena-red);
+      box-shadow: 0 0 12px rgba(228, 30, 38, 0.3);
+    }
+
+    .lb-rank {
+      font-family: var(--font-brand);
+      font-weight: 800;
+      font-size: 0.9rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .lb-rank.top-1 { background: var(--gold-gradient); color: white; box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+    .lb-rank.top-2 { background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%); color: white; }
+    .lb-rank.top-3 { background: linear-gradient(135deg, #B45309 0%, #78350F 100%); color: white; }
+
+    .lb-user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .lb-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lb-dept {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .lb-score {
+      font-family: var(--font-brand);
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--gold-yellow);
+      white-space: nowrap;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <div class="game-modal">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="brand-title">
+        <span class="brand-badge">GARENA</span>
+        <span>SKILL SNAKE</span>
+      </div>
+      <button class="close-btn" id="closeBtn" title="Đóng game">&times;</button>
+    </div>
+
+    <!-- Nav Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tabGameBtn">
+        🎮 Chơi Game
+      </button>
+      <button class="tab-btn" id="tabMissionsBtn">
+        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">6</span>
+      </button>
+      <button class="tab-btn" id="tabLeaderboardBtn">
+        🏆 BXH Văn Phòng
+      </button>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-card">
+        <span class="hud-label">Lượt Chơi</span>
+        <span class="hud-value highlight-red" id="hudPlays">⚡ ∞</span>
+      </div>
+      <div class="hud-card">
+        <span class="hud-label">Điểm Cao Nhất</span>
+        <span class="hud-value highlight-gold" id="hudHighScore">🏆 0</span>
+      </div>
+      <div class="hud-card clickable" id="hudCardCompass" title="Bấm để xem tất cả thông điệp Learning Compass đã mở khóa!">
+        <span class="hud-label" style="color: var(--electric-blue);">BẬT MÍ COMPASS 🔍</span>
+        <span class="hud-value" id="hudLastChest" style="font-size: 0.74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px; color: var(--text-primary);">🧭 --</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: GAME PLAY -->
+    <div class="tab-content active" id="gameTabContent">
+      <div class="canvas-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+        <!-- START OVERLAY -->
+        <div class="canvas-overlay" id="startOverlay">
+          <div class="overlay-title">SKILL SNAKE</div>
+          <div class="overlay-subtitle">Săn Rương Kỹ Năng - Bứt phá Sự Nghiệp & Khám Phá Garena Learning Journey</div>
+          <button class="btn-action" id="btnStartGame">
+            🚀 CHƠI NGAY (FREE TEST)
+          </button>
+        </div>
+
+        <!-- OUT OF PLAYS OVERLAY -->
+        <div class="canvas-overlay hidden" id="noPlaysOverlay">
+          <div class="overlay-title" style="color: var(--garena-red);">HẾT LƯỢT CHƠI!</div>
+          <div class="overlay-subtitle">Bạn đã sử dụng hết lượt chơi hôm nay. Hoàn thành nhiệm vụ để nhận thêm lượt!</div>
+          <button class="btn-action" id="btnGoToMissions">
+            🎯 LÀM NHIỆM VỤ NGAY
+          </button>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div class="canvas-overlay hidden" id="gameOverOverlay">
+          <div class="overlay-title">GAME OVER</div>
+          <div class="overlay-subtitle" id="gameOverSubtitle">Chiến binh Garena đã xuất sắc thu thập:</div>
+          
+          <div class="score-summary">
+            <div class="score-row">
+              <span>Tổng XP:</span>
+              <strong id="finalScore" style="color: var(--gold-yellow); font-size: 1.1rem; font-family: var(--font-brand);">0 XP</strong>
+            </div>
+            <div class="score-row">
+              <span>Kỷ Lục:</span>
+              <strong id="finalHighScore" style="font-family: var(--font-brand);">0 XP</strong>
+            </div>
+          </div>
+
+          <!-- SMART CAROUSEL KNOWLEDGE CONTAINER IN GAME OVER -->
+          <div class="smart-knowledge-card">
+            <div class="smart-card-header">
+              <span class="smart-card-title">💡 THÔNG ĐIỆP HỌC TẬP</span>
+              <span class="smart-card-counter" id="carouselCounter">1/1</span>
+            </div>
+            <div class="smart-card-body" id="carouselBodyText">
+              <!-- Rendered via JS -->
+            </div>
+            <div class="smart-card-footer">
+              <button class="btn-nav-arrow" id="btnPrevTip">◄ Trước</button>
+              <button class="btn-expand-all" id="btnExpandAllTips">🔍 Xem Tất Cả (1)</button>
+              <button class="btn-nav-arrow" id="btnNextTip">Sau ►</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button class="btn-action" id="btnReplay">
+              🔄 CHƠI LẠI (FREE)
+            </button>
+            <button class="btn-action btn-secondary" id="btnGameOverMissions">
+              🎯 NHIỆM VỤ
+            </button>
+          </div>
+        </div>
+
+        <!-- FULL KNOWLEDGE MODAL OVERLAY -->
+        <div class="knowledge-modal-overlay hidden" id="fullKnowledgeModal">
+          <div class="knowledge-modal-header">
+            <div class="knowledge-modal-title">💡 KHO THÔNG ĐIỆP LEARNING COMPASS</div>
+            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 4px 12px; font-size: 0.78rem;">Đóng ✕</button>
+          </div>
+          <div class="knowledge-modal-list" id="fullKnowledgeList">
+            <!-- Full Cards Rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Non-intrusive Bottom Ticker Bar (Placed OUTSIDE canvas) -->
+      <div class="lj-ticker-bar" id="ljTickerBar">
+        <span class="lj-ticker-badge" id="ljTickerBadge">🟢 RƯƠNG ĐỒNG</span>
+        <span class="lj-ticker-text" id="ljTickerText">Ăn rương để mở khóa thông điệp Learning Journey!</span>
+        <span class="lj-ticker-xp" id="ljTickerXP">+0 XP</span>
+      </div>
+
+      <!-- Controls Hint -->
+      <div class="controls-hint">
+        <span>🎮 Phím Mũi Tên / WASD để di chuyển</span>
+      </div>
+
+      <!-- Touch D-Pad for Mobile / Responsive -->
+      <div class="dpad-container">
+        <div></div>
+        <button class="dpad-btn" id="btnUp">▲</button>
+        <div></div>
+        <button class="dpad-btn" id="btnLeft">◄</button>
+        <button class="dpad-btn" id="btnDown">▼</button>
+        <button class="dpad-btn" id="btnRight">►</button>
+      </div>
+    </div>
+
+    <!-- TAB 2: MISSIONS -->
+    <div class="tab-content" id="missionsTabContent">
+      <div class="missions-list" id="missionsListContainer">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      <div class="missions-footer-action">
+        <span>🔄 Tự động reset mỗi ngày</span>
+        <button class="btn-reset-test" id="btnResetDataTest">🔄 Reset Data Test</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: OFFICE LEADERBOARD -->
+    <div class="tab-content" id="leaderboardTabContent">
+      <div class="leaderboard-list" id="leaderboardListContainer">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       CUSTOM USER LEARNING JOURNEY MESSAGES
+       (2 Chest Tiers: Rương Đồng & Rương Bạc)
+       ========================================== */
+    const LEARNING_JOURNEY_PROMOS = {
+      // 🟢 Rương Đồng (+10 XP)
+      level1: [
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'La bàn học tập cho riêng bạn!', fullDetail: '🟢 <b>La bàn học tập cho riêng bạn!</b>: Định hướng kỹ năng & lộ trình phát triển sự nghiệp cá nhân hóa!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Learning Compass: Dẫn lối tri thức!', fullDetail: '🟢 <b>Learning Compass: Dẫn lối tri thức!</b>: Tìm đúng khóa học bạn cần chỉ trong 1 nốt nhạc!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Gợi ý khóa học chuẩn rank', fullDetail: '🟢 <b>Gợi ý khóa học chuẩn rank</b>: Tự động đề xuất khóa học theo lộ trình thăng tiến!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Gợi ý khóa học riêng cho bạn!', fullDetail: '🟢 <b>Gợi ý khóa học riêng cho bạn!</b>: Khám phá các khóa học cá nhân hóa theo vai trò!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Tìm khóa học nhanh theo skill!', fullDetail: '🟢 <b>Tìm khóa học nhanh theo skill!</b>: Đổi mới kỹ năng và tra cứu chủ đề dễ dàng.' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Xem "đồng đội" đã học gì và review gì', fullDetail: '🟢 <b>Xem "đồng đội" đã học gì và review gì</b>: Tham khảo đánh giá & khóa học hot từ đồng nghiệp!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Xem lại tài liệu / record các khóa đã bỏ lỡ', fullDetail: '🟢 <b>Xem lại tài liệu / record các khóa đã bỏ lỡ</b>: Ôn tập lại kiến thức & xem lại recording!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Nâng cấp kỹ năng "chuẩn bài"', fullDetail: '🟢 <b>Nâng cấp kỹ năng "chuẩn bài"</b>: Nâng cao năng lực chuyên môn với kho tri thức Garena.' }
+      ],
+
+      // 🔵 Rương Bạc (+25 XP)
+      level2: [
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Định hướng lộ trình với Learning Compass!', fullDetail: '🔵 <b>Định hướng lộ trình với Learning Compass!</b>: Bật mở la bàn kỹ năng cá nhân hóa, bứt phá rank công việc!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Tài trợ chi phí đào tạo 20tr/năm!', fullDetail: '🔵 <b>Tài trợ chi phí đào tạo 20tr/năm!</b>: Garena hỗ trợ ngân sách học tập bên ngoài!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Đề xuất đào tạo theo nhu cầu riêng!', fullDetail: '🔵 <b>Đề xuất đào tạo theo nhu cầu riêng!</b>: Gửi yêu cầu thiết kế khóa học riêng cho bạn/team!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Hỏi đáp với "Hộ giá" 24/7!', fullDetail: '🔵 <b>Hỏi đáp với "Hộ giá" 24/7!</b>: Giải đáp thắc mắc quy định L&D mọi lúc mọi nơi!' }
+      ]
+    };
+
+    let sessionUnlockedTips = [];
+    let currentTipIndex = 0;
+
+    // Track last shown promo index per pool to prevent 2 consecutive repeats!
+    let lastLvl1Index = -1;
+    let lastLvl2Index = -1;
+
+    // Garena Office Leaderboard Data
+    let officeLeaderboard = [
+      { name: 'Hoàng Nam', dept: 'Tech / Game Dev', score: 320, isUser: false },
+      { name: 'Linh Chi', dept: 'L&D / HRBP', score: 260, isUser: false },
+      { name: 'Anh Tuấn', dept: 'Product / Publishing', score: 210, isUser: false },
+      { name: 'Bảo Trân', dept: 'Marketing / Media', score: 180, isUser: false },
+      { name: 'Bạn (Chiến binh Garena)', dept: 'Learning Journey', score: 0, isUser: true },
+      { name: 'Phương Thảo', dept: 'Operations / Esports', score: 120, isUser: false },
+      { name: 'Đức Minh', dept: 'Commercial / Sales', score: 90, isUser: false },
+      { name: 'Khánh Vy', dept: 'Legal & Finance', score: 60, isUser: false }
+    ];
+
+    function triggerLJTicker(chest) {
+      let pool = LEARNING_JOURNEY_PROMOS.level1;
+      let borderColor = 'var(--bronze-gold)';
+      let badgeBg = 'var(--bronze-gradient)';
+      const isLvl2 = chest.id === 2;
+
+      if (isLvl2) {
+        pool = LEARNING_JOURNEY_PROMOS.level2;
+        borderColor = 'var(--silver-color)';
+        badgeBg = 'var(--silver-gradient)';
+      }
+
+      // Smart Anti-Repeat Selection: Ensures 100% no 2 consecutive repeats for same chest tier!
+      const lastIndex = isLvl2 ? lastLvl2Index : lastLvl1Index;
+      let nextIndex = Math.floor(Math.random() * pool.length);
+
+      if (pool.length > 1) {
+        while (nextIndex === lastIndex) {
+          nextIndex = Math.floor(Math.random() * pool.length);
+        }
+      }
+
+      if (isLvl2) {
+        lastLvl2Index = nextIndex;
+      } else {
+        lastLvl1Index = nextIndex;
+      }
+
+      const promo = pool[nextIndex];
+
+      // Update HUD last promo text directly
+      lastChestName = promo.shortText;
+
+      // Store in session unlocked tips for Game Over review
+      if (!sessionUnlockedTips.some(t => t.fullDetail === promo.fullDetail)) {
+        sessionUnlockedTips.push(promo);
+      }
+
+      const tickerBar = document.getElementById('ljTickerBar');
+      const badgeEl = document.getElementById('ljTickerBadge');
+      const textEl = document.getElementById('ljTickerText');
+      const xpEl = document.getElementById('ljTickerXP');
+
+      badgeEl.textContent = promo.badge;
+      badgeEl.style.background = badgeBg;
+      textEl.textContent = promo.shortText;
+      xpEl.textContent = `+${chest.xp} XP`;
+      tickerBar.style.borderColor = borderColor;
+
+      // Pulse animation
+      tickerBar.style.transform = 'scale(1.02)';
+      setTimeout(() => tickerBar.style.transform = 'scale(1)', 150);
+
+      return promo;
+    }
+
+    /* ==========================================
+       SMART CAROUSEL & FULL KNOWLEDGE MODAL LOGIC
+       ========================================== */
+    function renderSmartKnowledgeCarousel() {
+      if (sessionUnlockedTips.length === 0) {
+        // Fallback tip
+        sessionUnlockedTips.push({
+          badge: '🔵 RƯƠNG BẠC',
+          shortText: 'Định hướng lộ trình với Learning Compass!',
+          fullDetail: '🔵 <b>Định hướng lộ trình với Learning Compass!</b>: Bật mở la bàn kỹ năng cá nhân hóa, bứt phá rank công việc!'
+        });
+      }
+
+      if (currentTipIndex >= sessionUnlockedTips.length) currentTipIndex = 0;
+      if (currentTipIndex < 0) currentTipIndex = sessionUnlockedTips.length - 1;
+
+      const activeTip = sessionUnlockedTips[currentTipIndex];
+
+      document.getElementById('carouselCounter').textContent = `${currentTipIndex + 1}/${sessionUnlockedTips.length}`;
+      document.getElementById('carouselBodyText').innerHTML = activeTip.fullDetail;
+      document.getElementById('btnExpandAllTips').textContent = `🔍 Xem Tất Cả (${sessionUnlockedTips.length})`;
+    }
+
+    function renderFullKnowledgeModal() {
+      const container = document.getElementById('fullKnowledgeList');
+      container.innerHTML = '';
+
+      sessionUnlockedTips.forEach((tip, idx) => {
+        const card = document.createElement('div');
+        card.className = 'full-knowledge-card';
+        card.innerHTML = `
+          <div class="full-card-badge" style="color: ${tip.badge.includes('ĐỒNG') ? 'var(--bronze-gold)' : 'var(--silver-color)'};">
+            ${tip.badge}
+          </div>
+          <div class="full-card-text">${tip.fullDetail}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('btnPrevTip').addEventListener('click', () => {
+      currentTipIndex--;
+      renderSmartKnowledgeCarousel();
+    });
+
+    document.getElementById('btnNextTip').addEventListener('click', () => {
+      currentTipIndex++;
+      renderSmartKnowledgeCarousel();
+    });
+
+    document.getElementById('btnExpandAllTips').addEventListener('click', () => {
+      renderFullKnowledgeModal();
+      document.getElementById('fullKnowledgeModal').classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseFullKnowledge').addEventListener('click', () => {
+      document.getElementById('fullKnowledgeModal').classList.add('hidden');
+    });
+
+    // Click handler for 3rd HUD card to open full knowledge modal anytime
+    document.getElementById('hudCardCompass').addEventListener('click', () => {
+      renderFullKnowledgeModal();
+      document.getElementById('fullKnowledgeModal').classList.remove('hidden');
+    });
+
+    /* ==========================================
+       GAME ENGINE & STATE MANAGEMENT
+       ========================================== */
+    const STORAGE_KEY = 'garena_snake_state';
+
+    // Game Config & Constants
+    const GRID_SIZE = 20; // 20x20 grid
+    const CELL_SIZE = 20; // 20px per cell -> 400x400
+    const GAME_SPEED_MS = 110;
+    const IS_TEST_MODE = true; // Unlimited plays for testing!
+
+    // 2 Chest Tiers Only as Requested
+    const CHEST_TYPES = [
+      { id: 1, name: 'Rương Đồng', xp: 10, color: '#D97706', chance: 0.75, imgKey: 'chest_lvl1' },
+      { id: 2, name: 'Rương Bạc', xp: 25, color: '#CBD5E1', chance: 1.00, imgKey: 'chest_lvl2' }
+    ];
+
+    // Asset Preloading & Fallbacks
+    const assets = {
+      head: new Image(),
+      chest_lvl1: new Image(),
+      chest_lvl2: new Image()
+    };
+
+    const assetsLoaded = {
+      head: false,
+      chest_lvl1: false,
+      chest_lvl2: false
+    };
+
+    function loadAssets() {
+      assets.head.src = 'assets/head.png';
+      assets.head.onload = () => assetsLoaded.head = true;
+
+      assets.chest_lvl1.src = 'assets/chest_lvl1.png';
+      assets.chest_lvl1.onload = () => assetsLoaded.chest_lvl1 = true;
+
+      assets.chest_lvl2.src = 'assets/chest_lvl2.png';
+      assets.chest_lvl2.onload = () => assetsLoaded.chest_lvl2 = true;
+    }
+
+    // Initial State including 6 Tasks
+    let gameState = {
+      playsLeft: '∞',
+      highScore: 0,
+      lastResetDate: new Date().toISOString().slice(0, 10),
+      tasks: [
+        { id: 'task_daily_login', title: '📅 Đăng nhập hàng ngày', reward: 1, reqTime: 0, progress: 1, status: 'READY_TO_CLAIM' },
+        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học bất kỳ', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
+      ]
+    };
+
+    // Automatic Daily Reset Logic
+    function checkDailyReset() {
+      const today = new Date().toISOString().slice(0, 10);
+      if (gameState.lastResetDate !== today) {
+        gameState.lastResetDate = today;
+        if (!IS_TEST_MODE && typeof gameState.playsLeft === 'number') {
+          gameState.playsLeft = Math.max(3, gameState.playsLeft);
+        } else {
+          gameState.playsLeft = '∞';
+        }
+        gameState.tasks.forEach(t => {
+          t.progress = 0;
+          if (t.id === 'task_daily_login') {
+            t.status = 'READY_TO_CLAIM';
+            t.progress = 1;
+          } else {
+            t.status = 'NOT_STARTED';
+          }
+        });
+        saveState();
+      }
+    }
+
+    function resetGameStateForTesting() {
+      localStorage.removeItem(STORAGE_KEY);
+      gameState = {
+        playsLeft: '∞',
+        highScore: 0,
+        lastResetDate: new Date().toISOString().slice(0, 10),
+        tasks: [
+          { id: 'task_daily_login', title: '📅 Đăng nhập hàng ngày', reward: 1, reqTime: 0, progress: 1, status: 'READY_TO_CLAIM' },
+          { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học bất kỳ', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+          { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
+          { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
+          { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED' },
+          { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
+        ]
+      };
+      saveState();
+      renderMissions();
+      renderLeaderboard();
+      showOverlay('startOverlay');
+    }
+
+    // Load State from LocalStorage
+    function loadSavedState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          gameState.playsLeft = IS_TEST_MODE ? '∞' : (parsed.playsLeft ?? 3);
+          gameState.highScore = parsed.highScore ?? 0;
+          gameState.lastResetDate = parsed.lastResetDate ?? new Date().toISOString().slice(0, 10);
+          
+          if (parsed.tasks && Array.isArray(parsed.tasks)) {
+            parsed.tasks.forEach(st => {
+              const t = gameState.tasks.find(x => x.id === st.id);
+              if (t) {
+                t.progress = st.progress ?? 0;
+                t.status = st.status ?? 'NOT_STARTED';
+              }
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing saved state:", e);
+        }
+      }
+
+      // Check and execute Daily Automatic Mission Reset
+      checkDailyReset();
+
+      // Update User Score in Leaderboard
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
+      
+      // Update Leaderboard score
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+
+      updateHUD();
+    }
+
+    /* ==========================================
+       CANVAS & GAME LOOP VARS
+       ========================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let snake = [];
+    let dir = { x: 1, y: 0 };
+    let nextDir = { x: 1, y: 0 };
+    let currentChest = null;
+    let currentScore = 0;
+    let lastChestName = '--';
+    let isRunning = false;
+    let isWaitingForInput = false; // Snake stays IDLE until first key press!
+    let gameInterval = null;
+
+    // Visual FX Arrays
+    let particles = [];
+    let floatingTexts = [];
+
+    /* ==========================================
+       CORE GAME LOGIC
+       ========================================== */
+    function initGame() {
+      // Starting snake position (3 segments)
+      snake = [
+        { x: 5, y: 10 },
+        { x: 4, y: 10 },
+        { x: 3, y: 10 }
+      ];
+      dir = { x: 0, y: 0 }; // Stand still initially
+      nextDir = { x: 0, y: 0 };
+      currentScore = 0;
+      lastChestName = '--';
+      lastLvl1Index = -1;
+      lastLvl2Index = -1;
+      sessionUnlockedTips = [];
+      currentTipIndex = 0;
+      particles = [];
+      floatingTexts = [];
+      spawnChest();
+      updateHUD();
+    }
+
+    function spawnChest() {
+      let valid = false;
+      let cx, cy;
+      while (!valid) {
+        cx = Math.floor(Math.random() * GRID_SIZE);
+        cy = Math.floor(Math.random() * GRID_SIZE);
+        valid = !snake.some(seg => seg.x === cx && seg.y === cy);
+      }
+
+      // Pick Chest Tier (75% Rương Đồng, 25% Rương Bạc)
+      const rand = Math.random();
+      let type = CHEST_TYPES[0];
+      if (rand > 0.75) {
+        type = CHEST_TYPES[1];
+      }
+
+      currentChest = { x: cx, y: cy, ...type };
+    }
+
+    function startGame() {
+      if (!IS_TEST_MODE && typeof gameState.playsLeft === 'number' && gameState.playsLeft <= 0) {
+        showOverlay('noPlaysOverlay');
+        return;
+      }
+
+      if (!IS_TEST_MODE && typeof gameState.playsLeft === 'number') {
+        gameState.playsLeft--;
+        saveState();
+      }
+
+      initGame();
+      hideOverlays();
+      document.getElementById('fullKnowledgeModal').classList.add('hidden');
+      
+      isRunning = true;
+      isWaitingForInput = true; // Freeze snake until first keypress!
+
+      if (gameInterval) clearInterval(gameInterval);
+      gameInterval = setInterval(gameLoop, GAME_SPEED_MS);
+      render();
+    }
+
+    function handlePlayerMoveInput(newDir) {
+      if (!isRunning) return;
+
+      if (isWaitingForInput) {
+        isWaitingForInput = false; // Unfreeze snake!
+      }
+
+      // Prevent 180-degree reverse
+      if (dir.x !== 0 && newDir.x === -dir.x) return;
+      if (dir.y !== 0 && newDir.y === -dir.y) return;
+
+      nextDir = newDir;
+    }
+
+    function gameLoop() {
+      if (!isRunning) return;
+
+      // If waiting for first keypress, just render static snake with hint prompt
+      if (isWaitingForInput) {
+        render();
+        return;
+      }
+
+      // Update Direction
+      dir = { ...nextDir };
+      if (dir.x === 0 && dir.y === 0) return;
+
+      // Calculate Head Position
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      // Wall Collision Check
+      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+        handleGameOver();
+        return;
+      }
+
+      // Self Collision Check
+      if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        handleGameOver();
+        return;
+      }
+
+      // Move Snake
+      snake.unshift(head);
+
+      // Check Chest Eating
+      if (head.x === currentChest.x && head.y === currentChest.y) {
+        currentScore += currentChest.xp;
+        
+        // Trigger Bottom Micro-Ticker Notification & Get Selected Promo
+        const promo = triggerLJTicker(currentChest);
+
+        // Spawn Particles & Floating Text FX directly displaying the custom promo message!
+        createChestFX(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
+
+        // Spawn new chest
+        spawnChest();
+        updateHUD();
+      } else {
+        snake.pop(); // Remove tail
+      }
+
+      // Update FX Particles & Floating Text Positions
+      updateFX();
+
+      // Render Scene
+      render();
+    }
+
+    function handleGameOver() {
+      isRunning = false;
+      isWaitingForInput = false;
+      if (gameInterval) clearInterval(gameInterval);
+
+      let isNewRecord = false;
+      if (currentScore > gameState.highScore) {
+        gameState.highScore = currentScore;
+        isNewRecord = true;
+      }
+      saveState();
+
+      // Emit postMessage event to parent
+      window.parent.postMessage({
+        type: 'GARENA_GAME_OVER',
+        score: currentScore,
+        highScore: gameState.highScore
+      }, '*');
+
+      // Render Smart Carousel Knowledge in GameOver screen
+      currentTipIndex = 0;
+      renderSmartKnowledgeCarousel();
+
+      // Update GameOver Overlay UI
+      document.getElementById('finalScore').textContent = `${currentScore} XP`;
+      document.getElementById('finalHighScore').textContent = `${gameState.highScore} XP ${isNewRecord ? '🎉 (Kỷ Lục Mới!)' : ''}`;
+      document.getElementById('gameOverSubtitle').textContent = `Chiến binh Garena đã xuất sắc thu thập được: ${currentScore} XP!`;
+
+      showOverlay('gameOverOverlay');
+    }
+
+    /* ==========================================
+       JUICE & VISUAL FX (ANTI-OVERLAP FLOATING TEXT ENGINE)
+       ========================================== */
+    function createChestFX(x, y, chest, promoText) {
+      // 18 glowing burst particles
+      for (let i = 0; i < 18; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1.5;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          color: chest.color,
+          radius: Math.random() * 3 + 2,
+          alpha: 1.0,
+          life: 25 + Math.floor(Math.random() * 10)
+        });
+      }
+
+      const rawX = x;
+      const displayText = promoText ? `+${chest.xp} XP • ${promoText}` : `+${chest.xp} XP ${chest.name}!`;
+
+      // SMART ANTI-OVERLAP STACKING:
+      // Calculate initial spawn Y position: ensure at least 26px vertical gap from existing floating texts!
+      let spawnY = y - 10;
+      floatingTexts.forEach(ft => {
+        // If an existing floating text is close in Y (within 24px gap)
+        if (Math.abs(ft.y - spawnY) < 24) {
+          spawnY = ft.y - 26; // Push new text 26px higher!
+        }
+      });
+
+      // Clamp spawnY so it stays inside top margin of canvas
+      spawnY = Math.max(30, spawnY);
+
+      floatingTexts.push({
+        text: displayText,
+        x: rawX,
+        y: spawnY,
+        color: chest.color,
+        alpha: 1.0,
+        vy: -0.7,
+        life: 65
+      });
+    }
+
+    function updateFX() {
+      // Update Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 1 / p.life;
+        if (p.alpha <= 0) particles.splice(i, 1);
+      }
+
+      // Update Floating Texts with Anti-Overlap Collision Distance Enforcement
+      for (let i = 0; i < floatingTexts.length; i++) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy;
+        ft.alpha -= 1 / ft.life;
+
+        // Ensure minimum 24px vertical distance between consecutive floating texts
+        if (i > 0) {
+          const prevFt = floatingTexts[i - 1];
+          if (prevFt.y - ft.y < 24 && prevFt.y - ft.y > 0) {
+            ft.y = prevFt.y - 24;
+          }
+        }
+      }
+
+      // Filter out dead floating texts
+      floatingTexts = floatingTexts.filter(ft => ft.alpha > 0);
+    }
+
+    /* ==========================================
+       CANVAS RENDERING ENGINE
+       ========================================== */
+    function render() {
+      // Clear Canvas Background
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Grid Lines (Subtle dark grid)
+      ctx.strokeStyle = '#1F2937';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= canvas.width; i += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+
+      // Draw Chest (Food)
+      if (currentChest) {
+        const cx = currentChest.x * CELL_SIZE;
+        const cy = currentChest.y * CELL_SIZE;
+        const imgKey = currentChest.imgKey;
+
+        if (assetsLoaded[imgKey]) {
+          ctx.drawImage(assets[imgKey], cx - 2, cy - 2, 24, 24);
+        } else {
+          // Programmatic Fallback Chest
+          ctx.save();
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = currentChest.color;
+          ctx.fillStyle = currentChest.color;
+          ctx.beginPath();
+          ctx.roundRect(cx + 2, cy + 2, 16, 16, 4);
+          ctx.fill();
+          
+          // Lock accent
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fillRect(cx + 8, cy + 8, 4, 4);
+          ctx.restore();
+        }
+      }
+
+      // Draw Snake Body & Head
+      snake.forEach((seg, index) => {
+        const sx = seg.x * CELL_SIZE;
+        const sy = seg.y * CELL_SIZE;
+
+        if (index === 0) {
+          // Snake Head
+          if (assetsLoaded.head) {
+            ctx.save();
+            ctx.translate(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2);
+            
+            // Rotate based on direction
+            let angle = 0;
+            if (dir.x === 1) angle = 0; // Right
+            else if (dir.x === -1) angle = Math.PI; // Left
+            else if (dir.y === 1) angle = Math.PI / 2; // Down
+            else if (dir.y === -1) angle = -Math.PI / 2; // Up
+
+            ctx.rotate(angle);
+            ctx.drawImage(assets.head, -CELL_SIZE, -CELL_SIZE, CELL_SIZE * 2, CELL_SIZE * 2);
+            ctx.restore();
+          } else {
+            // Programmatic Fallback Head (Official Garena Red #E41E26)
+            ctx.save();
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = '#E41E26';
+            ctx.fillStyle = '#E41E26';
+            ctx.beginPath();
+            ctx.arc(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        } else {
+          // Snake Body Segment
+          ctx.save();
+          ctx.fillStyle = '#E2E8F0';
+          ctx.strokeStyle = '#94A3B8';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(sx + 1, sy + 1, CELL_SIZE - 2, CELL_SIZE - 2, 6);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+
+      // Render FX Particles
+      particles.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // Render Floating Text with Dynamic Edge-Proof Clamping & Anti-Overlap Pill Background
+      floatingTexts.forEach(ft => {
+        ctx.save();
+        ctx.globalAlpha = ft.alpha;
+        ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
+        
+        const textWidth = ctx.measureText(ft.text).width;
+        const pillWidth = textWidth + 16;
+        const pillHeight = 20;
+
+        // Dynamic Edge-Proof Clamping: Ensures pill & text NEVER clip outside canvas bounds (left/right/top/bottom)!
+        const halfPill = pillWidth / 2;
+        const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
+        const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
+
+        // Render Dark Capsule Pill Background
+        ctx.fillStyle = 'rgba(11, 14, 20, 0.92)';
+        ctx.strokeStyle = ft.color;
+        ctx.lineWidth = 1;
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = ft.color;
+        ctx.beginPath();
+        ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        // Render High Contrast Crisp Text over Pill Background
+        ctx.fillStyle = '#FFFFFF';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 0;
+        ctx.fillText(ft.text, safeX, safeY);
+        ctx.restore();
+      });
+
+      // If waiting for initial input, draw glowing banner "BẤM PHÍM ĐỂ BẮT ĐẦU"
+      if (isWaitingForInput) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(40, 175, 320, 50);
+        ctx.strokeStyle = '#E41E26';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(40, 175, 320, 50);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '700 13px "Chakra Petch", "Be Vietnam Pro", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#E41E26';
+        ctx.fillText('🎮 BẤM PHÍM DI CHUYỂN ĐỂ BẮT ĐẦU!', 200, 205);
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================
+       HUD & OVERLAY MANAGEMENT
+       ========================================== */
+    function updateHUD() {
+      document.getElementById('hudPlays').textContent = `⚡ ${gameState.playsLeft}`;
+      document.getElementById('hudHighScore').textContent = `🏆 ${gameState.highScore} XP`;
+      document.getElementById('hudLastChest').textContent = lastChestName === '--' ? '🧭 --' : `🧭 ${lastChestName}`;
+      
+      // Update Mission Badge
+      const claimableCount = gameState.tasks.filter(t => t.status === 'READY_TO_CLAIM').length;
+      const badge = document.getElementById('missionBadge');
+      badge.textContent = claimableCount > 0 ? claimableCount : gameState.tasks.filter(t => t.status !== 'CLAIMED').length;
+    }
+
+    function showOverlay(overlayId) {
+      document.querySelectorAll('.canvas-overlay').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(overlayId);
+      if (target) target.classList.remove('hidden');
+    }
+
+    function hideOverlays() {
+      document.querySelectorAll('.canvas-overlay').forEach(el => el.classList.add('hidden'));
+    }
+
+    /* ==========================================
+       MISSIONS & TAB VISIBILITY SYSTEM
+       ========================================== */
+    function renderMissions() {
+      const container = document.getElementById('missionsListContainer');
+      container.innerHTML = '';
+
+      gameState.tasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = 'mission-card';
+
+        let btnClass = 'btn-claim pending';
+        let btnText = 'Chưa xong';
+        let isReady = false;
+
+        if (task.status === 'CLAIMED') {
+          btnClass = 'btn-claim done';
+          btnText = 'Đã nhận';
+        } else if (task.status === 'READY_TO_CLAIM' || (task.reqTime > 0 && task.progress >= task.reqTime)) {
+          btnClass = 'btn-claim ready';
+          btnText = 'Nhận + ' + task.reward + ' lượt';
+          isReady = true;
+        } else if (task.reqTime > 0) {
+          btnText = `Đang làm (${task.progress}/${task.reqTime}s)`;
+        }
+
+        card.innerHTML = `
+          <div class="mission-info">
+            <div class="mission-title">${task.title}</div>
+            <div class="mission-reward">+${task.reward} lượt chơi</div>
+            ${task.reqTime > 0 ? `<div class="mission-progress">Tiến độ: ${task.progress}/${task.reqTime}s</div>` : ''}
+          </div>
+          <button class="${btnClass}" ${!isReady ? 'disabled' : ''} data-id="${task.id}">
+            ${btnText}
+          </button>
+        `;
+
+        if (isReady) {
+          card.querySelector('button').addEventListener('click', () => claimTaskReward(task.id));
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function claimTaskReward(taskId) {
+      const task = gameState.tasks.find(t => t.id === taskId);
+      if (!task || task.status === 'CLAIMED') return;
+
+      task.status = 'CLAIMED';
+      if (!IS_TEST_MODE && typeof gameState.playsLeft === 'number') {
+        gameState.playsLeft += task.reward;
+      }
+      saveState();
+
+      // Emit postMessage to parent window
+      window.parent.postMessage({
+        type: 'GARENA_TASK_CLAIMED',
+        taskId: taskId
+      }, '*');
+
+      renderMissions();
+      updateHUD();
+    }
+
+    /* ==========================================
+       LEADERBOARD SYSTEM
+       ========================================== */
+    function renderLeaderboard() {
+      const container = document.getElementById('leaderboardListContainer');
+      container.innerHTML = '';
+
+      // Update user score from gameState
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+
+      // Sort leaderboard descending by score
+      const sorted = [...officeLeaderboard].sort((a, b) => b.score - a.score);
+
+      sorted.forEach((item, index) => {
+        const rankNum = index + 1;
+        const card = document.createElement('div');
+        card.className = `leaderboard-card ${item.isUser ? 'current-user' : ''}`;
+
+        let rankClass = 'lb-rank';
+        let medal = rankNum;
+        if (rankNum === 1) { rankClass += ' top-1'; medal = '🥇'; }
+        else if (rankNum === 2) { rankClass += ' top-2'; medal = '🥈'; }
+        else if (rankNum === 3) { rankClass += ' top-3'; medal = '🥉'; }
+
+        card.innerHTML = `
+          <div class="${rankClass}">${medal}</div>
+          <div class="lb-user-info">
+            <div class="lb-name">
+              ${item.name} ${item.isUser ? '<span style="color: var(--garena-red); font-size: 0.7rem;">(Bạn)</span>' : ''}
+            </div>
+            <div class="lb-dept">${item.dept}</div>
+          </div>
+          <div class="lb-score">${item.score} XP</div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    // Active Timer Tick Rule: ONLY tick when tab is visible!
+    let missionTimer = setInterval(() => {
+      // Tab Visibility Rule enforcement
+      if (document.visibilityState !== 'visible') return;
+
+      let stateChanged = false;
+      gameState.tasks.forEach(task => {
+        if (task.reqTime > 0 && task.status !== 'CLAIMED' && task.status !== 'READY_TO_CLAIM') {
+          task.progress++;
+          stateChanged = true;
+          if (task.progress >= task.reqTime) {
+            task.status = 'READY_TO_CLAIM';
+          }
+        }
+      });
+
+      if (stateChanged && document.getElementById('missionsTabContent').classList.contains('active')) {
+        renderMissions();
+      }
+    }, 1000);
+
+    /* ==========================================
+       EXTERNAL POSTMESSAGE LISTENERS & PROTOCOL
+       ========================================== */
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      // Handle TASK_COMPLETED_EXTERNAL from parent window
+      if (data.type === 'TASK_COMPLETED_EXTERNAL') {
+        const taskId = data.taskId;
+        const task = gameState.tasks.find(t => t.id === taskId);
+        if (task) {
+          task.progress = task.reqTime || 1;
+          task.status = 'READY_TO_CLAIM';
+          // Auto claim or notify
+          claimTaskReward(taskId);
+        }
+      }
+
+      // Handle SET_OFFICE_LEADERBOARD from parent window API
+      if (data.type === 'SET_OFFICE_LEADERBOARD' && Array.isArray(data.leaderboard)) {
+        officeLeaderboard = data.leaderboard;
+        if (document.getElementById('leaderboardTabContent').classList.contains('active')) {
+          renderLeaderboard();
+        }
+      }
+    });
+
+    /* ==========================================
+       INPUT & NAVIGATION CONTROLS
+       ========================================== */
+    window.addEventListener('keydown', (e) => {
+      let inputDir = null;
+      switch (e.key) {
+        case 'ArrowUp':
+        case 'w':
+        case 'W':
+          inputDir = { x: 0, y: -1 };
+          break;
+        case 'ArrowDown':
+        case 's':
+        case 'S':
+          inputDir = { x: 0, y: 1 };
+          break;
+        case 'ArrowLeft':
+        case 'a':
+        case 'A':
+          inputDir = { x: -1, y: 0 };
+          break;
+        case 'ArrowRight':
+        case 'd':
+        case 'D':
+          inputDir = { x: 1, y: 0 };
+          break;
+      }
+      if (inputDir) handlePlayerMoveInput(inputDir);
+    });
+
+    // Touch D-Pad Buttons
+    document.getElementById('btnUp').addEventListener('click', () => handlePlayerMoveInput({ x: 0, y: -1 }));
+    document.getElementById('btnDown').addEventListener('click', () => handlePlayerMoveInput({ x: 0, y: 1 }));
+    document.getElementById('btnLeft').addEventListener('click', () => handlePlayerMoveInput({ x: -1, y: 0 }));
+    document.getElementById('btnRight').addEventListener('click', () => handlePlayerMoveInput({ x: 1, y: 0 }));
+
+    // Close Button Event
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      window.parent.postMessage({ type: 'GARENA_CLOSE_GAME' }, '*');
+    });
+
+    // Reset Test Button Event
+    document.getElementById('btnResetDataTest').addEventListener('click', resetGameStateForTesting);
+
+    // Tab Switching
+    const tabGameBtn = document.getElementById('tabGameBtn');
+    const tabMissionsBtn = document.getElementById('tabMissionsBtn');
+    const tabLeaderboardBtn = document.getElementById('tabLeaderboardBtn');
+
+    const gameTabContent = document.getElementById('gameTabContent');
+    const missionsTabContent = document.getElementById('missionsTabContent');
+    const leaderboardTabContent = document.getElementById('leaderboardTabContent');
+
+    tabGameBtn.addEventListener('click', () => {
+      tabGameBtn.classList.add('active');
+      tabMissionsBtn.classList.remove('active');
+      tabLeaderboardBtn.classList.remove('active');
+
+      gameTabContent.classList.add('active');
+      missionsTabContent.classList.remove('active');
+      leaderboardTabContent.classList.remove('active');
+    });
+
+    tabMissionsBtn.addEventListener('click', () => {
+      tabMissionsBtn.classList.add('active');
+      tabGameBtn.classList.remove('active');
+      tabLeaderboardBtn.classList.remove('active');
+
+      missionsTabContent.classList.add('active');
+      gameTabContent.classList.remove('active');
+      leaderboardTabContent.classList.remove('active');
+      renderMissions();
+    });
+
+    tabLeaderboardBtn.addEventListener('click', () => {
+      tabLeaderboardBtn.classList.add('active');
+      tabGameBtn.classList.remove('active');
+      tabMissionsBtn.classList.remove('active');
+
+      leaderboardTabContent.classList.add('active');
+      gameTabContent.classList.remove('active');
+      missionsTabContent.classList.remove('active');
+      renderLeaderboard();
+    });
+
+    // Button Actions inside Overlays
+    document.getElementById('btnStartGame').addEventListener('click', startGame);
+    document.getElementById('btnReplay').addEventListener('click', startGame);
+
+    document.getElementById('btnGoToMissions').addEventListener('click', () => {
+      tabMissionsBtn.click();
+    });
+
+    document.getElementById('btnGameOverMissions').addEventListener('click', () => {
+      tabMissionsBtn.click();
+    });
+
+    /* ==========================================
+       INITIALIZATION
+       ========================================== */
+    loadAssets();
+    loadSavedState();
+    renderMissions();
+    renderLeaderboard();
+    showOverlay('startOverlay');
+    render();
+  </script>
+</body>
+</html>
