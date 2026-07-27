@@ -1431,11 +1431,12 @@
           if (assetsLoaded.head) {
             ctx.save();
             ctx.translate(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2);
-            let angle = 0;
-            if (dir.x === 1) angle = 0;
-            else if (dir.x === -1) angle = Math.PI;
-            else if (dir.y === 1) angle = Math.PI / 2;
-            else if (dir.y === -1) angle = -Math.PI / 2;
+            // Rotate head asset based on movement direction (head.png faces UP natively)
+            let angle = Math.PI / 2; // Default facing Right
+            if (dir.x === 1) angle = Math.PI / 2; // Moving Right -> rotate 90 deg
+            else if (dir.x === -1) angle = -Math.PI / 2; // Moving Left -> rotate -90 deg
+            else if (dir.y === 1) angle = Math.PI; // Moving Down -> rotate 180 deg
+            else if (dir.y === -1) angle = 0; // Moving Up -> 0 deg
 
             ctx.rotate(angle);
             ctx.drawImage(assets.head, -CELL_SIZE * 0.9, -CELL_SIZE * 0.9, CELL_SIZE * 1.8, CELL_SIZE * 1.8);
