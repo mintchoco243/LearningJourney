@@ -122,6 +122,13 @@ app.use("/admin/api/analytics", requireAuth, requireAdmin, adminAnalyticsRouter)
 app.use("/admin/api/settings", requireAuth, requireAdmin, adminSettingsRouter);
 app.use("/admin/api/minigame", requireAuth, requireAdmin, adminMinigameRouter);
 
+// Keep the public iframe URL stable while avoiding static-HTML deployment detection.
+app.get("/minigame/snake.html", (req, res, next) => {
+  res.sendFile(path.join(frontendDir, "public", "minigame", "snake.game"), (error) => {
+    if (error) next(error);
+  });
+});
+
 // Next.js (App Router, includes /admin) handles every remaining route.
 if (config.apiOnly) {
   app.use((req, res) => res.status(404).json({ error: "NOT_FOUND" }));

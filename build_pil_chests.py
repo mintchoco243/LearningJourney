@@ -48,8 +48,8 @@ def build_valid_chests():
     print("t1 valid:", t1.size, t1.mode)
     print("t2 valid:", t2.size, t2.mode)
 
-    # Replace in snake.html
-    target_file = 'd:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.html'
+    # Replace in the source game document
+    target_file = 'd:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.source'
     html = open(target_file, 'r', encoding='utf-8').read()
 
     html = re.sub(r"chest_lvl1:\s*'data:image/png;base64,[^']+'", f"chest_lvl1: 'data:image/png;base64,{b64_1}'", html)

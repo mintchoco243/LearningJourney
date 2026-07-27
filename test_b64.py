@@ -3,7 +3,7 @@ import io
 import re
 from PIL import Image
 
-html = open('d:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.html', 'r', encoding='utf-8').read()
+html = open('d:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.source', 'r', encoding='utf-8').read()
 
 c1_match = re.search(r"chest_lvl1:\s*'data:image/png;base64,([^']+)'", html)
 c2_match = re.search(r"chest_lvl2:\s*'data:image/png;base64,([^']+)'", html)

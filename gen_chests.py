@@ -71,7 +71,7 @@ def gen_silver():
 b64_c1 = base64.b64encode(gen_bronze()).decode('ascii')
 b64_c2 = base64.b64encode(gen_silver()).decode('ascii')
 
-target_file = 'd:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.html'
+target_file = 'd:/Downloads/KV lam viec/LearningJourney/Minigame/garena-skill-snake/snake.source'
 html = open(target_file, 'r', encoding='utf-8').read()
 
 # Replace chest_lvl1 and chest_lvl2 inside ASSET_B64
