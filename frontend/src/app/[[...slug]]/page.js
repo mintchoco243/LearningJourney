@@ -18,6 +18,7 @@ import { FAQScreen } from '@/components/screens/FAQScreen';
 import { AboutModal } from '@/components/screens/AboutModal';
 import { trackEvent, trackPageView } from '@/lib/analytics';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
+import { MinigameLauncher } from '@/components/MinigameLauncher';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
@@ -534,6 +535,22 @@ function AppInner() {
   }, [phase, activeTab]);
 
   React.useEffect(() => {
+    if (!user.email || typeof window === "undefined") return undefined;
+    const activity = course ? "course" : (phase === "app" && activeTab === "library" ? "library" : phase === "app" && activeTab === "home" ? "home" : "");
+    if (!activity) return undefined;
+    const timer = window.setInterval(() => {
+      window.dispatchEvent(new CustomEvent("minigame:activity", { detail: { activity, seconds: 5 } }));
+      fetch("/api/minigame/activity", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ activity, seconds: 5 }),
+      }).catch(() => {});
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [user.email, phase, activeTab, course]);
+
+  React.useEffect(() => {
     if (!mounted || !user.email || !user.quiz_result || typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const courseId = params.get("courseId");
@@ -704,6 +721,7 @@ function AppInner() {
 
   return React.createElement(React.Fragment, null,
     body,
+    React.createElement(MinigameLauncher, { authenticated: Boolean(user.email) }),
 
     course ? React.createElement(CourseModal, { course, onClose: closeCourse }) : null,
     courseLinkNotice ? React.createElement("div", {

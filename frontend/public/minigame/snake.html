@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Garena Skill Snake - Learning Compass Campaign</title>
+  <!-- Google Fonts: Chakra Petch (Garena Esports/Gaming Brand), Be Vietnam Pro & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Chakra+Petch:wght@500;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================
+       GARENA BRAND BOOK DESIGN SYSTEM & TOKENS (LIGHTWEIGHT HIGH-PERFORMANCE)
+       ========================================== */
+    :root {
+      --garena-red: #E41E26;
+      --primary-red-gradient: linear-gradient(135deg, #E41E26 0%, #B30006 100%);
+      
+      --bg-overlay: rgba(11, 14, 20, 0.92);
+      --card-bg: #131924;
+      --card-border: #222D3F;
+      
+      /* Typography System */
+      --font-brand: "Chakra Petch", "Be Vietnam Pro", -apple-system, sans-serif;
+      --font-body: "Be Vietnam Pro", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      
+      --bronze-gold: #D97706;
+      --bronze-gradient: linear-gradient(135deg, #F59E0B 0%, #B45309 100%);
+      --silver-color: #CBD5E1;
+      --silver-gradient: linear-gradient(135deg, #E2E8F0 0%, #64748B 100%);
+      
+      --emerald-green: #16A34A;
+      --emerald-gradient: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+      --electric-blue: #3B82F6;
+      --blue-gradient: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+      --gold-yellow: #F59E0B;
+      --gold-gradient: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      
+      --text-primary: #FFFFFF;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      
+      --shadow-glow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-overlay);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Fixed outer frame: tabs swap inside the same viewport. */
+    .game-modal {
+      width: 520px;
+      max-width: 98vw;
+      height: min(760px, 96vh);
+      max-height: 96vh;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 22px;
+      box-shadow: var(--shadow-glow);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+      overflow: hidden;
+    }
+
+    /* Header & Close Button */
+    .modal-header {
+      padding: 12px 18px;
+      background: rgba(17, 24, 39, 0.85);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-brand);
+      font-weight: 700;
+      font-size: 1.18rem;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-badge {
+      background: var(--primary-red-gradient);
+      color: #fff;
+      padding: 3px 8px;
+      border-radius: 7px;
+      font-family: var(--font-brand);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-secondary);
+      font-size: 1.15rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .close-btn:hover {
+      background: rgba(228, 30, 38, 0.2);
+      color: var(--garena-red);
+      border-color: var(--garena-red);
+    }
+
+    /* Navigation Tabs */
+    .nav-tabs {
+      display: flex;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid var(--card-border);
+      padding: 2px 12px 0 12px;
+      flex-shrink: 0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px 6px;
+      text-align: center;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-brand);
+      font-weight: 700;
+      font-size: 0.88rem;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: color 0.15s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--garena-red);
+    }
+
+    .tab-badge {
+      background: var(--garena-red);
+      color: white;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 9px;
+      font-weight: 800;
+    }
+
+    /* Spacious HUD Bar */
+    .hud-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      padding: 8px 14px;
+      background: rgba(15, 23, 42, 0.4);
+      border-bottom: 1px solid var(--card-border);
+      flex-shrink: 0;
+    }
+
+    .hud-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .hud-card.clickable {
+      cursor: pointer;
+      background: rgba(30, 41, 59, 0.7);
+    }
+
+    .hud-card.clickable:hover {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: var(--electric-blue);
+    }
+
+    .hud-label {
+      font-family: var(--font-brand);
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .hud-value {
+      font-family: var(--font-brand);
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .hud-value.highlight-red { color: var(--garena-red); }
+    .hud-value.highlight-gold { color: var(--gold-yellow); }
+
+    /* FLEX TAB CONTENT AREA */
+    .tab-content {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 14px;
+      position: relative;
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    /* Perfect 360x360 Canvas Frame */
+    .canvas-container {
+      position: relative;
+      width: 360px;
+      height: 360px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid var(--card-border);
+      background: #111827;
+      touch-action: none;
+      flex-shrink: 0;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* SPACIOUS ERGONOMIC TOUCH D-PAD */
+    .dpad-container {
+      margin-top: 10px;
+      margin-bottom: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 58px);
+      grid-template-rows: repeat(2, 50px);
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    .dpad-btn {
+      background: rgba(30, 41, 59, 0.9);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px;
+      color: white;
+      font-size: 1.4rem;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.1s ease, transform 0.1s ease;
+    }
+
+    .dpad-btn:active {
+      background: var(--garena-red);
+      transform: scale(0.92);
+      border-color: var(--garena-red);
+    }
+
+    /* Bottom Micro-Ticker Notification Bar */
+    .lj-ticker-bar {
+      width: 380px;
+      max-width: 100%;
+      margin-top: 4px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 5px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 36px;
+      flex-shrink: 0;
+    }
+
+    .lj-ticker-badge {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--primary-red-gradient);
+      color: white;
+      white-space: nowrap;
+    }
+
+    .lj-ticker-text {
+      font-family: var(--font-body);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .lj-ticker-xp {
+      font-family: var(--font-brand);
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--gold-yellow);
+      white-space: nowrap;
+    }
+
+    /* Controls Hint */
+    .controls-hint {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    /* OVERLAYS INSIDE 360x360 CANVAS */
+    .canvas-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 14, 20, 0.95);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 14px;
+      text-align: center;
+      z-index: 10;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .overlay-title {
+      font-family: var(--font-brand);
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+      color: #FFFFFF;
+      line-height: 1.2;
+    }
+
+    .overlay-subtitle {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      max-width: 95%;
+      line-height: 1.35;
+    }
+
+    /* PROMINENT PLAY BUTTON STYLING */
+    .btn-action {
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-family: var(--font-brand);
+      font-size: 0.92rem;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary-red-gradient);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .btn-action:hover {
+      background: #E41E26;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      font-size: 0.88rem;
+      padding: 10px 18px;
+    }
+
+    /* Score summary inside Game Over */
+    .score-summary {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 6px 14px;
+      margin-bottom: 8px;
+      width: 96%;
+      box-sizing: border-box;
+    }
+
+    .score-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 2px 0;
+      font-size: 0.82rem;
+      font-family: var(--font-body);
+    }
+
+    /* SMART CAROUSEL KNOWLEDGE CONTAINER IN GAME OVER */
+    .smart-knowledge-card {
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      width: 96%;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-sizing: border-box;
+    }
+
+    .smart-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .smart-card-title {
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--gold-yellow);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .smart-card-counter {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+    }
+
+    .smart-card-body {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      line-height: 1.35;
+      min-height: 38px;
+      display: block;
+      text-align: left;
+    }
+
+    .smart-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 5px;
+    }
+
+    .btn-nav-arrow {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: white;
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-expand-all {
+      font-family: var(--font-brand);
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--electric-blue);
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 3px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* FULL KNOWLEDGE MODAL OVERLAY */
+    .knowledge-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(11, 14, 20, 0.96);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      padding: 14px;
+      box-sizing: border-box;
+    }
+
+    .knowledge-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 10px;
+    }
+
+    .knowledge-modal-title {
+      font-family: var(--font-brand);
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: var(--gold-yellow);
+    }
+
+    .knowledge-modal-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .full-knowledge-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .full-card-badge {
+      font-family: var(--font-brand);
+      font-size: 0.68rem;
+      font-weight: 800;
+      margin-bottom: 3px;
+    }
+
+    .full-card-text {
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    /* Missions Tab Styling */
+    .missions-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .mission-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .mission-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-width: 65%;
+    }
+
+    .mission-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+
+    .mission-reward {
+      font-family: var(--font-brand);
+      font-size: 0.75rem;
+      color: var(--gold-yellow);
+      font-weight: 700;
+    }
+
+    .btn-claim {
+      font-family: var(--font-brand);
+      padding: 7px 12px;
+      font-size: 0.78rem;
+      border-radius: 8px;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-claim.ready { background: var(--emerald-gradient); color: white; }
+    .btn-claim.done { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
+    .btn-claim.pending { background: rgba(59, 130, 246, 0.2); color: var(--electric-blue); border: 1px solid rgba(59, 130, 246, 0.4); }
+
+    .mission-progress {
+      font-size: 0.68rem;
+      line-height: 1.1;
+      color: var(--text-muted);
+    }
+
+    .missions-footer-action {
+      margin-top: 8px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .btn-reset-test {
+      font-family: var(--font-brand);
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #FCA5A5;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+    }
+
+    /* Leaderboard Tab Styling */
+    .leaderboard-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .leaderboard-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .leaderboard-card.current-user {
+      background: rgba(228, 30, 38, 0.15);
+      border-color: var(--garena-red);
+    }
+
+    .lb-rank {
+      font-family: var(--font-brand);
+      font-weight: 800;
+      font-size: 0.88rem;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .lb-rank.top-1 { background: var(--gold-gradient); color: white; }
+    .lb-rank.top-2 { background: linear-gradient(135deg, #94A3B8 0%, #64748B 100%); color: white; }
+    .lb-rank.top-3 { background: linear-gradient(135deg, #B45309 0%, #78350F 100%); color: white; }
+
+    .lb-user-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .lb-name {
+      font-size: 0.86rem;
+      font-weight: 700;
+    }
+
+    .lb-dept {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .lb-score {
+      font-family: var(--font-brand);
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: var(--gold-yellow);
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+  <div class="game-modal">
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="brand-title">
+        <span class="brand-badge">GARENA</span>
+        <span>SKILL SNAKE</span>
+      </div>
+      <button class="close-btn" id="closeBtn" title="Đóng game">&times;</button>
+    </div>
+
+    <!-- Nav Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" id="tabGameBtn">
+        🎮 Chơi Game
+      </button>
+      <button class="tab-btn" id="tabMissionsBtn">
+        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">7</span>
+      </button>
+      <button class="tab-btn" id="tabLeaderboardBtn">
+        🏆 BXH Văn Phòng
+      </button>
+    </div>
+
+    <!-- HUD Bar -->
+    <div class="hud-bar">
+      <div class="hud-card">
+        <span class="hud-label">Lượt Chơi</span>
+        <span class="hud-value highlight-red" id="hudPlays">⚡ 3</span>
+      </div>
+      <div class="hud-card">
+        <span class="hud-label">Điểm Hiện Tại</span>
+        <span class="hud-value highlight-gold" id="hudCurrentScore">⭐ 0 XP</span>
+      </div>
+      <div class="hud-card">
+        <span class="hud-label">Kỷ Lục</span>
+        <span class="hud-value" id="hudHighScore">🏆 0</span>
+      </div>
+    </div>
+
+    <!-- TAB 1: GAME PLAY -->
+    <div class="tab-content active" id="gameTabContent">
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="gameCanvas" width="360" height="360"></canvas>
+
+        <!-- START OVERLAY -->
+        <div class="canvas-overlay" id="startOverlay">
+          <div class="overlay-title">SKILL SNAKE</div>
+          <div class="overlay-subtitle" style="text-align: left; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; width: 92%;">
+            <div>• Ăn rương để mở khóa các thông điệp về Learning Compass.</div>
+            <div>• Trò chơi kết thúc khi bạn va phải chướng ngại vật - là đuôi của bạn hoặc 4 cạnh tường thành.</div>
+          </div>
+          <button class="btn-action" id="btnStartGame">
+            🚀 CHƠI NGAY (SPACE / ENTER)
+          </button>
+        </div>
+
+        <!-- OUT OF PLAYS OVERLAY -->
+        <div class="canvas-overlay hidden" id="noPlaysOverlay">
+          <div class="overlay-title" style="color: var(--garena-red);">HẾT LƯỢT CHƠI!</div>
+          <div class="overlay-subtitle">Bạn đã sử dụng hết lượt chơi hôm nay. Hoàn thành nhiệm vụ để nhận thêm lượt!</div>
+          <button class="btn-action" id="btnGoToMissions">
+            🎯 LÀM NHIỆM VỤ NGAY
+          </button>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div class="canvas-overlay hidden" id="gameOverOverlay">
+          <div class="overlay-title">GAME OVER</div>
+          <div class="overlay-subtitle" id="gameOverSubtitle">Chiến binh Garena đã xuất sắc thu thập:</div>
+          
+          <div class="score-summary">
+            <div class="score-row">
+              <span>Tổng XP:</span>
+              <strong id="finalScore" style="color: var(--gold-yellow); font-size: 1.05rem; font-family: var(--font-brand);">0 XP</strong>
+            </div>
+            <div class="score-row">
+              <span>Kỷ Lục:</span>
+              <strong id="finalHighScore" style="font-family: var(--font-brand);">0 XP</strong>
+            </div>
+          </div>
+
+          <!-- SMART CAROUSEL KNOWLEDGE CONTAINER IN GAME OVER -->
+          <div class="smart-knowledge-card">
+            <div class="smart-card-header">
+              <span class="smart-card-title">💡 THÔNG ĐIỆP HỌC TẬP</span>
+              <span class="smart-card-counter" id="carouselCounter">1/1</span>
+            </div>
+            <div class="smart-card-body" id="carouselBodyText">
+              <!-- Rendered via JS -->
+            </div>
+            <div class="smart-card-footer">
+              <button class="btn-nav-arrow" id="btnPrevTip">◄ Trước</button>
+              <button class="btn-expand-all" id="btnExpandAllTips">🔍 Xem Tất Cả (1)</button>
+              <button class="btn-nav-arrow" id="btnNextTip">Sau ►</button>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action" id="btnReplay">
+              🔄 CHƠI LẠI (SPACE)
+            </button>
+            <button class="btn-action btn-secondary" id="btnGameOverMissions">
+              🎯 NHIỆM VỤ
+            </button>
+          </div>
+        </div>
+
+        <!-- FULL KNOWLEDGE MODAL OVERLAY -->
+        <div class="knowledge-modal-overlay hidden" id="fullKnowledgeModal">
+          <div class="knowledge-modal-header">
+            <div class="knowledge-modal-title">💡 KHO THÔNG ĐIỆP LEARNING COMPASS</div>
+            <button class="btn-action btn-secondary" id="btnCloseFullKnowledge" style="padding: 2px 10px; font-size: 0.75rem;">Đóng ✕</button>
+          </div>
+          <div class="knowledge-modal-list" id="fullKnowledgeList">
+            <!-- Full Cards Rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SPACIOUS ERGONOMIC TOUCH D-PAD -->
+      <div class="dpad-container">
+        <div></div>
+        <button class="dpad-btn" id="btnUp" title="Di chuyển Lên">▲</button>
+        <div></div>
+        <button class="dpad-btn" id="btnLeft" title="Di chuyển Trái">◄</button>
+        <button class="dpad-btn" id="btnDown" title="Di chuyển Xuống">▼</button>
+        <button class="dpad-btn" id="btnRight" title="Di chuyển Phải">►</button>
+      </div>
+
+      <!-- Bottom Micro-Ticker Notification Bar -->
+      <div class="lj-ticker-bar" id="ljTickerBar">
+        <span class="lj-ticker-badge" id="ljTickerBadge">🟢 RƯƠNG ĐỒNG</span>
+        <span class="lj-ticker-text" id="ljTickerText">Ăn rương để mở khóa thông điệp Learning Journey!</span>
+        <span class="lj-ticker-xp" id="ljTickerXP">+0 XP</span>
+      </div>
+
+      <!-- Controls Hint -->
+      <div class="controls-hint">
+        <span>📱 Vuốt Màn Hình (Swipe) hoặc Dùng Phím ◄ ▲ ▼ ►</span>
+        <span>⚡ Bấm phím SPACE / ENTER để Chơi Ngay / Chơi Lại</span>
+      </div>
+    </div>
+
+    <!-- TAB 2: MISSIONS -->
+    <div class="tab-content" id="missionsTabContent">
+      <div class="missions-list" id="missionsListContainer">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      <div class="missions-footer-action">
+        <span>🔄 Tự động reset mỗi ngày</span>
+        <button class="btn-reset-test" id="btnResetDataTest">🔄 Reset Data Test</button>
+      </div>
+    </div>
+
+    <!-- TAB 3: OFFICE LEADERBOARD -->
+    <div class="tab-content" id="leaderboardTabContent">
+      <div class="leaderboard-list" id="leaderboardListContainer">
+        <!-- Rendered dynamically via JS -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================
+       FAIL-SAFE EMBEDDED BASE64 ASSETS (100% RELIABLE)
+       ========================================== */
+    const ASSET_B64 = {
+      head: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAEqElEQVR4nNWZz09UVxTHCQt2bkbkDQw8FSvdzp6Fi/kPZseCHQt2kLg2Llz4P3TdWhFhTAUEFRhQHBopGkn9GRpTRmPTNGlM000Xr+czfq9cbmCYh5o8X/JNXu4995wv59c982hr+8SnHg8cM0SG2NAvxFo79qn6j0Ko3VAwFA0lQ9kwbBgxjAojWitLpqgz7V+SWIdhQAYxft5w+ftc17c/5KLylVw0ZrggjLHGHjKSHdZZdHR8bnKxlOOZS2a8ZCS+u5qL6hO5KLlmmMzl94A19pBBljOclQ7e489BrEPhGTJcxCs/5qIahieP55Mpw7ShYrgRoKI9ZJDlDGfRgS7pLB7Zm0r+QXLKQpU35RMYuS7DkPjpeHdys7M7mTHMBmCNPWRu6Mz1XaIT6FS+DqYuJpE7ZxgnNISJsDliN0VizjDf2ZMsGG4HYI29OclyxhFFFzoV9nHZao2kwjoocuWr8lpFHsPYLRG4c6InWTxRSJYMywFYYw8ZZDkzK49W5E10K+Tjsnl4uJUXo/JcQ5HzGt7A2F0zCoGqYdVwr6s3uR+AtVXJIHtXROc8b3okSwp38TByVOsQ+UEIfHK3FLpFR6yrkKwZiQeGdcPPXX17sK49ZJCtyqO35c2AZF05OXRgdSu0/CUXSWLypOKTk9dWDHioJlIPo77kF8NmANbYQ6Ymr67Im+hyJCvKSWyqukv7hloNdIScoNKmlXOEhL96SeHEI/7zOIqTJ/k42QrAGnuQ9Z9VR1Lhxsa0qlv5SJ8cCMm1i/klepUL7axyblGe88l1dsYf35/mTybPA7D2q2E/+RWFe0GF40KNbTXz0p5rUffkMMnqvOdCS3JXFVbfmIN7trtP7cErQzP5qgrHhdrzortKC2HlnudKmgy8t6SCqImgb8w3+nvP6WRH4P21CB4kj86lwIvYhoPu7qJPENaXqaYpL/fuyHtrKohmHnlrpN719DfAe93QTB6dVfVJl4tTqmgNGCVHjlujMXn44Z1X7pHUtAsqkqTfL6f+KPQnfxr+KpxpgHfW3gQk3YOuB+qT2JgPwqwpqNy4XTRYkn9lJhDKfsYL7z31OdoGlfnUS3xHDlJ/955J3gu8s8ae70kedKBrXc3chXlGLefabjWTh5FrziPMcPQjl3+0gWUVB+GlXdA+nhtBioA8I5R4C0L/9H6T/Cvwzhp7b5WTnOEsOjbVH9G9rJbzMQ9zjTwcU7uJ2zSijzJopiG4o5zDU3gNYv/1nW2A9/fyIjI76Qle0NXX/1UQzHyIUxcJTZg+RwG0UiSv1bg5e5QiSdVmuL5edO968Y1IHtRmnPc4w1l0pGozaRr1pufFl2bwN5GsK9xho2YPGWSd91x4W27Uaa46/vJH0Ydp5ZlIbivc+1112yL3TLn3SN6raUZMc9W1NCyQNxsK9ZY8SeheBYOCGxZeyHNbGr02lHv35b00w0LL4xbh2ZAnCRl51WzceiLPbXihTT1upR1Y1xXuTXnzsIH1oTy3psJIPbB+FSO/SGb3R1NQ0dn82emFOrs/3EUyu58+ApLZ/Hjkkczu57eAaDY/YAYks/sJOCCazY/oTQh/0X9D/A/z/ieuD+mJzgAAAABJRU5ErkJggg==',
+      chest_lvl1: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAABK0lEQVR4nGNgGAWjYGABIy6JLcGc/+npEJ+137G6hWkwOA6fnYy4FDp6Q9y+f+s/DE0wOVIBPrNgcughyYTPcfQEjlA70UOSaTA4Dp8jB841RIJRB1IKRkOQUjAagpQCeKk9yYEPa1WjJPwbQ+zeW1ayLFMiway8A5/AbmMhyyYiLKbEI8iABd0S9Jpk/1ZMTclxf5Hk/zF4zW3Eavi25HoU8wiZBTOPaplkP5rjqlxbwRgGQHLYGggDkourkByGzKYUjJxipm13NVb2oAvBNio6bvhHsaM3E7gowRV66MUMOYDigtoRzZHocpQCqtQkjjTsJgzvNEgPMOpAqoUgrEdPaeVOCcA2uoASxQPpyP04hj4YB8vgEa4RLiZShsJoCXwGwM5RMAoYiAAAED9yG8T2GU0AAAAASUVORK5CYII=',
+      chest_lvl2: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAABYklEQVR4nGNgGAWjYGABIy4J99DM/yDa188fQ27zpo1kWeaLx6ydq6djdQsTPsfRE7jjsJMRl8KWhgow/+S56xiazI00yXLESTxm1TR0YA1JJnyOoydogdqJHpJMg8Fx+ByJNQ0OJsDEMMgBE8MgB0wMgxwwMQxywMQwyAETwyAHjDCGsWMo1qomMSkZQ2z+vLlkWZZIglln968Gu42FgQrg9U9TrOKi7KcpNhvuQBEREQZsNQm2+nPGlB44Ozh1JYNUcx5Ww5/VTmJYOzucaLOQ62SqpMFgNMcdd2IHYxgAyYHUDIpMchzJYcjsYZ+LmahlkOW+n1jZlAKq5GJaOGxkRPHa2eHgogQXQC9mBiSK184OZwhOxe5ISh1HtTS4lgoOGZlpkB5g1IFUC0FYjx69NUFPUINldAEligfSkTU4hj6wjigh9+zpNbqFa4QLaybBNRRGS7BzAOwcBaOAgQgAAN63gAbNzYBlAAAAAElFTkSuQmCC'
+    };
+
+    /* ==========================================
+       CUSTOM USER LEARNING JOURNEY MESSAGES
+       ========================================== */
+    const LEARNING_JOURNEY_PROMOS = {
+      level1: [
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'La bàn học tập cho riêng bạn!', fullDetail: '🟢 <b>La bàn học tập cho riêng bạn!</b>: Định hướng kỹ năng & lộ trình phát triển sự nghiệp cá nhân hóa!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Learning Compass: Dẫn lối tri thức!', fullDetail: '🟢 <b>Learning Compass: Dẫn lối tri thức!</b>: Tìm đúng khóa học bạn cần chỉ trong 1 nốt nhạc!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Gợi ý khóa học chuẩn rank', fullDetail: '🟢 <b>Gợi ý khóa học chuẩn rank</b>: Tự động đề xuất khóa học theo lộ trình thăng tiến!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Gợi ý khóa học riêng cho bạn!', fullDetail: '🟢 <b>Gợi ý khóa học riêng cho bạn!</b>: Khám phá các khóa học cá nhân hóa theo vai trò!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Tìm khóa học nhanh theo skill!', fullDetail: '🟢 <b>Tìm khóa học nhanh theo skill!</b>: Đổi mới kỹ năng và tra cứu chủ đề dễ dàng.' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Xem "đồng đội" đã học gì và review gì', fullDetail: '🟢 <b>Xem "đồng đội" đã học gì và review gì</b>: Tham khảo đánh giá & khóa học hot từ đồng nghiệp!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Xem lại tài liệu / record các khóa đã bỏ lỡ', fullDetail: '🟢 <b>Xem lại tài liệu / record các khóa đã bỏ lỡ</b>: Ôn tập lại kiến thức & xem lại recording!' },
+        { badge: '🟢 RƯƠNG ĐỒNG', shortText: 'Nâng cấp kỹ năng "chuẩn bài"', fullDetail: '🟢 <b>Nâng cấp kỹ năng "chuẩn bài"</b>: Nâng cao năng lực chuyên môn với kho tri thức Garena.' }
+      ],
+      level2: [
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Định hướng lộ trình với Learning Compass!', fullDetail: '🔵 <b>Định hướng lộ trình với Learning Compass!</b>: Bật mở la bàn kỹ năng cá nhân hóa, bứt phá rank công việc!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Tài trợ chi phí đào tạo 20tr/năm!', fullDetail: '🔵 <b>Tài trợ chi phí đào tạo 20tr/năm!</b>: Garena hỗ trợ ngân sách học tập bên ngoài!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Đề xuất đào tạo theo nhu cầu riêng!', fullDetail: '🔵 <b>Đề xuất đào tạo theo nhu cầu riêng!</b>: Gửi yêu cầu thiết kế khóa học riêng cho bạn/team!' },
+        { badge: '🔵 RƯƠNG BẠC', shortText: 'Hỏi đáp với "Hộ giá" 24/7!', fullDetail: '🔵 <b>Hỏi đáp với "Hộ giá" 24/7!</b>: Giải đáp thắc mắc quy định L&D mọi lúc mọi nơi!' }
+      ]
+    };
+
+    let sessionUnlockedTips = [];
+    let currentTipIndex = 0;
+    let lastLvl1Index = -1;
+    let lastLvl2Index = -1;
+
+    let officeLeaderboard = [
+      { name: 'Hoàng Nam', dept: 'Tech / Game Dev', score: 320, isUser: false },
+      { name: 'Linh Chi', dept: 'L&D / HRBP', score: 260, isUser: false },
+      { name: 'Anh Tuấn', dept: 'Product / Publishing', score: 210, isUser: false },
+      { name: 'Bảo Trân', dept: 'Marketing / Media', score: 180, isUser: false },
+      { name: 'Bạn (Chiến binh Garena)', dept: 'Learning Journey', score: 0, isUser: true },
+      { name: 'Phương Thảo', dept: 'Operations / Esports', score: 120, isUser: false },
+      { name: 'Đức Minh', dept: 'Commercial / Sales', score: 90, isUser: false },
+      { name: 'Khánh Vy', dept: 'Legal & Finance', score: 60, isUser: false }
+    ];
+
+    function triggerLJTicker(chest) {
+      let pool = LEARNING_JOURNEY_PROMOS.level1;
+      let borderColor = 'var(--bronze-gold)';
+      let badgeBg = 'var(--bronze-gradient)';
+      const isLvl2 = chest.id === 2;
+
+      if (isLvl2) {
+        pool = LEARNING_JOURNEY_PROMOS.level2;
+        borderColor = 'var(--silver-color)';
+        badgeBg = 'var(--silver-gradient)';
+      }
+
+      const lastIndex = isLvl2 ? lastLvl2Index : lastLvl1Index;
+      let nextIndex = Math.floor(Math.random() * pool.length);
+
+      if (pool.length > 1) {
+        while (nextIndex === lastIndex) {
+          nextIndex = Math.floor(Math.random() * pool.length);
+        }
+      }
+
+      if (isLvl2) lastLvl2Index = nextIndex;
+      else lastLvl1Index = nextIndex;
+
+      const promo = pool[nextIndex];
+      lastChestName = promo.shortText;
+
+      // Add to session tips for current carousel
+      if (!sessionUnlockedTips.some(t => t.fullDetail === promo.fullDetail)) {
+        sessionUnlockedTips.push(promo);
+      }
+
+      // PERMANENT PLAYER HISTORY COLLECTION IN LOCALSTORAGE
+      if (!gameState.unlockedTipsHistory.some(t => t.fullDetail === promo.fullDetail)) {
+        gameState.unlockedTipsHistory.push(promo);
+        saveState();
+      }
+
+      const tickerBar = document.getElementById('ljTickerBar');
+      const badgeEl = document.getElementById('ljTickerBadge');
+      const textEl = document.getElementById('ljTickerText');
+      const xpEl = document.getElementById('ljTickerXP');
+
+      badgeEl.textContent = promo.badge;
+      badgeEl.style.background = badgeBg;
+      textEl.textContent = promo.shortText;
+      xpEl.textContent = `+${chest.xp} XP`;
+      tickerBar.style.borderColor = borderColor;
+
+      return promo;
+    }
+
+    function renderSmartKnowledgeCarousel() {
+      if (sessionUnlockedTips.length === 0) {
+        sessionUnlockedTips.push({
+          badge: '🔵 RƯƠNG BẠC',
+          shortText: 'Định hướng lộ trình với Learning Compass!',
+          fullDetail: '🔵 <b>Định hướng lộ trình với Learning Compass!</b>: Bật mở la bàn kỹ năng cá nhân hóa, bứt phá rank công việc!'
+        });
+      }
+
+      if (currentTipIndex >= sessionUnlockedTips.length) currentTipIndex = 0;
+      if (currentTipIndex < 0) currentTipIndex = sessionUnlockedTips.length - 1;
+
+      const activeTip = sessionUnlockedTips[currentTipIndex];
+      document.getElementById('carouselCounter').textContent = `${currentTipIndex + 1}/${sessionUnlockedTips.length}`;
+      document.getElementById('carouselBodyText').innerHTML = activeTip.fullDetail;
+      document.getElementById('btnExpandAllTips').textContent = `🔍 Xem Tất Cả (${sessionUnlockedTips.length})`;
+    }
+
+    function renderFullKnowledgeModal() {
+      const container = document.getElementById('fullKnowledgeList');
+      container.innerHTML = '';
+
+      // Use cumulative history list if available, fallback to session tips
+      const tipsList = (gameState.unlockedTipsHistory && gameState.unlockedTipsHistory.length > 0) 
+        ? gameState.unlockedTipsHistory 
+        : (sessionUnlockedTips.length > 0 ? sessionUnlockedTips : LEARNING_JOURNEY_PROMOS.level1.slice(0, 1));
+
+      tipsList.forEach((tip) => {
+        const card = document.createElement('div');
+        card.className = 'full-knowledge-card';
+        card.innerHTML = `
+          <div class="full-card-badge" style="color: ${tip.badge.includes('ĐỒNG') ? 'var(--bronze-gold)' : 'var(--silver-color)'};">
+            ${tip.badge}
+          </div>
+          <div class="full-card-text">${tip.fullDetail}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    document.getElementById('btnPrevTip').addEventListener('click', () => {
+      currentTipIndex--;
+      renderSmartKnowledgeCarousel();
+    });
+
+    document.getElementById('btnNextTip').addEventListener('click', () => {
+      currentTipIndex++;
+      renderSmartKnowledgeCarousel();
+    });
+
+    document.getElementById('btnExpandAllTips').addEventListener('click', () => {
+      renderFullKnowledgeModal();
+      document.getElementById('fullKnowledgeModal').classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseFullKnowledge').addEventListener('click', () => {
+      document.getElementById('fullKnowledgeModal').classList.add('hidden');
+    });
+
+    /* ==========================================
+       GAME ENGINE & STATE MANAGEMENT
+       ========================================== */
+    const GRID_SIZE = 20;
+    const CELL_SIZE = 18; // 20x20 grid in 360x360 canvas
+    const GAME_SPEED_MS = 110;
+    const GAME_MODE = new URLSearchParams(window.location.search).get('mode') === 'test' ? 'test' : 'production';
+    let currentRunToken = null;
+    let backendLeaderboard = [];
+    let backendUserId = null;
+    let startPending = false;
+
+    async function startBackendRun() {
+      const response = await fetch('/api/minigame/runs', { method: 'POST', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'RUN_START_FAILED');
+      const data = await response.json();
+      currentRunToken = data.run_token;
+      if (GAME_MODE === 'production' && Number.isFinite(Number(data.plays))) {
+        gameState.playsLeft = Number(data.plays);
+        updateHUD();
+      }
+    }
+
+    async function finishBackendRun(score) {
+      if (!currentRunToken) return;
+      const response = await fetch('/api/minigame/runs/finish', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-MinGame-Mode': GAME_MODE },
+        body: JSON.stringify({ run_token: currentRunToken, score }),
+      });
+      currentRunToken = null;
+      if (!response.ok) throw new Error('RUN_FINISH_FAILED');
+    }
+
+    async function refreshBackendState() {
+      const response = await fetch('/api/minigame/bootstrap', { credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (!response.ok) throw new Error('MINIGAME_BOOTSTRAP_FAILED');
+      const data = await response.json();
+      gameState.playsLeft = data.user.plays;
+      gameState.highScore = data.user.high_score;
+      backendUserId = data.user.id;
+      gameState.tasks = data.tasks.map(task => ({ ...task, progress: Number(task.progress || 0), reqTime: Number(task.seconds || 0) }));
+      backendLeaderboard = data.leaderboard || [];
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+    }
+
+    const CHEST_TYPES = [
+      { id: 1, name: 'Rương Đồng', xp: 10, color: '#D97706', chance: 0.75, imgKey: 'chest_lvl1' },
+      { id: 2, name: 'Rương Bạc', xp: 25, color: '#CBD5E1', chance: 1.00, imgKey: 'chest_lvl2' }
+    ];
+
+    const assets = {
+      head: new Image(),
+      chest_lvl1: new Image(),
+      chest_lvl2: new Image()
+    };
+
+    const assetsLoaded = { head: false, chest_lvl1: false, chest_lvl2: false };
+
+    function loadAssets() {
+      assets.head.onload = () => assetsLoaded.head = true;
+      assets.head.src = ASSET_B64.head;
+
+      assets.chest_lvl1.onload = () => assetsLoaded.chest_lvl1 = true;
+      assets.chest_lvl1.src = ASSET_B64.chest_lvl1;
+
+      assets.chest_lvl2.onload = () => assetsLoaded.chest_lvl2 = true;
+      assets.chest_lvl2.src = ASSET_B64.chest_lvl2;
+    }
+
+    let gameState = {
+      playsLeft: 3,
+      highScore: 0,
+      lastResetDate: new Date().toISOString().slice(0, 10),
+      unlockedTipsHistory: [],
+      tasks: [
+        { id: 'task_daily_login', title: '📅 Đăng nhập hằng ngày', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
+        { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_4', title: '✅ Hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
+      ]
+    };
+
+    async function loadSavedState() {
+      await refreshBackendState();
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+    }
+
+    function saveState() {
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+      updateHUD();
+    }
+
+    /* ==========================================
+       CANVAS & GAME LOOP VARS (60 FPS REQUESTANIMATIONFRAME)
+       ========================================== */
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let snake = [];
+    let dir = { x: 1, y: 0 };
+    let nextDir = { x: 1, y: 0 };
+    let currentChest = null;
+    let currentScore = 0;
+    let lastChestName = '--';
+    let isRunning = false;
+    let isWaitingForInput = false;
+
+    let animFrameId = null;
+    let lastStepTimestamp = 0;
+
+    /* OPTION 3: OBJECT POOLING FOR ZERO GARBAGED COLLECTION PAUSES */
+    const MAX_PARTICLES = 30;
+    const particlePool = [];
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      particlePool.push({ x: 0, y: 0, vx: 0, vy: 0, color: '#FFF', radius: 2, alpha: 0, life: 0, active: false });
+    }
+
+    const MAX_POPUPS = 2;
+    const popupPool = [];
+    for (let i = 0; i < MAX_POPUPS; i++) {
+      popupPool.push({ text: '', x: 0, y: 0, color: '#FFF', alpha: 0, vy: 0, life: 0, active: false });
+    }
+
+    function initGame() {
+      snake = [
+        { x: 5, y: 10 },
+        { x: 4, y: 10 },
+        { x: 3, y: 10 }
+      ];
+      dir = { x: 0, y: 0 };
+      nextDir = { x: 0, y: 0 };
+      currentScore = 0;
+      lastChestName = '--';
+      lastLvl1Index = -1;
+      lastLvl2Index = -1;
+      sessionUnlockedTips = [];
+      currentTipIndex = 0;
+      
+      // Reset Object Pools
+      particlePool.forEach(p => p.active = false);
+      popupPool.forEach(p => p.active = false);
+
+      spawnChest();
+      updateHUD();
+    }
+
+    function spawnChest() {
+      let valid = false;
+      let cx, cy;
+      while (!valid) {
+        cx = Math.floor(Math.random() * GRID_SIZE);
+        cy = Math.floor(Math.random() * GRID_SIZE);
+        valid = !snake.some(seg => seg.x === cx && seg.y === cy);
+      }
+      const rand = Math.random();
+      let type = CHEST_TYPES[0];
+      if (rand > 0.75) type = CHEST_TYPES[1];
+      currentChest = { x: cx, y: cy, ...type };
+    }
+
+    /* OPTION 1: HIGH-PERFORMANCE REQUESTANIMATIONFRAME LOOP */
+    async function startGame() {
+      if (startPending || isRunning) return;
+      startPending = true;
+      try {
+        await startBackendRun();
+      } catch (error) {
+        try {
+          await refreshBackendState();
+          updateHUD();
+        } catch (_) { /* keep the current state if bootstrap is unavailable */ }
+        showOverlay(gameState.playsLeft > 0 ? 'startOverlay' : 'noPlaysOverlay');
+        startPending = false;
+        return;
+      }
+      startPending = false;
+      initGame();
+      hideOverlays();
+      document.getElementById('fullKnowledgeModal').classList.add('hidden');
+      isRunning = true;
+      isWaitingForInput = true;
+      lastStepTimestamp = performance.now();
+
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      animFrameId = requestAnimationFrame(gameLoop60fps);
+      render();
+    }
+
+    function gameLoop60fps(timestamp) {
+      if (!isRunning) return;
+
+      const elapsed = timestamp - lastStepTimestamp;
+      if (elapsed >= GAME_SPEED_MS) {
+        lastStepTimestamp = timestamp - (elapsed % GAME_SPEED_MS);
+        if (!isWaitingForInput) {
+          gameStepLogic();
+        }
+      }
+
+      updateFX();
+      render();
+
+      animFrameId = requestAnimationFrame(gameLoop60fps);
+    }
+
+    function handlePlayerMoveInput(newDir) {
+      if (!isRunning) return;
+
+      if (isWaitingForInput || (dir.x === 0 && dir.y === 0)) {
+        if (newDir.x === -1) return;
+        isWaitingForInput = false;
+      }
+
+      if (dir.x !== 0 && newDir.x === -dir.x) return;
+      if (dir.y !== 0 && newDir.y === -dir.y) return;
+
+      nextDir = newDir;
+    }
+
+    function gameStepLogic() {
+      dir = { ...nextDir };
+      if (dir.x === 0 && dir.y === 0) return;
+
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+      // CLASSIC WALL COLLISION (VA TƯỜNG LÀ CHẾT)
+      if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+        handleGameOver();
+        return;
+      }
+
+      // Self Collision Check
+      if (snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+        handleGameOver();
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === currentChest.x && head.y === currentChest.y) {
+        currentScore += currentChest.xp;
+        const promo = triggerLJTicker(currentChest);
+        triggerChestFXPooled(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
+        spawnChest();
+        updateHUD();
+      } else {
+        snake.pop();
+      }
+    }
+
+    async function handleGameOver() {
+      isRunning = false;
+      isWaitingForInput = false;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+
+      let isNewRecord = false;
+      if (currentScore > gameState.highScore) {
+        gameState.highScore = currentScore;
+        isNewRecord = true;
+      }
+      try { await finishBackendRun(currentScore); } catch (error) { console.error(error); }
+      saveState();
+
+      window.parent.postMessage({
+        type: 'GARENA_GAME_OVER',
+        score: currentScore,
+        highScore: gameState.highScore
+      }, window.location.origin);
+
+      currentTipIndex = 0;
+      renderSmartKnowledgeCarousel();
+
+      document.getElementById('finalScore').textContent = `${currentScore} XP`;
+      document.getElementById('finalHighScore').textContent = `${gameState.highScore} XP ${isNewRecord ? '🎉 (Kỷ Lục Mới!)' : ''}`;
+      document.getElementById('gameOverSubtitle').textContent = `Chiến binh Garena đã xuất sắc thu thập được: ${currentScore} XP!`;
+
+      showOverlay('gameOverOverlay');
+    }
+
+    /* ==========================================
+       OPTION 3: ZERO-ALLOCATION OBJECT POOLED FX
+       ========================================== */
+    function triggerChestFXPooled(x, y, chest, promoText) {
+      // 1. Activate 8 particles from pool
+      let particleCount = 0;
+      for (let i = 0; i < MAX_PARTICLES && particleCount < 8; i++) {
+        const p = particlePool[i];
+        if (!p.active) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 3.5 + 1.0;
+          p.x = x;
+          p.y = y;
+          p.vx = Math.cos(angle) * speed;
+          p.vy = Math.sin(angle) * speed;
+          p.color = chest.color;
+          p.radius = Math.random() * 2 + 1.5;
+          p.alpha = 1.0;
+          p.life = 18;
+          p.active = true;
+          particleCount++;
+        }
+      }
+
+      // 2. Activate popup from pool (cap max 2 active popups)
+      const activePopups = popupPool.filter(p => p.active);
+      if (activePopups.length >= 2) {
+        activePopups[0].active = false; // Recycle oldest
+      }
+
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const pop = popupPool[i];
+        if (!pop.active) {
+          pop.text = promoText ? `+${chest.xp} XP • ${promoText}` : `+${chest.xp} XP ${chest.name}!`;
+          pop.x = x;
+          pop.y = Math.max(28, y - 12);
+          pop.color = chest.color;
+          pop.alpha = 1.0;
+          pop.vy = -0.25; // Gentle float
+          pop.life = 300; // Exactly 5.0 seconds duration at 60 FPS
+          pop.active = true;
+          break;
+        }
+      }
+    }
+
+    function updateFX() {
+      // Update Particles
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        const p = particlePool[i];
+        if (p.active) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 1 / p.life;
+          if (p.alpha <= 0) p.active = false;
+        }
+      }
+
+      // Update Popups
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const pop = popupPool[i];
+        if (pop.active) {
+          pop.y += pop.vy;
+          pop.alpha -= 1 / pop.life;
+          if (pop.alpha <= 0) pop.active = false;
+        }
+      }
+    }
+
+    /* ==========================================
+       CANVAS RENDERING ENGINE (HIGH SPEED)
+       ========================================== */
+    function render() {
+      ctx.fillStyle = '#111827';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.strokeStyle = '#1F2937';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= canvas.width; i += CELL_SIZE) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+
+      // Draw Chest (Food)
+      if (currentChest) {
+        const cx = currentChest.x * CELL_SIZE;
+        const cy = currentChest.y * CELL_SIZE;
+        const imgKey = currentChest.imgKey;
+
+        if (assetsLoaded[imgKey]) {
+          ctx.save();
+          const pad = CELL_SIZE * 0.175;
+          ctx.drawImage(assets[imgKey], cx - pad, cy - pad, CELL_SIZE * 1.35, CELL_SIZE * 1.35);
+          ctx.restore();
+        } else {
+          ctx.save();
+          ctx.fillStyle = currentChest.color;
+          ctx.beginPath();
+          ctx.roundRect(cx + 2, cy + 2, CELL_SIZE - 4, CELL_SIZE - 4, 5);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Draw Snake Body & Head
+      snake.forEach((seg, index) => {
+        const sx = seg.x * CELL_SIZE;
+        const sy = seg.y * CELL_SIZE;
+
+        if (index === 0) {
+          if (assetsLoaded.head) {
+            ctx.save();
+            ctx.translate(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2);
+            let angle = Math.PI / 2; // Default facing Right
+            if (dir.x === 1) angle = Math.PI / 2;
+            else if (dir.x === -1) angle = -Math.PI / 2;
+            else if (dir.y === 1) angle = Math.PI;
+            else if (dir.y === -1) angle = 0;
+
+            ctx.rotate(angle);
+            ctx.drawImage(assets.head, -CELL_SIZE * 0.95, -CELL_SIZE * 0.95, CELL_SIZE * 1.9, CELL_SIZE * 1.9);
+            ctx.restore();
+          } else {
+            ctx.save();
+            ctx.fillStyle = '#E41E26';
+            ctx.beginPath();
+            ctx.arc(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2, CELL_SIZE / 2 - 1, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+        } else {
+          ctx.save();
+          ctx.fillStyle = '#E2E8F0';
+          ctx.strokeStyle = '#94A3B8';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(sx + 1.5, sy + 1.5, CELL_SIZE - 3, CELL_SIZE - 3, 5);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      });
+
+      // Render Pooled Particles
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        const p = particlePool[i];
+        if (p.active) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // Render Pooled Popups
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const ft = popupPool[i];
+        if (ft.active) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, ft.alpha);
+          ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
+          
+          const textWidth = ctx.measureText(ft.text).width;
+          const pillWidth = textWidth + 16;
+          const pillHeight = 20;
+
+          const halfPill = pillWidth / 2;
+          const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
+          const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
+
+          ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
+          ctx.strokeStyle = ft.color;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.fillText(ft.text, safeX, safeY);
+          ctx.restore();
+        }
+      }
+
+      if (isWaitingForInput) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        ctx.fillRect(10, 150, 340, 60);
+        ctx.strokeStyle = '#E41E26';
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(10, 150, 340, 60);
+
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '700 11.5px "Chakra Petch", "Be Vietnam Pro", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('📱 VUỐT MÀN HÌNH HOẶC BẤM PHÍM MŨI TÊN / SPACE', 180, 177);
+        ctx.fillText('ĐỂ BẮT ĐẦU DI CHUYỂN!', 180, 195);
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================
+       HUD & OVERLAY MANAGEMENT
+       ========================================== */
+    function updateHUD() {
+      document.getElementById('hudPlays').textContent = `⚡ ${gameState.playsLeft}`;
+      document.getElementById('hudCurrentScore').textContent = `⭐ ${currentScore} XP`;
+      document.getElementById('hudHighScore').textContent = `🏆 ${gameState.highScore} XP`;
+      
+      const badge = document.getElementById('missionBadge');
+      badge.textContent = gameState.tasks.length;
+    }
+
+    function showOverlay(overlayId) {
+      document.querySelectorAll('.canvas-overlay').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(overlayId);
+      if (target) target.classList.remove('hidden');
+    }
+
+    function hideOverlays() {
+      document.querySelectorAll('.canvas-overlay').forEach(el => el.classList.add('hidden'));
+    }
+
+    /* ==========================================
+       MISSIONS & LEADERBOARD SYSTEM
+       ========================================== */
+    function renderMissions() {
+      const container = document.getElementById('missionsListContainer');
+      container.innerHTML = '';
+
+      gameState.tasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = 'mission-card';
+
+        let btnClass = 'btn-claim pending';
+        let btnText = 'Chưa xong';
+        let isReady = false;
+        const completed = task.status === 'CLAIMED' || (task.reqTime > 0 && task.progress >= task.reqTime);
+
+        if (completed) {
+          btnClass = 'btn-claim done';
+          btnText = 'Đã hoàn thành';
+        } else if (task.path) {
+          btnClass = 'btn-claim ready';
+          btnText = 'Thực hiện';
+          isReady = true;
+        } else if (task.reqTime > 0) {
+          btnText = `Đang làm (${task.progress}/${task.reqTime}s)`;
+        }
+
+        card.innerHTML = `
+          <div class="mission-info">
+            <div class="mission-title">${task.title}</div>
+            <div class="mission-reward">+${task.reward} lượt chơi</div>
+            ${task.reqTime > 0 ? `<div class="mission-progress">Tiến độ: ${task.progress}/${task.reqTime}s</div>` : ''}
+          </div>
+          <button class="${btnClass}" ${!isReady ? 'disabled' : ''} data-id="${task.id}">${btnText}</button>
+        `;
+
+        if (isReady) {
+          card.querySelector('button').addEventListener('click', () => window.parent.postMessage({ type: 'GARENA_NAVIGATE', path: task.path }, window.location.origin));
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    function renderLeaderboard() {
+      const container = document.getElementById('leaderboardListContainer');
+      container.innerHTML = '';
+
+      const sorted = backendLeaderboard.length ? backendLeaderboard.map(item => ({ ...item, name: item.full_name || item.email, dept: item.team || 'Learning Journey', isUser: item.id === backendUserId })) : [...officeLeaderboard];
+
+      sorted.forEach((item, index) => {
+        const rankNum = index + 1;
+        const card = document.createElement('div');
+        card.className = `leaderboard-card ${item.isUser ? 'current-user' : ''}`;
+
+        let rankClass = 'lb-rank';
+        let medal = rankNum;
+        if (rankNum === 1) { rankClass += ' top-1'; medal = '🥇'; }
+        else if (rankNum === 2) { rankClass += ' top-2'; medal = '🥈'; }
+        else if (rankNum === 3) { rankClass += ' top-3'; medal = '🥉'; }
+
+        card.innerHTML = `
+          <div class="${rankClass}">${medal}</div>
+          <div class="lb-user-info">
+            <div class="lb-name">
+              ${item.name} ${item.isUser ? '<span style="color: var(--garena-red); font-size: 0.75rem;">(Bạn)</span>' : ''}
+            </div>
+            <div class="lb-dept">${item.dept}</div>
+          </div>
+          <div class="lb-score">${item.score} XP</div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function syncMissionTabHeight() {
+      const modal = document.querySelector('.game-modal');
+      const gameTab = document.getElementById('gameTabContent');
+      const missionsTab = document.getElementById('missionsTabContent');
+      const leaderboardTab = document.getElementById('leaderboardTabContent');
+      if (!modal || !gameTab || !missionsTab || !leaderboardTab) return;
+      [gameTab, missionsTab, leaderboardTab].forEach(tab => {
+        tab.style.flex = '';
+        tab.style.height = '';
+      });
+      modal.style.height = '';
+    }
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'GARENA_ACTIVITY') return;
+      const activity = String(event.data.activity || '');
+      const seconds = Math.max(0, Math.min(Number(event.data.seconds || 0), 10));
+      let changed = false;
+      gameState.tasks.forEach(task => {
+        if (task.activity === activity && task.reqTime > 0 && task.status !== 'CLAIMED' && task.status !== 'READY_TO_CLAIM') {
+          task.progress = Math.min(task.reqTime, task.progress + seconds);
+          task.status = task.progress >= task.reqTime ? 'READY_TO_CLAIM' : task.status;
+          changed = true;
+        }
+      });
+      if (changed) renderMissions();
+    });
+
+    setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      refreshBackendState().then(() => {
+        renderMissions();
+        updateHUD();
+      }).catch(() => {});
+    }, 5000);
+
+    /* ==========================================
+       KEYBOARD SHORTCUTS & ARROW KEYS ONLY
+       ========================================== */
+    window.addEventListener('keydown', (e) => {
+      // GLOBAL SPACEBAR & ENTER SHORTCUT: Start / Replay / Unfreeze cleanly!
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault(); // Prevent browser scroll
+        const startOverlay = document.getElementById('startOverlay');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const noPlaysOverlay = document.getElementById('noPlaysOverlay');
+
+        if (!startOverlay.classList.contains('hidden') || 
+            !gameOverOverlay.classList.contains('hidden') || 
+            !noPlaysOverlay.classList.contains('hidden')) {
+          startGame();
+          return;
+        }
+
+        // If game is running and waiting for initial input, unfreeze & start moving!
+        if (isRunning && isWaitingForInput) {
+          isWaitingForInput = false;
+          nextDir = { x: 1, y: 0 }; // Start moving Right
+          return;
+        }
+      }
+
+      // ARROW KEYS MOVEMENT ONLY (WASD DISABLED AS REQUESTED)
+      let inputDir = null;
+      switch (e.key) {
+        case 'ArrowUp':
+          inputDir = { x: 0, y: -1 };
+          break;
+        case 'ArrowDown':
+          inputDir = { x: 0, y: 1 };
+          break;
+        case 'ArrowLeft':
+          inputDir = { x: -1, y: 0 };
+          break;
+        case 'ArrowRight':
+          inputDir = { x: 1, y: 0 };
+          break;
+      }
+
+      if (inputDir) {
+        e.preventDefault(); // Prevent browser scroll
+        handlePlayerMoveInput(inputDir);
+      }
+    });
+
+    /* ==========================================
+       TOUCH SWIPE GESTURES FOR MOBILE
+       ========================================== */
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    const canvasContainerEl = document.getElementById('canvasContainer');
+
+    canvasContainerEl.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    canvasContainerEl.addEventListener('touchend', (e) => {
+      if (!e.changedTouches || e.changedTouches.length === 0) return;
+      const touchEndX = e.changedTouches[0].clientX;
+      const touchEndY = e.changedTouches[0].clientY;
+
+      const dx = touchEndX - touchStartX;
+      const dy = touchEndY - touchStartY;
+      const minSwipeDist = 18; // 18px threshold
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (Math.abs(dx) > minSwipeDist) {
+          if (dx > 0) handlePlayerMoveInput({ x: 1, y: 0 }); // Swipe Right
+          else handlePlayerMoveInput({ x: -1, y: 0 }); // Swipe Left
+        }
+      } else {
+        if (Math.abs(dy) > minSwipeDist) {
+          if (dy > 0) handlePlayerMoveInput({ x: 0, y: 1 }); // Swipe Down
+          else handlePlayerMoveInput({ x: 0, y: -1 }); // Swipe Up
+        }
+      }
+    }, { passive: true });
+
+    // Touch D-Pad Buttons
+    document.getElementById('btnUp').addEventListener('click', () => handlePlayerMoveInput({ x: 0, y: -1 }));
+    document.getElementById('btnDown').addEventListener('click', () => handlePlayerMoveInput({ x: 0, y: 1 }));
+    document.getElementById('btnLeft').addEventListener('click', () => handlePlayerMoveInput({ x: -1, y: 0 }));
+    document.getElementById('btnRight').addEventListener('click', () => handlePlayerMoveInput({ x: 1, y: 0 }));
+
+    // Close & Reset Buttons
+    document.getElementById('closeBtn').addEventListener('click', () => {
+      window.parent.postMessage({ type: 'GARENA_CLOSE_GAME' }, window.location.origin);
+    });
+
+    document.getElementById('btnResetDataTest').remove();
+
+    // Tab Switching
+    const tabGameBtn = document.getElementById('tabGameBtn');
+    const tabMissionsBtn = document.getElementById('tabMissionsBtn');
+    const tabLeaderboardBtn = document.getElementById('tabLeaderboardBtn');
+
+    const gameTabContent = document.getElementById('gameTabContent');
+    const missionsTabContent = document.getElementById('missionsTabContent');
+    const leaderboardTabContent = document.getElementById('leaderboardTabContent');
+
+    tabGameBtn.addEventListener('click', () => {
+      tabGameBtn.classList.add('active');
+      tabMissionsBtn.classList.remove('active');
+      tabLeaderboardBtn.classList.remove('active');
+
+      gameTabContent.classList.add('active');
+      missionsTabContent.classList.remove('active');
+      leaderboardTabContent.classList.remove('active');
+    });
+
+    tabMissionsBtn.addEventListener('click', () => {
+      tabMissionsBtn.classList.add('active');
+      tabGameBtn.classList.remove('active');
+      tabLeaderboardBtn.classList.remove('active');
+
+      missionsTabContent.classList.add('active');
+      gameTabContent.classList.remove('active');
+      leaderboardTabContent.classList.remove('active');
+      renderMissions();
+    });
+
+    tabLeaderboardBtn.addEventListener('click', () => {
+      tabLeaderboardBtn.classList.add('active');
+      tabGameBtn.classList.remove('active');
+      tabMissionsBtn.classList.remove('active');
+
+      leaderboardTabContent.classList.add('active');
+      gameTabContent.classList.remove('active');
+      missionsTabContent.classList.remove('active');
+      renderLeaderboard();
+    });
+
+    // Button Actions
+    document.getElementById('btnStartGame').addEventListener('click', startGame);
+    document.getElementById('btnReplay').addEventListener('click', startGame);
+
+    document.getElementById('btnGoToMissions').addEventListener('click', () => {
+      tabMissionsBtn.click();
+    });
+
+    document.getElementById('btnGameOverMissions').addEventListener('click', () => {
+      tabMissionsBtn.click();
+    });
+
+    /* ==========================================
+       INITIALIZATION
+       ========================================== */
+    loadAssets();
+    loadSavedState().then(() => {
+      renderMissions();
+      renderLeaderboard();
+      syncMissionTabHeight();
+      showOverlay('startOverlay');
+      render();
+    }).catch(() => showOverlay('noPlaysOverlay'));
+  </script>
+</body>
+</html>

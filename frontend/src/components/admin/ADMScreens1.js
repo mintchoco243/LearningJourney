@@ -324,16 +324,45 @@ const COURSE_STATUSES = [
     rank_05: "Senior Manager",
     Associate: "Associate",
     "Senior Associate": "Senior Associate",
+    "Senior Associate I": "Senior Associate I",
+    "Senior Associate II": "Senior Associate II",
     "Assistant Manager": "Assistant Manager",
     Manager: "Manager",
     "Senior Manager": "Senior Manager",
+    Engineer: "Engineer",
+    "Engineer I": "Engineer I",
+    "Engineer II": "Engineer II",
+    "Expert Engineer": "Expert Engineer",
+    "Senior Engineer": "Senior Engineer",
+    "Senior Engineer I": "Senior Engineer I",
+    "Senior Engineer II": "Senior Engineer II",
+    "Senior Engineer III": "Senior Engineer III",
+    "Senior Designer I": "Senior Designer I",
+    "Senior Designer II": "Senior Designer II",
+    "Senior Product Management Associate II": "Senior Product Management Associate II",
+    "Senior Product Management Associate III": "Senior Product Management Associate III",
   };
   const RANKS_ALL  = [
     { id: "Associate", name: "Associate" },
     { id: "Senior Associate", name: "Senior Associate" },
+    { id: "Senior Associate I", name: "Senior Associate I" },
+    { id: "Senior Associate II", name: "Senior Associate II" },
     { id: "Assistant Manager", name: "Assistant Manager" },
     { id: "Manager", name: "Manager" },
     { id: "Senior Manager", name: "Senior Manager" },
+    { id: "Director", name: "Director" },
+    { id: "Engineer", name: "Engineer" },
+    { id: "Engineer I", name: "Engineer I" },
+    { id: "Engineer II", name: "Engineer II" },
+    { id: "Expert Engineer", name: "Expert Engineer" },
+    { id: "Senior Engineer", name: "Senior Engineer" },
+    { id: "Senior Engineer I", name: "Senior Engineer I" },
+    { id: "Senior Engineer II", name: "Senior Engineer II" },
+    { id: "Senior Engineer III", name: "Senior Engineer III" },
+    { id: "Senior Designer I", name: "Senior Designer I" },
+    { id: "Senior Designer II", name: "Senior Designer II" },
+    { id: "Senior Product Management Associate II", name: "Senior Product Management Associate II" },
+    { id: "Senior Product Management Associate III", name: "Senior Product Management Associate III" },
   ];
 
   export function CoursesScreen() {
@@ -1241,7 +1270,10 @@ const COURSE_STATUSES = [
   function CourseForm({ course, courses, onSave, onClose, saving, error }) {
     const trainerOptions = catalogOptions(courses, "trainer");
     const locationOptions = catalogOptions(courses, "location");
-    const rankOptions = catalogOptions(courses, "rank_targets", true);
+    const rankOptions = [...new Set([
+      ...RANKS_ALL.map(rank => rank.id),
+      ...catalogOptions(courses, "rank_targets", true),
+    ])];
     const roleOptions = catalogOptions(courses, "role_targets", true);
     const skillOptions = SKILL_OPTIONS;
     const [form, setForm] = React.useState({

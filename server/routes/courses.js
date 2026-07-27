@@ -2,6 +2,7 @@ import express from "express";
 import { query, withTransaction } from "../db.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 import { getRecommendationsForUser } from "../services/recommendations.js";
+import { ranksForUser, rankGroupForUser } from "../services/rankGroups.js";
 
 export const coursesRouter = express.Router();
 
@@ -150,8 +151,14 @@ coursesRouter.get("/options", async (req, res, next) => {
       return String(value).split(",").map((item) => item.trim()).filter(Boolean);
     };
     const unique = (values) => [...new Set(values.flatMap(listValue).map((item) => String(item).trim()).filter((item) => item && item.toLowerCase() !== "all"))].sort((a, b) => a.localeCompare(b));
+    const userResult = await query("SELECT role, rank, team FROM users WHERE id = $1", [req.user.id]);
+    const user = userResult.rows[0] || {};
     res.json({
-      ranks: uniqueTargets(result.rows, "rank_targets"),
+      rank_group: rankGroupForUser(user),
+      // Return the complete ladder for the current user's group, including
+      // ranks that do not yet have a course target (for example the newly
+      // added Senior Product Management Associate III).
+      ranks: ranksForUser(user),
       roles: uniqueTargets(result.rows, "role_targets"),
       trainers: unique(result.rows.map((row) => row.trainer)),
       locations: unique(result.rows.map((row) => row.location)),
