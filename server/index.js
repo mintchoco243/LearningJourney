@@ -72,6 +72,7 @@ app.get("/api/config/public", async (req, res) => {
 
 app.get("/api/minigame/status", async (req, res) => {
   try {
+    res.set("Cache-Control", "no-store");
     const { query } = await import("./db.js");
     const result = await query("SELECT setting_key, setting_value FROM app_settings WHERE setting_key IN ('minigame_enabled', 'minigame_started_at', 'minigame_ended_at')");
     const values = Object.fromEntries(result.rows.map((row) => [row.setting_key, row.setting_value]));

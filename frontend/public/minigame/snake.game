@@ -1107,7 +1107,7 @@
     }
 
     async function refreshBackendState() {
-      const response = await fetch('/api/minigame/bootstrap', { credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      const response = await fetch('/api/minigame/bootstrap', { cache: 'no-store', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
       if (!response.ok) throw new Error('MINIGAME_BOOTSTRAP_FAILED');
       const data = await response.json();
       gameState.playsLeft = data.user.plays;

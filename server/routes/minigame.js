@@ -114,6 +114,7 @@ export async function syncMinigameTasks(userId, mode = "production") {
 
 minigameRouter.get("/bootstrap", async (req, res, next) => {
   try {
+    res.set("Cache-Control", "no-store");
     const campaign = await settings();
     if (!campaign.started_at && campaign.enabled) {
       const startedAt = new Date().toISOString();

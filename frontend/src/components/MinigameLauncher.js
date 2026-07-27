@@ -17,7 +17,7 @@ export function MinigameLauncher({ authenticated }) {
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
-    fetch("/api/minigame/status").then((response) => response.ok ? response.json() : null).then((data) => setEnabled(Boolean(data?.enabled))).catch(() => setEnabled(false));
+    fetch("/api/minigame/status", { cache: "no-store" }).then((response) => response.ok ? response.json() : null).then((data) => setEnabled(Boolean(data?.enabled))).catch(() => setEnabled(false));
     const params = new URLSearchParams(window.location.search);
     if ((params.get("openMinigame") === "1" || window.location.pathname === "/minigame") && authenticated && enabled) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
