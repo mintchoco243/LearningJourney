@@ -69,7 +69,11 @@ async function taskState(user, mode = "production") {
     task_4: Number(completions.rows[0]?.count || 0) >= 1 ? "READY_TO_CLAIM" : "NOT_STARTED",
     task_onboarding: user.onboarding_done ? "READY_TO_CLAIM" : "NOT_STARTED",
   };
-  return TASKS.map((task) => ({ ...task, progress: progress[task.id] || 0, status: claims[task.id] || available[task.id] }));
+  return TASKS.map((task) => ({
+    ...task,
+    progress: progress[task.id] || 0,
+    status: claims[task.id] ? "CLAIMED" : available[task.id],
+  }));
 }
 
 async function autoClaimTasks(user, mode = "production") {
