@@ -65,7 +65,13 @@ const { Avatar } = GLHAvatar;
             role: user.db_role || null,
           }),
         });
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error("ONBOARDING_SAVE_FAILED");
+        (data?.minigame?.claimed || []).forEach((task) => {
+          window.dispatchEvent(new CustomEvent("minigame:task-completed", {
+            detail: { title: task.title, reward: task.reward },
+          }));
+        });
         trackEvent("quiz_complete", { rank_id: user.db_rank || "rank_01", learning_styles_count: step4.length, availability: step5 });
         actions.completeQuiz(result);
         props.onComplete();

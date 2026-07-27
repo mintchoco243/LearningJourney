@@ -3,6 +3,7 @@ import { query, withTransaction } from "../db.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 import { getRecommendationsForUser } from "../services/recommendations.js";
 import { ranksForUser, rankGroupForUser } from "../services/rankGroups.js";
+import { syncMinigameTasks } from "./minigame.js";
 
 export const coursesRouter = express.Router();
 
@@ -189,7 +190,8 @@ coursesRouter.post("/:id/favorite", async (req, res, next) => {
       "SELECT * FROM course_favorites WHERE user_id = $1 AND course_id = $2",
       [req.user.id, req.params.id],
     );
-    res.status(201).json({ favorite: favorite.rows[0], is_favorite: true });
+    const minigame = await syncMinigameTasks(req.user.id);
+    res.status(201).json({ favorite: favorite.rows[0], is_favorite: true, minigame: { claimed: minigame.claimed || [] } });
   } catch (err) {
     next(err);
   }
@@ -271,6 +273,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
     });
     if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
     if (result.duplicate) {
+      const minigame = await syncMinigameTasks(req.user.id);
       return res.status(409).json({
         error: "ALREADY_COMPLETED",
         course_id: result.course.id,
@@ -281,9 +284,11 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
         xp_total: result.user.xp_total,
         hours_total: result.user.hours_total,
         already_completed: true,
+        minigame: { claimed: minigame.claimed || [] },
       });
     }
     const [course] = await attachPublicCourseRatings([result.course]);
+    const minigame = await syncMinigameTasks(req.user.id);
     res.json({
       course_id: result.course.id,
       xp_earned: result.course.xp_reward,
@@ -293,6 +298,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       already_completed: false,
       course,
       enrollment: result.enrollment,
+      minigame: { claimed: minigame.claimed || [] },
     });
   } catch (error) {
     next(error);

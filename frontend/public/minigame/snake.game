@@ -1582,7 +1582,7 @@
       document.getElementById('hudHighScore').textContent = `🏆 ${gameState.highScore} XP`;
       
       const badge = document.getElementById('missionBadge');
-      badge.textContent = gameState.tasks.length;
+      badge.textContent = gameState.tasks.filter(task => task.status !== 'CLAIMED' && !(task.reqTime > 0 && Number(task.progress) >= task.reqTime)).length;
     }
 
     function showOverlay(overlayId) {
@@ -1637,6 +1637,7 @@
 
         container.appendChild(card);
       });
+      updateHUD();
     }
 
     function renderLeaderboard() {

@@ -49,6 +49,15 @@ const D = GLH_DATA;
   }
   function clearUser() { try { localStorage.removeItem(KEY); } catch (e) {} }
 
+  function notifyMinigameClaimed(data) {
+    if (typeof window === "undefined") return;
+    (data?.minigame?.claimed || []).forEach((task) => {
+      window.dispatchEvent(new CustomEvent("minigame:task-completed", {
+        detail: { title: task.title, reward: task.reward },
+      }));
+    });
+  }
+
   function parseList(value) {
     if (Array.isArray(value)) return value.filter(Boolean);
     if (!value) return [];
@@ -226,6 +235,8 @@ const D = GLH_DATA;
           credentials: "include",
         });
         if (!response.ok) return false;
+        const data = await response.json().catch(() => ({}));
+        notifyMinigameClaimed(data);
         const ids = new Set(user.favorite_course_ids || []);
         const details = new Map((user.favorite_course_details || []).map((item) => [item.id || item.course_id, item]));
         if (shouldFavorite) {
@@ -257,6 +268,7 @@ const D = GLH_DATA;
         });
         let data = null;
         try { data = await response.json(); } catch (e) {}
+        notifyMinigameClaimed(data);
 
         if (!response.ok) {
           if (response.status === 409) {
