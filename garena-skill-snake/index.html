@@ -876,7 +876,7 @@
 
       </div>
 
-      <!-- SPACIOUS ERGONOMIC TOUCH D-PAD (SPACED OUT NATIVE FEEL) -->
+      <!-- SPACIOUS ERGONOMIC TOUCH D-PAD -->
       <div class="dpad-container">
         <div></div>
         <button class="dpad-btn" id="btnUp" title="Di chuyển Lên">▲</button>
@@ -920,6 +920,15 @@
   </div>
 
   <script>
+    /* ==========================================
+       FAIL-SAFE EMBEDDED BASE64 ASSETS (100% RELIABLE)
+       ========================================== */
+    const ASSET_B64 = {
+      head: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACgAAAAoCAYAAACM/rhtAAAEqElEQVR4nNWZz09UVxTHCQt2bkbkDQw8FSvdzp6Fi/kPZseCHQt2kLg2Llz4P3TdWhFhTAUEFRhQHBopGkn9GRpTRmPTNGlM000Xr+czfq9cbmCYh5o8X/JNXu4995wv59c982hr+8SnHg8cM0SG2NAvxFo79qn6j0Ko3VAwFA0lQ9kwbBgxjAojWitLpqgz7V+SWIdhQAYxft5w+ftc17c/5KLylVw0ZrggjLHGHjKSHdZZdHR8bnKxlOOZS2a8ZCS+u5qL6hO5KLlmmMzl94A19pBBljOclQ7e489BrEPhGTJcxCs/5qIahieP55Mpw7ShYrgRoKI9ZJDlDGfRgS7pLB7Zm0r+QXLKQpU35RMYuS7DkPjpeHdys7M7mTHMBmCNPWRu6Mz1XaIT6FS+DqYuJpE7ZxgnNISJsDliN0VizjDf2ZMsGG4HYI29OclyxhFFFzoV9nHZao2kwjoocuWr8lpFHsPYLRG4c6InWTxRSJYMywFYYw8ZZDkzK49W5E10K+Tjsnl4uJUXo/JcQ5HzGt7A2F0zCoGqYdVwr6s3uR+AtVXJIHtXROc8b3okSwp38TByVOsQ+UEIfHK3FLpFR6yrkKwZiQeGdcPPXX17sK49ZJCtyqO35c2AZF05OXRgdSu0/CUXSWLypOKTk9dWDHioJlIPo77kF8NmANbYQ6Ymr67Im+hyJCvKSWyqukv7hloNdIScoNKmlXOEhL96SeHEI/7zOIqTJ/k42QrAGnuQ9Z9VR1Lhxsa0qlv5SJ8cCMm1i/klepUL7axyblGe88l1dsYf35/mTybPA7D2q2E/+RWFe0GF40KNbTXz0p5rUffkMMnqvOdCS3JXFVbfmIN7trtP7cErQzP5qgrHhdrzortKC2HlnudKmgy8t6SCqImgb8w3+nvP6WRH4P21CB4kj86lwIvYhoPu7qJPENaXqaYpL/fuyHtrKohmHnlrpN719DfAe93QTB6dVfVJl4tTqmgNGCVHjlujMXn44Z1X7pHUtAsqkqTfL6f+KPQnfxr+KpxpgHfW3gQk3YOuB+qT2JgPwqwpqNy4XTRYkn9lJhDKfsYL7z31OdoGlfnUS3xHDlJ/955J3gu8s8ae70kedKBrXc3chXlGLefabjWTh5FrziPMcPQjl3+0gWUVB+GlXdA+nhtBioA8I5R4C0L/9H6T/Cvwzhp7b5WTnOEsOjbVH9G9rJbzMQ9zjTwcU7uJ2zSijzJopiG4o5zDU3gNYv/1nW2A9/fyIjI76Qle0NXX/1UQzHyIUxcJTZg+RwG0UiSv1bg5e5QiSdVmuL5edO968Y1IHtRmnPc4w1l0pGozaRr1pufFl2bwN5GsK9xho2YPGWSd91x4W27Uaa46/vJH0Ydp5ZlIbivc+1112yL3TLn3SN6raUZMc9W1NCyQNxsK9ZY8SeheBYOCGxZeyHNbGr02lHv35b00w0LL4xbh2ZAnCRl51WzceiLPbXihTT1upR1Y1xXuTXnzsIH1oTy3psJIPbB+FSO/SGb3R1NQ0dn82emFOrs/3EUyu58+ApLZ/Hjkkczu57eAaDY/YAYks/sJOCCazY/oTQh/0X9D/A/z/ieuD+mJzgAAAABJRU5ErkJggg==',
+      chest_lvl1: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAZUlEQVR4nGNgGAWjYDCBm+VsAfTAeB0wyYHvPy0xUQ4A0igYSTNRGJf6UQeMOmDoOGDAs+GOVFYUDNOMLo4L41JPVQf8+9CFgkcdMPIcMOCJcNQBow4Y3g4Y0MqIHhinA0bBiAQAIBbJEYS/2+0AAAAASUVORK5CYII=',
+      chest_lvl2: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAYklEQVR4nGNgGAWjYDCB01cfBtAD43WAe2jmf1piohwApFEwkmaiMC71ow4YdcDQccCAZ8M1W/ejYJhmdHFcGJd6qjoAHYw6YOQ5YMAT4agDRh0wvB0woJURPTBOB4yCEQxAADned4fP97CQAAAAASUVORK5CYII='
+    };
+
     /* ==========================================
        CUSTOM USER LEARNING JOURNEY MESSAGES
        ========================================== */
@@ -1070,7 +1079,7 @@
        ========================================== */
     const STORAGE_KEY = 'garena_snake_state';
     const GRID_SIZE = 20;
-    const CELL_SIZE = 20; // 20x20 grid in 400x400 canvas
+    const CELL_SIZE = 20;
     const GAME_SPEED_MS = 110;
     const IS_TEST_MODE = true;
 
@@ -1088,12 +1097,15 @@
     const assetsLoaded = { head: false, chest_lvl1: false, chest_lvl2: false };
 
     function loadAssets() {
-      assets.head.src = 'assets/head.png';
+      // 100% Fail-safe Base64 Image Loading (0ms latency, zero HTTP requests)
       assets.head.onload = () => assetsLoaded.head = true;
-      assets.chest_lvl1.src = 'assets/chest_lvl1.png';
+      assets.head.src = ASSET_B64.head;
+
       assets.chest_lvl1.onload = () => assetsLoaded.chest_lvl1 = true;
-      assets.chest_lvl2.src = 'assets/chest_lvl2.png';
+      assets.chest_lvl1.src = ASSET_B64.chest_lvl1;
+
       assets.chest_lvl2.onload = () => assetsLoaded.chest_lvl2 = true;
+      assets.chest_lvl2.src = ASSET_B64.chest_lvl2;
     }
 
     let gameState = {
@@ -1415,6 +1427,7 @@
         ctx.stroke();
       }
 
+      // Draw Chest (Food) with 100% Reliable Base64 Image
       if (currentChest) {
         const cx = currentChest.x * CELL_SIZE;
         const cy = currentChest.y * CELL_SIZE;
@@ -1434,6 +1447,7 @@
         }
       }
 
+      // Draw Snake Body & Head with 100% Reliable Base64 Image & Rotation
       snake.forEach((seg, index) => {
         const sx = seg.x * CELL_SIZE;
         const sy = seg.y * CELL_SIZE;
@@ -1442,7 +1456,7 @@
           if (assetsLoaded.head) {
             ctx.save();
             ctx.translate(sx + CELL_SIZE / 2, sy + CELL_SIZE / 2);
-            let angle = Math.PI / 2;
+            let angle = Math.PI / 2; // Default facing Right
             if (dir.x === 1) angle = Math.PI / 2;
             else if (dir.x === -1) angle = -Math.PI / 2;
             else if (dir.y === 1) angle = Math.PI;
