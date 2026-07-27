@@ -101,6 +101,8 @@ async function autoClaimTasks(user, mode = "production") {
 
 export async function syncMinigameTasks(userId, mode = "production") {
   try {
+    const campaign = await settings();
+    if (!campaign.enabled && mode !== "test") return { states: [], claimed: [] };
     const result = await query("SELECT * FROM users WHERE id = $1", [userId]);
     if (!result.rowCount) return { states: [], claimed: [] };
     return await autoClaimTasks(result.rows[0], mode);
