@@ -10,14 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Chakra+Petch:wght@500;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     /* ==========================================
-       GARENA BRAND BOOK DESIGN SYSTEM & TOKENS
+       GARENA BRAND BOOK DESIGN SYSTEM & TOKENS (LIGHTWEIGHT HIGH-PERFORMANCE)
        ========================================== */
     :root {
-      --garena-red: #E41E26; /* PANTONE 485 C */
+      --garena-red: #E41E26;
       --primary-red-gradient: linear-gradient(135deg, #E41E26 0%, #B30006 100%);
-      --red-glow: 0 0 20px rgba(228, 30, 38, 0.5);
       
-      --bg-overlay: rgba(11, 14, 20, 0.85);
+      --bg-overlay: rgba(11, 14, 20, 0.92);
       --card-bg: #131924;
       --card-border: #222D3F;
       
@@ -41,7 +40,7 @@
       --text-secondary: #94A3B8;
       --text-muted: #64748B;
       
-      --shadow-glow: 0 20px 50px rgba(0, 0, 0, 0.85);
+      --shadow-glow: 0 10px 30px rgba(0, 0, 0, 0.6);
     }
 
     * {
@@ -61,7 +60,6 @@
       width: 100vw;
       height: 100vh;
       background: var(--bg-overlay);
-      backdrop-filter: blur(12px);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -85,18 +83,12 @@
       position: relative;
       overflow-x: hidden;
       overflow-y: auto;
-      animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes modalFadeIn {
-      from { opacity: 0; transform: scale(0.96) translateY(8px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
     }
 
     /* Header & Close Button */
     .modal-header {
       padding: 12px 18px;
-      background: rgba(17, 24, 39, 0.7);
+      background: rgba(17, 24, 39, 0.85);
       border-bottom: 1px solid var(--card-border);
       display: flex;
       justify-content: space-between;
@@ -122,7 +114,6 @@
       font-family: var(--font-brand);
       font-size: 0.76rem;
       font-weight: 800;
-      box-shadow: var(--red-glow);
       letter-spacing: 1px;
     }
 
@@ -138,7 +129,7 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: background 0.15s ease, color 0.15s ease;
     }
 
     .close-btn:hover {
@@ -169,7 +160,7 @@
       font-size: 0.88rem;
       letter-spacing: 0.3px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: color 0.15s ease;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -214,14 +205,12 @@
 
     .hud-card.clickable {
       cursor: pointer;
-      transition: all 0.2s ease;
       background: rgba(30, 41, 59, 0.7);
     }
 
     .hud-card.clickable:hover {
       background: rgba(59, 130, 246, 0.25);
       border-color: var(--electric-blue);
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
     }
 
     .hud-label {
@@ -259,7 +248,7 @@
       display: flex;
     }
 
-    /* Perfect 360x360 Canvas Frame (Fits Desktop 100% Zoom) */
+    /* Perfect 360x360 Canvas Frame */
     .canvas-container {
       position: relative;
       width: 360px;
@@ -267,7 +256,6 @@
       border-radius: 16px;
       overflow: hidden;
       border: 2px solid var(--card-border);
-      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
       background: #111827;
       touch-action: none;
       flex-shrink: 0;
@@ -302,15 +290,11 @@
       justify-content: center;
       align-items: center;
       cursor: pointer;
-      transition: all 0.15s ease;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
       -webkit-tap-highlight-color: transparent;
     }
 
     .dpad-btn:active {
       background: var(--garena-red);
-      transform: scale(0.92);
-      box-shadow: var(--red-glow);
     }
 
     /* Bottom Micro-Ticker Notification Bar */
@@ -326,7 +310,6 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      transition: all 0.25s ease;
       min-height: 36px;
       flex-shrink: 0;
     }
@@ -379,7 +362,6 @@
       width: 100%;
       height: 100%;
       background: rgba(11, 14, 20, 0.95);
-      backdrop-filter: blur(8px);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -387,7 +369,6 @@
       padding: 12px 14px;
       text-align: center;
       z-index: 10;
-      transition: opacity 0.3s ease;
       box-sizing: border-box;
       overflow-y: auto;
     }
@@ -398,9 +379,7 @@
       font-weight: 800;
       letter-spacing: 1px;
       margin-bottom: 3px;
-      background: linear-gradient(135deg, #FFF 0%, var(--text-secondary) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #FFFFFF;
       line-height: 1.2;
     }
 
@@ -424,8 +403,6 @@
       cursor: pointer;
       color: #fff;
       background: var(--primary-red-gradient);
-      box-shadow: var(--red-glow);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -434,14 +411,12 @@
     }
 
     .btn-action:hover {
-      transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 0 25px rgba(228, 30, 38, 0.8);
+      background: #E41E26;
     }
 
     .btn-secondary {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: none;
       font-size: 0.88rem;
       padding: 10px 18px;
     }
@@ -477,7 +452,6 @@
       display: flex;
       flex-direction: column;
       gap: 5px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       box-sizing: border-box;
     }
 
@@ -556,7 +530,6 @@
       width: 100%;
       height: 100%;
       background: rgba(11, 14, 20, 0.96);
-      backdrop-filter: blur(10px);
       z-index: 50;
       display: flex;
       flex-direction: column;
@@ -1018,9 +991,6 @@
       xpEl.textContent = `+${chest.xp} XP`;
       tickerBar.style.borderColor = borderColor;
 
-      tickerBar.style.transform = 'scale(1.02)';
-      setTimeout(() => tickerBar.style.transform = 'scale(1)', 150);
-
       return promo;
     }
 
@@ -1199,7 +1169,7 @@
     }
 
     /* ==========================================
-       CANVAS & GAME LOOP VARS
+       CANVAS & GAME LOOP VARS (60 FPS REQUESTANIMATIONFRAME)
        ========================================== */
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
@@ -1212,10 +1182,22 @@
     let lastChestName = '--';
     let isRunning = false;
     let isWaitingForInput = false;
-    let gameInterval = null;
 
-    let particles = [];
-    let floatingTexts = [];
+    let animFrameId = null;
+    let lastStepTimestamp = 0;
+
+    /* OPTION 3: OBJECT POOLING FOR ZERO GARBAGED COLLECTION PAUSES */
+    const MAX_PARTICLES = 30;
+    const particlePool = [];
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      particlePool.push({ x: 0, y: 0, vx: 0, vy: 0, color: '#FFF', radius: 2, alpha: 0, life: 0, active: false });
+    }
+
+    const MAX_POPUPS = 3;
+    const popupPool = [];
+    for (let i = 0; i < MAX_POPUPS; i++) {
+      popupPool.push({ text: '', x: 0, y: 0, color: '#FFF', alpha: 0, vy: 0, life: 0, active: false });
+    }
 
     function initGame() {
       snake = [
@@ -1231,8 +1213,11 @@
       lastLvl2Index = -1;
       sessionUnlockedTips = [];
       currentTipIndex = 0;
-      particles = [];
-      floatingTexts = [];
+      
+      // Reset Object Pools
+      particlePool.forEach(p => p.active = false);
+      popupPool.forEach(p => p.active = false);
+
       spawnChest();
       updateHUD();
     }
@@ -1251,22 +1236,40 @@
       currentChest = { x: cx, y: cy, ...type };
     }
 
+    /* OPTION 1: HIGH-PERFORMANCE REQUESTANIMATIONFRAME LOOP */
     function startGame() {
       initGame();
       hideOverlays();
       document.getElementById('fullKnowledgeModal').classList.add('hidden');
       isRunning = true;
       isWaitingForInput = true;
+      lastStepTimestamp = performance.now();
 
-      if (gameInterval) clearInterval(gameInterval);
-      gameInterval = setInterval(gameLoop, GAME_SPEED_MS);
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      animFrameId = requestAnimationFrame(gameLoop60fps);
       render();
+    }
+
+    function gameLoop60fps(timestamp) {
+      if (!isRunning) return;
+
+      const elapsed = timestamp - lastStepTimestamp;
+      if (elapsed >= GAME_SPEED_MS) {
+        lastStepTimestamp = timestamp - (elapsed % GAME_SPEED_MS);
+        if (!isWaitingForInput) {
+          gameStepLogic();
+        }
+      }
+
+      updateFX();
+      render();
+
+      animFrameId = requestAnimationFrame(gameLoop60fps);
     }
 
     function handlePlayerMoveInput(newDir) {
       if (!isRunning) return;
 
-      // Fix idle state left move collision check
       if (isWaitingForInput || (dir.x === 0 && dir.y === 0)) {
         if (newDir.x === -1) return;
         isWaitingForInput = false;
@@ -1278,20 +1281,13 @@
       nextDir = newDir;
     }
 
-    function gameLoop() {
-      if (!isRunning) return;
-
-      if (isWaitingForInput) {
-        render();
-        return;
-      }
-
+    function gameStepLogic() {
       dir = { ...nextDir };
       if (dir.x === 0 && dir.y === 0) return;
 
       const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-      // CLASSIC WALL-WRAPPING PHYSICS (Xuyên tường mượt mà 100% không chết)
+      // CLASSIC WALL-WRAPPING PHYSICS
       if (head.x < 0) head.x = GRID_SIZE - 1;
       else if (head.x >= GRID_SIZE) head.x = 0;
       if (head.y < 0) head.y = GRID_SIZE - 1;
@@ -1308,21 +1304,18 @@
       if (head.x === currentChest.x && head.y === currentChest.y) {
         currentScore += currentChest.xp;
         const promo = triggerLJTicker(currentChest);
-        createChestFX(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
+        triggerChestFXPooled(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
         spawnChest();
         updateHUD();
       } else {
         snake.pop();
       }
-
-      updateFX();
-      render();
     }
 
     function handleGameOver() {
       isRunning = false;
       isWaitingForInput = false;
-      if (gameInterval) clearInterval(gameInterval);
+      if (animFrameId) cancelAnimationFrame(animFrameId);
 
       let isNewRecord = false;
       if (currentScore > gameState.highScore) {
@@ -1348,71 +1341,76 @@
     }
 
     /* ==========================================
-       VISUAL FX (OPTIMIZED 60 FPS)
+       OPTION 3: ZERO-ALLOCATION OBJECT POOLED FX
        ========================================== */
-    function createChestFX(x, y, chest, promoText) {
-      for (let i = 0; i < 14; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 4.0 + 1.2;
-        particles.push({
-          x: x,
-          y: y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          color: chest.color,
-          radius: Math.random() * 2.5 + 1.5,
-          alpha: 1.0,
-          life: 20 + Math.floor(Math.random() * 8)
-        });
-      }
-
-      const rawX = x;
-      const displayText = promoText ? `+${chest.xp} XP • ${promoText}` : `+${chest.xp} XP ${chest.name}!`;
-
-      // Cap max floating popups to 2 so eating chests fast never clutters the screen!
-      if (floatingTexts.length >= 2) {
-        floatingTexts.shift();
-      }
-
-      let spawnY = y - 12;
-      floatingTexts.push({
-        text: displayText,
-        x: rawX,
-        y: spawnY,
-        color: chest.color,
-        alpha: 1.0,
-        vy: -1.2,
-        life: 25 // Snappy ~2.5s duration (3x faster fade out)
-      });
-    }
-
-    function updateFX() {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.alpha -= 1 / p.life;
-        if (p.alpha <= 0) particles.splice(i, 1);
-      }
-
-      for (let i = 0; i < floatingTexts.length; i++) {
-        const ft = floatingTexts[i];
-        ft.y += ft.vy;
-        ft.alpha -= 1 / ft.life;
-
-        if (i > 0) {
-          const prevFt = floatingTexts[i - 1];
-          if (prevFt.y - ft.y < 24 && prevFt.y - ft.y > 0) {
-            ft.y = prevFt.y - 24;
-          }
+    function triggerChestFXPooled(x, y, chest, promoText) {
+      // 1. Activate 8 particles from pool
+      let particleCount = 0;
+      for (let i = 0; i < MAX_PARTICLES && particleCount < 8; i++) {
+        const p = particlePool[i];
+        if (!p.active) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 3.5 + 1.0;
+          p.x = x;
+          p.y = y;
+          p.vx = Math.cos(angle) * speed;
+          p.vy = Math.sin(angle) * speed;
+          p.color = chest.color;
+          p.radius = Math.random() * 2 + 1.5;
+          p.alpha = 1.0;
+          p.life = 18;
+          p.active = true;
+          particleCount++;
         }
       }
 
-      floatingTexts = floatingTexts.filter(ft => ft.alpha > 0);
+      // 2. Activate popup from pool (cap max 2 active popups)
+      const activePopups = popupPool.filter(p => p.active);
+      if (activePopups.length >= 2) {
+        activePopups[0].active = false; // Recycle oldest
+      }
+
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const pop = popupPool[i];
+        if (!pop.active) {
+          pop.text = promoText ? `+${chest.xp} XP • ${promoText}` : `+${chest.xp} XP ${chest.name}!`;
+          pop.x = x;
+          pop.y = Math.max(28, y - 12);
+          pop.color = chest.color;
+          pop.alpha = 1.0;
+          pop.vy = -1.2;
+          pop.life = 22; // ~2.2s fast snappy fade
+          pop.active = true;
+          break;
+        }
+      }
+    }
+
+    function updateFX() {
+      // Update Particles
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        const p = particlePool[i];
+        if (p.active) {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= 1 / p.life;
+          if (p.alpha <= 0) p.active = false;
+        }
+      }
+
+      // Update Popups
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const pop = popupPool[i];
+        if (pop.active) {
+          pop.y += pop.vy;
+          pop.alpha -= 1 / pop.life;
+          if (pop.alpha <= 0) pop.active = false;
+        }
+      }
     }
 
     /* ==========================================
-       CANVAS RENDERING ENGINE
+       CANVAS RENDERING ENGINE (HIGH SPEED)
        ========================================== */
     function render() {
       ctx.fillStyle = '#111827';
@@ -1432,7 +1430,7 @@
         ctx.stroke();
       }
 
-      // Draw Chest (Food) with Prominent 1.35x Scale
+      // Draw Chest (Food)
       if (currentChest) {
         const cx = currentChest.x * CELL_SIZE;
         const cy = currentChest.y * CELL_SIZE;
@@ -1449,13 +1447,11 @@
           ctx.beginPath();
           ctx.roundRect(cx + 2, cy + 2, CELL_SIZE - 4, CELL_SIZE - 4, 5);
           ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.fillRect(cx + CELL_SIZE / 2 - 2, cy + CELL_SIZE / 2 - 2, 4, 4);
           ctx.restore();
         }
       }
 
-      // Draw Snake Body & Head with 100% Reliable Base64 Image & Rotation
+      // Draw Snake Body & Head
       snake.forEach((seg, index) => {
         const sx = seg.x * CELL_SIZE;
         const sy = seg.y * CELL_SIZE;
@@ -1494,42 +1490,50 @@
         }
       });
 
-      particles.forEach(p => {
-        ctx.save();
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      });
+      // Render Pooled Particles
+      for (let i = 0; i < MAX_PARTICLES; i++) {
+        const p = particlePool[i];
+        if (p.active) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
 
-      floatingTexts.forEach(ft => {
-        ctx.save();
-        ctx.globalAlpha = ft.alpha;
-        ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
-        
-        const textWidth = ctx.measureText(ft.text).width;
-        const pillWidth = textWidth + 16;
-        const pillHeight = 20;
+      // Render Pooled Popups
+      for (let i = 0; i < MAX_POPUPS; i++) {
+        const ft = popupPool[i];
+        if (ft.active) {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, ft.alpha);
+          ctx.font = '600 11.5px "Be Vietnam Pro", "Inter", sans-serif';
+          
+          const textWidth = ctx.measureText(ft.text).width;
+          const pillWidth = textWidth + 16;
+          const pillHeight = 20;
 
-        const halfPill = pillWidth / 2;
-        const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
-        const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
+          const halfPill = pillWidth / 2;
+          const safeX = Math.max(halfPill + 8, Math.min(canvas.width - halfPill - 8, ft.x));
+          const safeY = Math.max(22, Math.min(canvas.height - 10, ft.y));
 
-        ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
-        ctx.strokeStyle = ft.color;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
-        ctx.fill();
-        ctx.stroke();
+          ctx.fillStyle = 'rgba(11, 14, 20, 0.94)';
+          ctx.strokeStyle = ft.color;
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.roundRect(safeX - halfPill, safeY - 14, pillWidth, pillHeight, 10);
+          ctx.fill();
+          ctx.stroke();
 
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.fillText(ft.text, safeX, safeY);
-        ctx.restore();
-      });
+          ctx.fillStyle = '#FFFFFF';
+          ctx.textAlign = 'center';
+          ctx.fillText(ft.text, safeX, safeY);
+          ctx.restore();
+        }
+      }
 
       if (isWaitingForInput) {
         ctx.save();
