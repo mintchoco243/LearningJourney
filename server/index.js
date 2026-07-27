@@ -124,6 +124,7 @@ app.use("/admin/api/minigame", requireAuth, requireAdmin, adminMinigameRouter);
 
 // Keep the public iframe URL stable while avoiding static-HTML deployment detection.
 app.get("/minigame/snake.html", (req, res, next) => {
+  res.type("html");
   res.sendFile(path.join(frontendDir, "public", "minigame", "snake.game"), (error) => {
     if (error) next(error);
   });
