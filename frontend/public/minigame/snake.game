@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Garena Skill Snake - Learning Compass Campaign</title>
+  <title>Game rắn săn rương - Learning Compass</title>
   <!-- Google Fonts: Chakra Petch (Garena Esports/Gaming Brand), Be Vietnam Pro & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -274,12 +274,13 @@
     .dpad-container {
       margin-top: 10px;
       margin-bottom: 8px;
-      display: grid;
+      display: none;
       grid-template-columns: repeat(3, 58px);
-      grid-template-rows: repeat(2, 50px);
-      gap: 8px;
+      grid-template-rows: repeat(2, 36px);
+      column-gap: 8px;
+      row-gap: 4px;
       justify-content: center;
-      align-items: center;
+      align-items: stretch;
       flex-shrink: 0;
     }
 
@@ -297,6 +298,12 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       -webkit-tap-highlight-color: transparent;
       transition: background 0.1s ease, transform 0.1s ease;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .dpad-container {
+        display: grid;
+      }
     }
 
     .dpad-btn:active {
@@ -756,7 +763,7 @@
     <div class="modal-header">
       <div class="brand-title">
         <span class="brand-badge">GARENA</span>
-        <span>SKILL SNAKE</span>
+        <span>GAME RẮN SĂN RƯƠNG</span>
       </div>
       <button class="close-btn" id="closeBtn" title="Đóng game">&times;</button>
     </div>
@@ -767,7 +774,7 @@
         🎮 Chơi Game
       </button>
       <button class="tab-btn" id="tabMissionsBtn">
-        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">7</span>
+        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">8</span>
       </button>
       <button class="tab-btn" id="tabLeaderboardBtn">
         🏆 BXH Văn Phòng
@@ -778,7 +785,7 @@
     <div class="hud-bar">
       <div class="hud-card">
         <span class="hud-label">Lượt Chơi</span>
-        <span class="hud-value highlight-red" id="hudPlays">⚡ 3</span>
+        <span class="hud-value highlight-red" id="hudPlays">⚡ 0</span>
       </div>
       <div class="hud-card">
         <span class="hud-label">Điểm Hiện Tại</span>
@@ -797,7 +804,7 @@
 
         <!-- START OVERLAY -->
         <div class="canvas-overlay" id="startOverlay">
-          <div class="overlay-title">SKILL SNAKE</div>
+          <div class="overlay-title">GAME RẮN SĂN RƯƠNG</div>
           <div class="overlay-subtitle" style="text-align: left; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; width: 92%;">
             <div>• Ăn rương để mở khóa các thông điệp về Learning Compass.</div>
             <div>• Trò chơi kết thúc khi bạn va phải chướng ngại vật - là đuôi của bạn hoặc 4 cạnh tường thành.</div>
@@ -1147,18 +1154,19 @@
     }
 
     let gameState = {
-      playsLeft: 3,
+      playsLeft: 0,
       highScore: 0,
       lastResetDate: new Date().toISOString().slice(0, 10),
       unlockedTipsHistory: [],
       tasks: [
+        { id: 'task_first_login', title: '👋 Đăng nhập lần đầu', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/' },
         { id: 'task_daily_login', title: '📅 Đăng nhập hằng ngày', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
         { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
         { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED', path: '/library' },
-        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
-        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/' }
+        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' }
       ]
     };
 

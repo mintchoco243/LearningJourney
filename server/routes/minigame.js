@@ -5,13 +5,14 @@ import { query, withTransaction } from "../db.js";
 export const minigameRouter = express.Router();
 
 const TASKS = [
+  { id: "task_first_login", title: "Đăng nhập lần đầu", reward: 1, reset: "never" },
+  { id: "task_onboarding", title: "Hoàn thành Onboarding Quiz", reward: 1, path: "/", reset: "never" },
   { id: "task_daily_login", title: "Đăng nhập hằng ngày", reward: 1 },
   { id: "task_fav_3", title: "Yêu thích 3 khóa học", reward: 1, path: "/library" },
   { id: "task_1", title: "Lướt Trang chủ 30s", reward: 1, activity: "home", seconds: 30, path: "/" },
   { id: "task_2", title: "Lướt Thư viện đào tạo 30s", reward: 1, activity: "library", seconds: 30, path: "/library" },
   { id: "task_3", title: "Xem 1 khóa học bất kỳ 15s", reward: 1, activity: "course", seconds: 15, path: "/library" },
-  { id: "task_4", title: "Đánh dấu hoàn thành 1 khóa học", reward: 2, path: "/library" },
-  { id: "task_onboarding", title: "Hoàn thành Onboarding Quiz", reward: 1, path: "/" },
+  { id: "task_4", title: "Đánh dấu hoàn thành 1 khóa học", reward: 1, path: "/library" },
 ];
 
 function parseClaims(value) {
@@ -51,29 +52,54 @@ function todayKey() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh" }).format(new Date());
 }
 
+function todayRange() {
+  const today = todayKey();
+  const start = new Date(`${today}T00:00:00+07:00`);
+  return {
+    today,
+    start,
+    end: new Date(start.getTime() + 24 * 60 * 60 * 1000),
+  };
+}
+
+function taskStorageKey(task, today = todayKey()) {
+  return task.reset === "never" ? task.id : `${task.id}:${today}`;
+}
+
 async function taskState(user, mode = "production") {
   const state = claimState(mode === "test" ? user.minigame_test_task_claims : user.minigame_task_claims);
   const claims = state.claims;
   const progress = state.progress;
-  const today = todayKey();
+  const { today, start, end } = todayRange();
   const [favorites, completions] = await Promise.all([
-    query("SELECT COUNT(*) AS count FROM course_favorites WHERE user_id = $1", [user.id]),
-    query("SELECT COUNT(*) AS count FROM enrollments WHERE user_id = $1 AND completed_at IS NOT NULL", [user.id]),
+    query(
+      "SELECT COUNT(*) AS count FROM course_favorites WHERE user_id = $1 AND created_at >= $2 AND created_at < $3",
+      [user.id, start, end],
+    ),
+    query(
+      "SELECT COUNT(*) AS count FROM enrollments WHERE user_id = $1 AND completed_at >= $2 AND completed_at < $3",
+      [user.id, start, end],
+    ),
   ]);
+  const progressFor = (task) => Number(progress[taskStorageKey(task, today)] || 0);
   const available = {
-    task_daily_login: claims[`task_daily_login:${today}`] ? "CLAIMED" : "READY_TO_CLAIM",
-    task_fav_3: Number(favorites.rows[0]?.count || 0) >= 3 ? "READY_TO_CLAIM" : "NOT_STARTED",
-    task_1: Number(progress.task_1 || 0) >= 30 ? "READY_TO_CLAIM" : "NOT_STARTED",
-    task_2: Number(progress.task_2 || 0) >= 30 ? "READY_TO_CLAIM" : "NOT_STARTED",
-    task_3: Number(progress.task_3 || 0) >= 15 ? "READY_TO_CLAIM" : "NOT_STARTED",
-    task_4: Number(completions.rows[0]?.count || 0) >= 1 ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_first_login: "READY_TO_CLAIM",
     task_onboarding: user.onboarding_done ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_daily_login: "READY_TO_CLAIM",
+    task_fav_3: Number(favorites.rows[0]?.count || 0) >= 3 ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_1: progressFor(TASKS.find((task) => task.id === "task_1")) >= 30 ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_2: progressFor(TASKS.find((task) => task.id === "task_2")) >= 30 ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_3: progressFor(TASKS.find((task) => task.id === "task_3")) >= 15 ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_4: Number(completions.rows[0]?.count || 0) >= 1 ? "READY_TO_CLAIM" : "NOT_STARTED",
   };
-  return TASKS.map((task) => ({
-    ...task,
-    progress: progress[task.id] || 0,
-    status: claims[task.id] ? "CLAIMED" : available[task.id],
-  }));
+  return TASKS.map((task) => {
+    const key = taskStorageKey(task, today);
+    return {
+      ...task,
+      progress: progress[key] || 0,
+      status: claims[key] ? "CLAIMED" : available[task.id],
+    };
+  });
 }
 
 async function autoClaimTasks(user, mode = "production") {
@@ -88,7 +114,7 @@ async function autoClaimTasks(user, mode = "production") {
     const claimed = [];
     const now = new Date().toISOString();
     for (const task of states) {
-      const key = task.id === "task_daily_login" ? `${task.id}:${todayKey()}` : task.id;
+      const key = taskStorageKey(task);
       if (task.status === "READY_TO_CLAIM" && !state.claims[key]) {
         state.claims[key] = now;
         reward += task.reward;
@@ -204,11 +230,12 @@ minigameRouter.post("/activity", async (req, res, next) => {
     const user = userResult.rows[0];
     const column = mode === "test" ? "minigame_test_task_claims" : "minigame_task_claims";
     const state = claimState(user[column]);
-    state.progress[task.id] = Math.min(task.seconds, Number(state.progress[task.id] || 0) + seconds);
+    const progressKey = taskStorageKey(task);
+    state.progress[progressKey] = Math.min(task.seconds, Number(state.progress[progressKey] || 0) + seconds);
     await query(`UPDATE users SET ${column} = $2 WHERE id = $1`, [req.user.id, JSON.stringify(state)]);
     user[column] = JSON.stringify(state);
     const synced = await autoClaimTasks(user, mode);
-    res.json({ task_id: task.id, progress: state.progress[task.id], status: synced.states.find((item) => item.id === task.id)?.status, claimed: synced.claimed || [] });
+    res.json({ task_id: task.id, progress: state.progress[progressKey], status: synced.states.find((item) => item.id === task.id)?.status, claimed: synced.claimed || [] });
   } catch (error) { next(error); }
 });
 

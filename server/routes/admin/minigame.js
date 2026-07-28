@@ -50,7 +50,7 @@ adminMinigameRouter.post("/users/:id/reset", async (req, res, next) => {
     await withTransaction(async (client) => {
       await client.query(
         `UPDATE users SET
-          minigame_high_score = 0, minigame_total_runs = 0, minigame_plays = 3,
+          minigame_high_score = 0, minigame_total_runs = 0, minigame_plays = 0,
           minigame_last_played_at = NULL, minigame_suspicious = FALSE,
           minigame_task_claims = NULL, minigame_test_high_score = 0,
           minigame_test_total_runs = 0, minigame_test_plays = 0,

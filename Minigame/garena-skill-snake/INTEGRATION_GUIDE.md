@@ -67,16 +67,18 @@ Thêm đoạn HTML modal và iframe sau vào trang chính của Learning Site:
 
 ## 3. Danh Sách Nhiệm Vụ & Mã Nhiệm Vụ (Task IDs)
 
-Hệ thống có **6 Nhiệm vụ** và **Tự động Reset mỗi ngày (00:00)**:
+User mới bắt đầu với **0 lượt chơi**. Hệ thống có 2 nhiệm vụ một lần và 6 nhiệm vụ tự động reset mỗi ngày (00:00, múi giờ Việt Nam):
 
 | Task ID | Tên Nhiệm Vụ | Thời Gian / Điều Kiện | Phần Thưởng | Tự Động Reset |
 | :--- | :--- | :--- | :--- | :--- |
+| `task_first_login` | 👋 Đăng nhập lần đầu | Lần đầu vào hệ thống | +1 lượt chơi | Không reset |
+| `task_onboarding` | 🧭 Hoàn thành Onboarding Quiz | Hoàn thành quiz | +1 lượt chơi | Không reset |
 | `task_daily_login` | 📅 Đăng nhập hàng ngày | Mỗi ngày vào web | +1 lượt chơi | Tự động hoàn thành mỗi ngày |
-| `task_fav_3` | ⭐ Yêu thích 3 khóa học bất kỳ | Yêu thích đủ 3 khóa | +1 lượt chơi | Hàng ngày |
+| `task_fav_3` | ⭐ Yêu thích 3 khóa học bất kỳ | Yêu thích 3 khóa trong ngày | +1 lượt chơi | Hàng ngày |
 | `task_1` | 🌐 Lướt Trang chủ 30s | 30 giây | +1 lượt chơi | Hàng ngày |
 | `task_2` | 📚 Lướt Thư viện đào tạo 30s | 30 giây | +1 lượt chơi | Hàng ngày |
 | `task_3` | 📖 Xem 1 khóa học bất kỳ 15s | 15 giây | +1 lượt chơi | Hàng ngày |
-| `task_4` | ✅ Đánh dấu hoàn thành 1 khóa học | Tức thì khi xong | +2 lượt chơi | Hàng ngày |
+| `task_4` | ✅ Đánh dấu hoàn thành 1 khóa học | Tức thì khi xong | +1 lượt chơi | Hàng ngày |
 
 ---
 

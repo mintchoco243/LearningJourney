@@ -539,6 +539,8 @@ function AppInner() {
     const activity = course ? "course" : (phase === "app" && activeTab === "library" ? "library" : phase === "app" && activeTab === "home" ? "home" : "");
     if (!activity) return undefined;
     const timer = window.setInterval(() => {
+      const gameIsOpen = Boolean(document.querySelector('[data-minigame-open="true"]'));
+      if (document.visibilityState !== "visible" || !document.hasFocus() || gameIsOpen) return;
       window.dispatchEvent(new CustomEvent("minigame:activity", { detail: { activity, seconds: 5 } }));
       fetch("/api/minigame/activity", {
         method: "POST",
@@ -725,7 +727,7 @@ function AppInner() {
 
   return React.createElement(React.Fragment, null,
     body,
-    React.createElement(MinigameLauncher, { authenticated: Boolean(user.email) }),
+    React.createElement(MinigameLauncher, { key: user.email || "guest", authenticated: Boolean(user.email), userKey: user.email || "guest" }),
 
     course ? React.createElement(CourseModal, { course, onClose: closeCourse }) : null,
     courseLinkNotice ? React.createElement("div", {
