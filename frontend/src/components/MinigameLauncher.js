@@ -4,7 +4,7 @@ import React from "react";
 
 const DISMISSED_DATE_KEY = "minigame_launcher_dismissed_date";
 const LAUNCHER_POSITION_KEY = "minigame_launcher_position";
-const LAUNCHER_SIZE = 120;
+const LAUNCHER_SIZE = 150;
 
 function localDateKey() {
   const now = new Date();
@@ -25,7 +25,7 @@ function readLauncherPosition(userKey) {
     const saved = JSON.parse(window.localStorage.getItem(`${LAUNCHER_POSITION_KEY}:${userKey}`) || "null");
     if (saved && Number.isFinite(Number(saved.left)) && Number.isFinite(Number(saved.top))) return clampLauncherPosition(saved);
   } catch (_) { /* ignore malformed local preferences */ }
-  return clampLauncherPosition({ left: window.innerWidth - 144, top: window.innerHeight - 224 });
+  return clampLauncherPosition({ left: window.innerWidth - 174, top: window.innerHeight - 274 });
 }
 
 export function MinigameLauncher({ authenticated, userKey = "guest" }) {
@@ -74,6 +74,11 @@ export function MinigameLauncher({ authenticated, userKey = "guest" }) {
       const reward = event.detail?.reward;
       if (typeof title === "string" && Number.isFinite(Number(reward))) showTaskNotice(title, reward);
     };
+    const onRestore = () => {
+      window.localStorage.removeItem(`${DISMISSED_DATE_KEY}:${userKey}`);
+      setDismissedToday(false);
+      setOpen(true);
+    };
     const onActivity = (event) => {
       const activity = event.detail?.activity;
       const seconds = event.detail?.seconds;
@@ -81,10 +86,12 @@ export function MinigameLauncher({ authenticated, userKey = "guest" }) {
       iframeRef.current?.contentWindow?.postMessage({ type: "GARENA_ACTIVITY", activity, seconds }, window.location.origin);
     };
     window.addEventListener("message", onMessage);
+    window.addEventListener("minigame:restore", onRestore);
     window.addEventListener("minigame:activity", onActivity);
     window.addEventListener("minigame:task-completed", onTaskCompleted);
     return () => {
       window.removeEventListener("message", onMessage);
+      window.removeEventListener("minigame:restore", onRestore);
       window.removeEventListener("minigame:activity", onActivity);
       window.removeEventListener("minigame:task-completed", onTaskCompleted);
       if (noticeTimerRef.current) window.clearTimeout(noticeTimerRef.current);
@@ -95,6 +102,7 @@ export function MinigameLauncher({ authenticated, userKey = "guest" }) {
     window.localStorage.setItem(`${DISMISSED_DATE_KEY}:${userKey}`, localDateKey());
     setDismissedToday(true);
     setTaskNotice(null);
+    window.dispatchEvent(new CustomEvent("minigame:dismissed"));
   }
 
   function handleLauncherPointerDown(event) {
@@ -155,7 +163,7 @@ export function MinigameLauncher({ authenticated, userKey = "guest" }) {
       role: taskNotice ? "status" : undefined,
       style: { maxWidth: 240, padding: "9px 12px", borderRadius: 14, background: "#172235", border: "1px solid rgba(245,158,11,.72)", color: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.28)", fontSize: 12, lineHeight: 1.25, fontWeight: 800, textAlign: "right", position: "relative" },
     }, taskNotice ? `✅ ${taskNotice.title} · +${taskNotice.reward} lượt chơi — Chơi tiếp ngay!` : "Săn rương nhận quà ngay!"), React.createElement("div", {
-      style: { width: 120, height: 120, position: "relative" },
+      style: { width: 150, height: 150, position: "relative" },
     }, React.createElement("button", {
       type: "button",
       onClick: dismissForToday,
@@ -178,12 +186,12 @@ export function MinigameLauncher({ authenticated, userKey = "guest" }) {
       title: "Mở Game rắn săn rương",
       "aria-label": "Săn rương nhận quà ngay!",
       style: {
-        width: 120, height: 120, border: 0, borderRadius: 0,
+        width: 150, height: 150, border: 0, borderRadius: 0,
         background: "transparent", color: "#fff",
         boxShadow: "none", padding: 0,
         cursor: "grab", display: "grid", placeItems: "center", touchAction: "none",
       },
-    }, React.createElement("img", { src: "/minigame/assets/logo.png", alt: "Game rắn săn rương", draggable: false, style: { width: 120, height: 120, objectFit: "contain", pointerEvents: "none" } })))) : null,
+    }, React.createElement("img", { src: "/minigame/assets/logo.svg?v=1", alt: "Game rắn săn rương", draggable: false, style: { width: 150, height: 150, objectFit: "contain", pointerEvents: "none" } })))) : null,
     open && authenticated ? React.createElement("div", {
       role: "dialog", "aria-modal": "true", "data-minigame-open": "true", onClick: () => setOpen(false),
       style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(11,14,20,.85)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 16 },

@@ -1085,7 +1085,10 @@
        ========================================== */
     const GRID_SIZE = 20;
     const CELL_SIZE = 18; // 20x20 grid in 360x360 canvas
-    const GAME_SPEED_MS = 110;
+    const GAME_BASE_SPEED_MS = 110;
+    const GAME_GRACE_PERIOD_MS = 30000;
+    const GAME_SPEED_STEP_MS = 5;
+    const GAME_MIN_SPEED_MS = 68;
     const GAME_MODE = new URLSearchParams(window.location.search).get('mode') === 'test' ? 'test' : 'production';
     let currentRunToken = null;
     let backendLeaderboard = [];
@@ -1196,6 +1199,10 @@
     let lastChestName = '--';
     let isRunning = false;
     let isWaitingForInput = false;
+    let currentSpeedMs = GAME_BASE_SPEED_MS;
+    let speedChestCount = 0;
+    let activePlayMs = 0;
+    let lastGameTimestamp = 0;
 
     let animFrameId = null;
     let lastStepTimestamp = 0;
@@ -1223,6 +1230,10 @@
       nextDir = { x: 0, y: 0 };
       currentScore = 0;
       lastChestName = '--';
+      currentSpeedMs = GAME_BASE_SPEED_MS;
+      speedChestCount = 0;
+      activePlayMs = 0;
+      lastGameTimestamp = 0;
       lastLvl1Index = -1;
       lastLvl2Index = -1;
       sessionUnlockedTips = [];
@@ -1272,6 +1283,7 @@
       isRunning = true;
       isWaitingForInput = true;
       lastStepTimestamp = performance.now();
+      lastGameTimestamp = lastStepTimestamp;
 
       if (animFrameId) cancelAnimationFrame(animFrameId);
       animFrameId = requestAnimationFrame(gameLoop60fps);
@@ -1281,9 +1293,14 @@
     function gameLoop60fps(timestamp) {
       if (!isRunning) return;
 
+      if (!isWaitingForInput && lastGameTimestamp) {
+        activePlayMs += Math.min(250, Math.max(0, timestamp - lastGameTimestamp));
+      }
+      lastGameTimestamp = timestamp;
+
       const elapsed = timestamp - lastStepTimestamp;
-      if (elapsed >= GAME_SPEED_MS) {
-        lastStepTimestamp = timestamp - (elapsed % GAME_SPEED_MS);
+      if (elapsed >= currentSpeedMs) {
+        lastStepTimestamp = timestamp - (elapsed % currentSpeedMs);
         if (!isWaitingForInput) {
           gameStepLogic();
         }
@@ -1331,6 +1348,10 @@
 
       if (head.x === currentChest.x && head.y === currentChest.y) {
         currentScore += currentChest.xp;
+        if (activePlayMs >= GAME_GRACE_PERIOD_MS) {
+          speedChestCount += 1;
+          currentSpeedMs = Math.max(GAME_MIN_SPEED_MS, GAME_BASE_SPEED_MS - speedChestCount * GAME_SPEED_STEP_MS);
+        }
         const promo = triggerLJTicker(currentChest);
         triggerChestFXPooled(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
         spawnChest();

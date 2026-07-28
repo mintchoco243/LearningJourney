@@ -97,6 +97,24 @@ export function filterCourses(courses, filters) {
   });
 }
 
+export function applyCourseFilters(courses, filters, user) {
+  const sortMode = filters?.sortMode || "rating_desc";
+  let filtered = filterCourses(courses, filters);
+
+  if (sortMode === "newest") filtered = sortCoursesByStatusPriority(filtered, user);
+  if (sortMode === "rating_desc") filtered = [...filtered].sort((a, b) => (b.rating ?? -Infinity) - (a.rating ?? -Infinity));
+  if (sortMode === "dur_asc") filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
+  if (sortMode === "dur_desc") filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
+
+  return filtered;
+}
+
+export function countActiveCourseFilters(filters) {
+  const f = Object.assign(defaultCourseFilters(), filters);
+  return [f.cmFilter, f.trainerFilter, f.durationFilter, f.tagFilter, f.rankFilter]
+    .reduce((count, value) => count + selectionValues(value).length, f.q.trim() ? 1 : 0);
+}
+
 function SearchableSelect({ placeholder, value, onChange, options, noDefault, multi = false, minWidth = 110, maxWidth = 180 }) {
   const [open, setOpen] = React.useState(false);
   const [term, setTerm] = React.useState("");
@@ -279,14 +297,9 @@ function ctaColor(cta) {
     }, []);
 
     const filterOptions = getCourseFilterOptions(courses, targetOptions);
-    const activeFilterCount = [cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter].reduce((count, value) => count + selectionValues(value).length, q.trim() ? 1 : 0);
-
-    let filtered = filterCourses(courses, { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode });
-
-    if (sortMode === "newest")      filtered = sortCoursesByStatusPriority(filtered, user);
-    if (sortMode === "rating_desc") filtered = [...filtered].sort((a, b) => (b.rating ?? -Infinity) - (a.rating ?? -Infinity));
-    if (sortMode === "dur_asc")     filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
-    if (sortMode === "dur_desc")    filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
+    const filters = { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode };
+    const activeFilterCount = countActiveCourseFilters(filters);
+    const filtered = applyCourseFilters(courses, filters, user);
 
     const [page, setPage] = React.useState(1);
     const PAGE_SIZE = 9;

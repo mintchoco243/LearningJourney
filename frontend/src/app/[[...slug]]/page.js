@@ -99,6 +99,13 @@ function FAQSection() {
   );
 }
 /* ---------- App bar (Sidebar) ---------- */
+const MINIGAME_DISMISSED_DATE_KEY = "minigame_launcher_dismissed_date";
+
+function localDateKeyForMinigame() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
 function AppBar(props) {
   const { user } = useGame();
   const rank = rankForUser(user);
@@ -108,6 +115,21 @@ function AppBar(props) {
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [restartingOnboarding, setRestartingOnboarding] = React.useState(false);
   const [confirmDialog, setConfirmDialog] = React.useState(null);
+  const [minigameDismissed, setMinigameDismissed] = React.useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(`${MINIGAME_DISMISSED_DATE_KEY}:${user.email || "guest"}`) === localDateKeyForMinigame();
+  });
+
+  React.useEffect(() => {
+    const onDismissed = () => setMinigameDismissed(true);
+    window.addEventListener("minigame:dismissed", onDismissed);
+    return () => window.removeEventListener("minigame:dismissed", onDismissed);
+  }, []);
+
+  const reopenMinigame = () => {
+    setMinigameDismissed(false);
+    window.dispatchEvent(new CustomEvent("minigame:restore"));
+  };
 
   // Close sidebar on navigation (for mobile)
   const handleNav = (id) => {
@@ -198,8 +220,15 @@ function AppBar(props) {
           React.createElement("button", {
             onClick: () => props.onOpenAbout && props.onOpenAbout(),
             title: "Về Learning Compass",
-            style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
-          }, React.createElement(Icon, { name: "info", size: 16, color: "var(--ui-heading)" })),
+           style: { width: 34, height: 34, borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }
+           }, React.createElement(Icon, { name: "info", size: 16, color: "var(--ui-heading)" })),
+          minigameDismissed && React.createElement("button", {
+            type: "button",
+            onClick: reopenMinigame,
+            title: "Mở lại Game rắn săn rương",
+            "aria-label": "Mở lại Game rắn săn rương",
+            style: { minHeight: 34, padding: "3px 9px 3px 5px", borderRadius: 8, background: "var(--rpg-panel)", border: "1px solid var(--rpg-border)", display: "flex", alignItems: "center", gap: 5, cursor: "pointer", color: "var(--ui-heading)", whiteSpace: "nowrap", fontSize: 11, fontWeight: 700 }
+          }, React.createElement("img", { src: "/minigame/assets/logo.svg?v=1", alt: "", style: { width: 24, height: 24, objectFit: "contain" } }), "Game rắn săn rương"),
           // Rating button
           React.createElement("button", {
             onClick: () => props.onOpenRating && props.onOpenRating(),
@@ -279,6 +308,10 @@ function AppBar(props) {
           React.createElement("button", {
             className: "tool-btn", onClick: () => props.onOpenAbout && props.onOpenAbout(), title: "Về Learning Compass"
           }, React.createElement(Icon, { name: "info", size: 18, color: "var(--rpg-muted)" })),
+          minigameDismissed && React.createElement("button", {
+            className: "tool-btn", onClick: reopenMinigame, title: "Mở lại Game rắn săn rương", "aria-label": "Mở lại Game rắn săn rương",
+            style: { width: "auto", minWidth: 34, padding: "0 7px", display: "flex", alignItems: "center", gap: 4 }
+          }, React.createElement("img", { src: "/minigame/assets/logo.svg?v=1", alt: "", style: { width: 22, height: 22, objectFit: "contain" } }), React.createElement("span", { style: { fontSize: 11, whiteSpace: "nowrap" } }, "Game rắn săn rương")),
           React.createElement("button", {
             className: "tool-btn", onClick: () => props.onOpenRating && props.onOpenRating(), title: "Đánh giá"
           }, React.createElement(Icon, { name: "star", size: 18, color: "var(--amber)" }))
