@@ -6,10 +6,18 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLHAvatar } from '../GLHAvatar';
 import { CourseCard } from '../GLHParts';
 import { AvatarEditModal } from './ProfilePolicy';
-import { Calendar } from './CatalogCalendar';
+import {
+  Calendar,
+  CourseSearchFilters,
+  applyCourseFilters,
+  countActiveCourseFilters,
+  defaultCourseFilters,
+  getVisibleFilterOptions,
+  getCourseFilterOptions,
+} from './CatalogCalendar';
 import { getRecommendations } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
-import { SKILL_OPTIONS, courseHasSkill, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
@@ -233,7 +241,6 @@ export function Dashboard(props) {
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
-  const [selectedSkills, setSelectedSkills] = React.useState([]);
   const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {
@@ -244,11 +251,8 @@ export function Dashboard(props) {
       .catch(() => {});
   }, []);
 
-  const filterBySkill = React.useCallback((courses) => selectedSkills.length
-    ? courses.filter((course) => courseHasSkill(course, selectedSkills))
-    : courses, [selectedSkills]);
-  const quizCourses = filterBySkill(recommendations.quiz_skill_courses || []);
-  const hrCourses = filterBySkill(recommendations.hr_recommended_courses || []);
+  const quizCourses = recommendations.quiz_skill_courses || [];
+  const hrCourses = recommendations.hr_recommended_courses || [];
   const rankCourses = [...quizCourses, ...hrCourses];
   const reservationCourses = (user.reservation_details || []).map((item) => mapCourseToCard(item));
   const registeredCourses = reservationCourses.filter((course) => course.type === "scheduled");
@@ -315,8 +319,7 @@ export function Dashboard(props) {
           }, React.createElement(Icon, { name: item.icon, size: 12, color: "var(--amber)" }), item.value))
         ) : null)),
 
-    React.createElement(SkillFilterBar, { selected: selectedSkills, onChange: setSelectedSkills }),
-    React.createElement(Calendar, { embedded: true, selectedSkills, onOpenCourse: props.onOpenCourse }),
+    React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }),
 
     React.createElement(React.Fragment, null,
       React.createElement(SectionRow, {
@@ -339,37 +342,11 @@ export function Dashboard(props) {
   ));
 }
 
-function SkillFilterBar({ selected, onChange }) {
-  const toggle = (id) => onChange(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
-  return React.createElement("div", { className: "dash-filter-sticky", style: { padding: "10px 0", background: "var(--ui-bg)", backdropFilter: "blur(10px)" } },
-    React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" } },
-      React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 700 } }, "Lọc Kỹ năng"),
-      SKILL_OPTIONS.map((skill) => {
-        const visual = getSkillVisual(skill);
-        const isSelected = selected.includes(skill);
-        return React.createElement("button", {
-        key: skill,
-        type: "button",
-        onClick: () => toggle(skill),
-        className: isSelected ? "u-chip is-active" : "u-chip",
-        style: {
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          borderColor: isSelected ? visual.color + "cc" : undefined,
-          background: isSelected ? visual.color + "20" : undefined,
-          color: isSelected ? visual.color : undefined,
-        },
-      }, React.createElement(Icon, { name: isSelected ? "check" : visual.icon, size: 13, color: isSelected ? visual.color : "currentColor" }), skill);
-      }),
-      selected.length ? React.createElement("button", { type: "button", className: "u-btn u-btn--ghost", style: { fontSize: 12, padding: "5px 9px" }, onClick: () => onChange([]) }, "Xóa lọc") : null
-    )
-  );
-}
-
 function MyLearningSection({ registeredCourses, completedCourses, reservedCourses, favoriteCourses, onOpenCourse }) {
+  const { user } = useGame();
   const [open, setOpen] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState("registered");
+  const [filters, setFilters] = React.useState(defaultCourseFilters);
   const groups = {
     registered: { label: "Đã đăng ký", courses: registeredCourses },
     completed: { label: "Đã học", courses: completedCourses },
@@ -378,6 +355,11 @@ function MyLearningSection({ registeredCourses, completedCourses, reservedCourse
   };
   const summary = `${registeredCourses.length} đã đăng ký · ${completedCourses.length} đã học · ${reservedCourses.length} đặt chỗ · ${favoriteCourses.length} yêu thích`;
   const active = groups[activeTab];
+  const allCourses = [...registeredCourses, ...completedCourses, ...reservedCourses, ...favoriteCourses];
+  const filterOptions = getCourseFilterOptions(allCourses);
+  const visibleFilterOptions = getVisibleFilterOptions(active.courses, filters, filterOptions);
+  const activeFilterCount = countActiveCourseFilters(filters);
+  const visibleCourses = applyCourseFilters(active.courses, filters, user);
 
   return React.createElement("section", { id: "my-learning", className: "my-learning-section", style: { scrollMarginTop: 70 } },
     React.createElement("div", { className: "my-learning-section__header" },
@@ -387,9 +369,10 @@ function MyLearningSection({ registeredCourses, completedCourses, reservedCourse
     open ? React.createElement(React.Fragment, null,
       React.createElement("div", { className: "my-learning-tabs", role: "tablist" }, Object.entries(groups).map(([key, group]) =>
         React.createElement("button", { key, type: "button", role: "tab", "aria-selected": activeTab === key, className: activeTab === key ? "my-learning-tab is-active" : "my-learning-tab", onClick: () => setActiveTab(key) }, `${group.label} (${group.courses.length})`))),
-      active.courses.length
-        ? React.createElement("div", { className: "my-learning-list" }, active.courses.map((course) => React.createElement(SimpleCourseRow, { key: course._id || course.course_id, course, tab: activeTab, onOpenCourse })))
-        : React.createElement("div", { className: "u-card my-learning-empty" }, "Chưa có dữ liệu.")) : null
+      React.createElement(CourseSearchFilters, { filters, setFilters, options: visibleFilterOptions, activeFilterCount }),
+      visibleCourses.length
+        ? React.createElement("div", { className: "my-learning-list" }, visibleCourses.map((course) => React.createElement(SimpleCourseRow, { key: course._id || course.course_id, course, tab: activeTab, onOpenCourse })))
+        : React.createElement("div", { className: "u-card my-learning-empty" }, active.courses.length ? "Không có khóa học phù hợp với bộ lọc." : "Chưa có dữ liệu.")) : null
   );
 }
 

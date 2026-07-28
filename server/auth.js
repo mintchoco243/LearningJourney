@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import { config } from "./config.js";
 import { query } from "./db.js";
+import { isAllowedGarenaEmail } from "./lib/emailPolicy.js";
 
 const googleClient = new OAuth2Client(
   config.google.clientId,
@@ -10,9 +11,7 @@ const googleClient = new OAuth2Client(
   config.google.callbackUrl
 );
 
-export function isGarenaEmail(email) {
-  return typeof email === "string" && email.toLowerCase().endsWith("@garena.vn");
-}
+export const isGarenaEmail = isAllowedGarenaEmail;
 
 export function signToken(user) {
   return jwt.sign({ userId: user.id, email: user.email }, config.jwtSecret, {
@@ -61,7 +60,7 @@ export async function getGoogleProfile(code) {
 
 export async function upsertUser(profile) {
   if (!isGarenaEmail(profile.email)) {
-    const error = new Error("Only @garena.vn accounts are allowed.");
+    const error = new Error("Only eligible @garena.vn accounts are allowed.");
     error.status = 401;
     throw error;
   }

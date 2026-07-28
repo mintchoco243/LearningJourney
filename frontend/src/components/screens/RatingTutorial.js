@@ -172,14 +172,14 @@ const { useGame } = GLHEngine;
     },
     {
       title: "Trang cá nhân",
-      desc: "Click vào tên bạn để xem thông tin, khóa đã học và thay đổi cài đặt.",
+      desc: "Click vào tên bạn để lựa chọn lại ưu tiên kỹ năng bất cứ lúc nào.",
       selector: "[data-tour='profile']",
       placement: "bottom",
     },
     {
-      title: "Bot Hộ giá và Form gửi nhu cầu đào tạo",
-      desc: "Dùng bot hỗ trợ để hỏi nhanh về khóa học, rank hoặc chính sách L&D. Nếu chưa thấy khóa phù hợp, bạn có thể gửi nhu cầu đào tạo để L&D team xem xét và phản hồi.",
-      selectors: ["[data-tour='training-request']", "[data-tour='learning-support']"],
+      title: "Bot Hộ giá",
+      desc: "Dùng Bot Hộ giá để hỏi nhanh về khóa học, rank hoặc chính sách L&D.",
+      selector: "[data-tour='learning-support']",
       placement: "top",
     },
     {

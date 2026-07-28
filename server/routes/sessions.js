@@ -10,7 +10,12 @@ export const sessionsRouter = express.Router();
 // views. It must not become a separate session data model again.
 sessionsRouter.get("/", async (req, res) => {
   const params = [];
-  const filters = ["c.is_active = TRUE", "c.status <> 'draft'", "c.session_date IS NOT NULL"];
+  const filters = [
+    "c.is_active = TRUE",
+    "c.status <> 'draft'",
+    "c.type IN ('scheduled', 'interest')",
+    "c.session_date IS NOT NULL",
+  ];
   if (req.query.month) {
     params.push(`${req.query.month}-01`);
     filters.push(`c.session_date >= $${params.length}`);

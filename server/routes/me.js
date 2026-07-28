@@ -2,6 +2,7 @@ import express from "express";
 import { query } from "../db.js";
 import { canonicalSkill, canonicalizeFocusSkills } from "../lib/skillCatalog.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
+import { syncMinigameTasks } from "./minigame.js";
 
 export const meRouter = express.Router();
 
@@ -88,7 +89,8 @@ meRouter.post("/onboarding", async (req, res) => {
     [req.user.id, learning_formats, weekly_hours, preferred_trainers, requestedSkills, rank, role]
   );
   const result = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);
-  res.json({ user: result.rows[0], xp_earned: 50 });
+  const minigame = await syncMinigameTasks(req.user.id);
+  res.json({ user: result.rows[0], xp_earned: 50, minigame: { claimed: minigame.claimed || [] } });
 });
 
 meRouter.delete("/onboarding", async (req, res) => {

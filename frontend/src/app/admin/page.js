@@ -8,6 +8,7 @@ import { RequestsScreen } from '@/components/admin/ADMScreens2';
 import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen, IntegrationsScreen } from '@/components/admin/ADMScreens3';
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 import { FaqsScreen } from '@/components/admin/ADMScreensFaqs';
+import { MinigameAdminScreen } from '@/components/admin/ADMScreensMinigame';
 
 const { Sidebar } = ADMComponents;
 
@@ -79,6 +80,7 @@ function DevLoginButton() {
     testimonials: { label: "Testimonials" },
     faqs:         { label: "Quản lý FAQs" },
     site_feedback:{ label: "Site Feedback" },
+    minigame:     { label: "Minigame Launch" },
     bot_settings: { label: "Cấu hình Hệ thống" },
     accounts:     { label: "Admin Accounts" },
   };
@@ -217,6 +219,7 @@ function DevLoginButton() {
       testimonials: <TestimonialsScreen />,
       faqs:         <FaqsScreen />,
       site_feedback:<SiteFeedbackScreen />,
+      minigame:     <MinigameAdminScreen />,
       bot_settings: <IntegrationsScreen />,
       accounts:     adminRole === "super_admin" ? <AccountsScreen /> : null,
     };

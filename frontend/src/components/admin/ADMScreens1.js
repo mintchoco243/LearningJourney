@@ -5,7 +5,8 @@ import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
 import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
-import { SKILL_OPTIONS, skillLabel } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS } from '@/lib/skillCatalog';
+import { buildCourseDeepLink } from '@/lib/courseLinks.mjs';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -101,7 +102,8 @@ const COURSE_STATUSES = [
       rating: c.rating == null ? "" : parseFloat(c.rating),
       rank_targets: toList(c.rank_targets),
       role_targets: toList(c.role_targets),
-      skill_tags: [...new Set(toList(c.skill_tags).map(skillLabel).filter(Boolean))],
+      // Keep legacy course tags as stored; admins can migrate them deliberately.
+      skill_tags: [...new Set(toList(c.skill_tags).filter(Boolean))],
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),
@@ -324,16 +326,45 @@ const COURSE_STATUSES = [
     rank_05: "Senior Manager",
     Associate: "Associate",
     "Senior Associate": "Senior Associate",
+    "Senior Associate I": "Senior Associate I",
+    "Senior Associate II": "Senior Associate II",
     "Assistant Manager": "Assistant Manager",
     Manager: "Manager",
     "Senior Manager": "Senior Manager",
+    Engineer: "Engineer",
+    "Engineer I": "Engineer I",
+    "Engineer II": "Engineer II",
+    "Expert Engineer": "Expert Engineer",
+    "Senior Engineer": "Senior Engineer",
+    "Senior Engineer I": "Senior Engineer I",
+    "Senior Engineer II": "Senior Engineer II",
+    "Senior Engineer III": "Senior Engineer III",
+    "Senior Designer I": "Senior Designer I",
+    "Senior Designer II": "Senior Designer II",
+    "Senior Product Management Associate II": "Senior Product Management Associate II",
+    "Senior Product Management Associate III": "Senior Product Management Associate III",
   };
   const RANKS_ALL  = [
     { id: "Associate", name: "Associate" },
     { id: "Senior Associate", name: "Senior Associate" },
+    { id: "Senior Associate I", name: "Senior Associate I" },
+    { id: "Senior Associate II", name: "Senior Associate II" },
     { id: "Assistant Manager", name: "Assistant Manager" },
     { id: "Manager", name: "Manager" },
     { id: "Senior Manager", name: "Senior Manager" },
+    { id: "Director", name: "Director" },
+    { id: "Engineer", name: "Engineer" },
+    { id: "Engineer I", name: "Engineer I" },
+    { id: "Engineer II", name: "Engineer II" },
+    { id: "Expert Engineer", name: "Expert Engineer" },
+    { id: "Senior Engineer", name: "Senior Engineer" },
+    { id: "Senior Engineer I", name: "Senior Engineer I" },
+    { id: "Senior Engineer II", name: "Senior Engineer II" },
+    { id: "Senior Engineer III", name: "Senior Engineer III" },
+    { id: "Senior Designer I", name: "Senior Designer I" },
+    { id: "Senior Designer II", name: "Senior Designer II" },
+    { id: "Senior Product Management Associate II", name: "Senior Product Management Associate II" },
+    { id: "Senior Product Management Associate III", name: "Senior Product Management Associate III" },
   ];
 
   export function CoursesScreen() {
@@ -454,12 +485,8 @@ const COURSE_STATUSES = [
       }
     }
     function openImport(c = null) { setImportTarget(c); setImportModal(true); }
-    function buildCourseDeepLink(c) {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      return `${origin}/library?courseId=${encodeURIComponent(c.id)}`;
-    }
     async function copyCourseLink(c) {
-      const link = buildCourseDeepLink(c);
+      const link = buildCourseDeepLink(c.id, window.location.origin);
       try {
         if (navigator?.clipboard?.writeText) {
           await navigator.clipboard.writeText(link);
@@ -1241,7 +1268,10 @@ const COURSE_STATUSES = [
   function CourseForm({ course, courses, onSave, onClose, saving, error }) {
     const trainerOptions = catalogOptions(courses, "trainer");
     const locationOptions = catalogOptions(courses, "location");
-    const rankOptions = catalogOptions(courses, "rank_targets", true);
+    const rankOptions = [...new Set([
+      ...RANKS_ALL.map(rank => rank.id),
+      ...catalogOptions(courses, "rank_targets", true),
+    ])];
     const roleOptions = catalogOptions(courses, "role_targets", true);
     const skillOptions = SKILL_OPTIONS;
     const [form, setForm] = React.useState({

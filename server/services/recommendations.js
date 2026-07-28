@@ -81,6 +81,54 @@ function compareQuiz(a, b) {
   return hrDiff || compareRatingThenDate(a, b);
 }
 
+function targetIsExact(targets, userValues, { rank = false } = {}) {
+  const targetList = asList(targets).map(normalize).filter(Boolean);
+  if (!targetList.length || targetList.includes("all")) return false;
+  const values = asList(userValues)
+    .flatMap((value) => rank ? rankTokens(value) : [normalize(value)])
+    .filter(Boolean);
+  return targetList.some((target) => values.includes(target));
+}
+
+function targetIsWildcard(targets) {
+  return asList(targets).some((target) => normalize(target) === "all");
+}
+
+function fitScore(course, rankValues, roleValues) {
+  // Exact rank is weighted above exact role, then wildcard matches. This keeps
+  // the strongest match (exact rank + exact role) first without changing the
+  // existing eligibility rules.
+  const rankExact = targetIsExact(course.rank_targets, rankValues, { rank: true });
+  const roleExact = targetIsExact(course.role_targets, roleValues);
+  const rankWildcard = targetIsWildcard(course.rank_targets);
+  const roleWildcard = targetIsWildcard(course.role_targets);
+  return (rankExact ? 2 : rankWildcard ? 0 : -1) + (roleExact ? 1 : roleWildcard ? 0 : -1);
+}
+
+function courseSkillKeys(course) {
+  return new Set(asList(course.skill_tags).map((tag) => canonicalSkill(tag) || normalize(tag)).filter(Boolean));
+}
+
+export function selectHRRecommendedCourses(candidates, rankValues, roleValues, usedIds = new Set()) {
+  const ranked = candidates
+    .filter((course) => Boolean(course.is_hr_recommended))
+    .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
+    .filter((course) => targetMatches(course.role_targets, roleValues))
+    .filter((course) => !usedIds.has(String(course.id)))
+    .sort((a, b) => fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues) || compareRatingThenDate(a, b));
+
+  const selected = [];
+  const usedSkills = new Set();
+  for (const course of ranked) {
+    const skills = courseSkillKeys(course);
+    if (!skills.size || ![...skills].some((skill) => !usedSkills.has(skill))) continue;
+    selected.push(course);
+    skills.forEach((skill) => usedSkills.add(skill));
+    if (selected.length === 3) break;
+  }
+  return selected;
+}
+
 function eligible(course, completedIds, reservedIds) {
   return Boolean(course.is_active) &&
     !["draft", "cancelled"].includes(String(course.status || "").toLowerCase()) &&
@@ -129,13 +177,7 @@ export async function getRecommendationsForUser(userId) {
     }
   }
 
-  const hrRecommendedCourses = candidates
-    .filter((course) => Boolean(course.is_hr_recommended))
-    .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
-    .filter((course) => targetMatches(course.role_targets, roleValues))
-    .filter((course) => !usedIds.has(String(course.id)))
-    .sort(compareRatingThenDate)
-    .slice(0, 3);
+  const hrRecommendedCourses = selectHRRecommendedCourses(candidates, rankValues, roleValues, usedIds);
 
   const [quizWithRatings, hrWithRatings] = await Promise.all([
     attachPublicCourseRatings(quizSkillCourses),

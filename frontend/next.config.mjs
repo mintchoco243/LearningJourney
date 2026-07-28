@@ -23,6 +23,10 @@ const nextConfig = {
         source: '/admin/api/:path*',
         destination: 'http://localhost:5001/admin/api/:path*',
       },
+      {
+        source: '/minigame/snake.html',
+        destination: 'http://localhost:5001/minigame/snake.html',
+      },
       // Logo fallback
       {
         source: '/assets/logo_horizontal.png',

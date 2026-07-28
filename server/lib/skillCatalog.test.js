@@ -7,35 +7,37 @@ import {
 } from "./skillCatalog.js";
 import { SKILL_OPTIONS as FRONTEND_SKILL_OPTIONS } from "../../frontend/src/lib/skillCatalog.js";
 
-test("canonical skill catalog contains the approved eleven skills", () => {
+test("canonical skill catalog contains the approved thirteen skills", () => {
   assert.deepEqual(SKILL_OPTIONS, [
+    "IT / Dev",
+    "Game Dev & Game Design",
+    "People",
     "Product",
-    "Marketing",
-    "Planning & Strategy",
-    "Problem Solving and Decision Making",
-    "Task Management",
-    "Communication and Collaboration",
-    "Analysis",
-    "Creativity",
-    "Game Understanding",
-    "Team and Talent Management",
+    "Marketing & Esports",
+    "Creative",
+    "Data / BA",
+    "Management",
+    "Communication",
+    "Problem Solving",
+    "Language",
     "AI Adoption",
+    "Other",
   ]);
   assert.deepEqual(SKILL_OPTIONS, FRONTEND_SKILL_OPTIONS);
 });
 
 test("legacy onboarding ids and database casing map to canonical skills", () => {
-  assert.equal(canonicalSkill("analytics"), "Analysis");
-  assert.equal(canonicalSkill("Analytics"), "Analysis");
-  assert.equal(canonicalSkill("strategy"), "Planning & Strategy");
-  assert.equal(canonicalSkill("ops_excellence"), "Task Management");
+  assert.equal(canonicalSkill("analytics"), "Data / BA");
+  assert.equal(canonicalSkill("Analytics"), "Data / BA");
+  assert.equal(canonicalSkill("strategy"), "Product");
+  assert.equal(canonicalSkill("ops_excellence"), "Management");
   assert.equal(canonicalSkill("ai"), "AI Adoption");
 });
 
 test("focus skills are canonicalized and deduplicated", () => {
   assert.deepEqual(
     canonicalizeFocusSkills(["analytics", "Analysis", "strategy"]),
-    ["Analysis", "Planning & Strategy"],
+    ["Data / BA", "Product"],
   );
   assert.deepEqual(canonicalizeFocusSkills(["not-a-skill"]), []);
 });

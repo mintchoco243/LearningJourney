@@ -2,6 +2,7 @@ import express from "express";
 import crypto from "node:crypto";
 import { setAuthCookie, signToken, verifyToken } from "./auth.js";
 import { SKILL_OPTIONS, canonicalSkill, canonicalizeFocusSkills } from "./lib/skillCatalog.js";
+import { isAllowedGarenaEmail } from "./lib/emailPolicy.js";
 
 const now = () => new Date().toISOString();
 const demoUser = {
@@ -230,6 +231,7 @@ function userSnapshot(user) {
 export const localMockAuthRouter = express.Router();
 localMockAuthRouter.post("/dev-login", (req, res) => {
   const email = String(req.body?.email || "demo@garena.vn").trim().toLowerCase();
+  if (!isAllowedGarenaEmail(email)) return res.status(403).json({ error: "EMAIL_NOT_ALLOWED" });
   const id = email === demoUser.email ? demoUser.id : `mock-${crypto.createHash("sha1").update(email).digest("hex").slice(0, 12)}`;
   if (!state.users.has(id)) state.users.set(id, { ...demoUser, id, email, full_name: email.split("@")[0].replace(/[._-]/g, " ") });
   const user = state.users.get(id);

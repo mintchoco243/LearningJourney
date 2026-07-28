@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Garena Skill Snake - Learning Compass Campaign</title>
+  <title>Game rắn săn rương - Learning Compass</title>
   <!-- Google Fonts: Chakra Petch (Garena Esports/Gaming Brand), Be Vietnam Pro & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -69,10 +69,11 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* PERFECT DESKTOP FIT MODAL FRAME (520px Width x Compact 650px Height) */
+    /* Fixed outer frame: tabs swap inside the same viewport. */
     .game-modal {
       width: 520px;
       max-width: 98vw;
+      height: min(760px, 96vh);
       max-height: 96vh;
       background: var(--card-bg);
       border: 1.5px solid var(--card-border);
@@ -82,7 +83,7 @@
       flex-direction: column;
       position: relative;
       overflow-x: hidden;
-      overflow-y: auto;
+      overflow: hidden;
     }
 
     /* Header & Close Button */
@@ -242,6 +243,8 @@
       padding: 12px 14px;
       position: relative;
       flex: 1;
+      min-height: 0;
+      overflow-y: auto;
     }
 
     .tab-content.active {
@@ -271,13 +274,34 @@
     .dpad-container {
       margin-top: 10px;
       margin-bottom: 8px;
-      display: grid;
+      display: none;
       grid-template-columns: repeat(3, 58px);
-      grid-template-rows: repeat(2, 50px);
-      gap: 8px;
+      grid-template-rows: repeat(2, 36px);
+      column-gap: 8px;
+      row-gap: 4px;
       justify-content: center;
-      align-items: center;
+      align-items: stretch;
       flex-shrink: 0;
+    }
+
+    .speed-notice {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      z-index: 5;
+      transform: translateX(-50%);
+      padding: 7px 12px;
+      border: 1px solid rgba(245, 158, 11, 0.75);
+      border-radius: 999px;
+      background: rgba(120, 53, 15, 0.92);
+      color: #fff;
+      opacity: 0.78;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      font-family: var(--font-brand);
+      font-size: 0.76rem;
+      font-weight: 800;
+      white-space: nowrap;
+      pointer-events: none;
     }
 
     .dpad-btn {
@@ -294,6 +318,12 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       -webkit-tap-highlight-color: transparent;
       transition: background 0.1s ease, transform 0.1s ease;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .dpad-container {
+        display: grid;
+      }
     }
 
     .dpad-btn:active {
@@ -642,6 +672,12 @@
     .btn-claim.done { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); }
     .btn-claim.pending { background: rgba(59, 130, 246, 0.2); color: var(--electric-blue); border: 1px solid rgba(59, 130, 246, 0.4); }
 
+    .mission-progress {
+      font-size: 0.68rem;
+      line-height: 1.1;
+      color: var(--text-muted);
+    }
+
     .missions-footer-action {
       margin-top: 8px;
       width: 100%;
@@ -747,7 +783,7 @@
     <div class="modal-header">
       <div class="brand-title">
         <span class="brand-badge">GARENA</span>
-        <span>SKILL SNAKE</span>
+        <span>GAME RẮN SĂN RƯƠNG</span>
       </div>
       <button class="close-btn" id="closeBtn" title="Đóng game">&times;</button>
     </div>
@@ -758,7 +794,7 @@
         🎮 Chơi Game
       </button>
       <button class="tab-btn" id="tabMissionsBtn">
-        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">6</span>
+        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">7</span>
       </button>
       <button class="tab-btn" id="tabLeaderboardBtn">
         🏆 BXH Văn Phòng
@@ -769,7 +805,7 @@
     <div class="hud-bar">
       <div class="hud-card">
         <span class="hud-label">Lượt Chơi</span>
-        <span class="hud-value highlight-red" id="hudPlays">⚡ ∞</span>
+        <span class="hud-value highlight-red" id="hudPlays">⚡ 0</span>
       </div>
       <div class="hud-card">
         <span class="hud-label">Điểm Hiện Tại</span>
@@ -785,10 +821,14 @@
     <div class="tab-content active" id="gameTabContent">
       <div class="canvas-container" id="canvasContainer">
         <canvas id="gameCanvas" width="360" height="360"></canvas>
+        <div class="speed-notice hidden" id="speedNotice" role="status"></div>
 
         <!-- START OVERLAY -->
         <div class="canvas-overlay" id="startOverlay">
-          <div class="overlay-title">SKILL SNAKE</div>
+          <div class="overlay-title">GAME RẮN SĂN RƯƠNG</div>
+          <div id="guestNotice" class="overlay-subtitle hidden" style="width: 92%; margin-bottom: 12px; padding: 9px 11px; border: 1px solid rgba(245, 158, 11, .65); border-radius: 10px; background: rgba(245, 158, 11, .12); color: #fff;">
+            Chơi thử 1 lượt không cần đăng nhập. Thành tích chưa được lưu. Đăng nhập và hoàn thành Quiz để lưu thành tích, nhận thưởng.
+          </div>
           <div class="overlay-subtitle" style="text-align: left; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; width: 92%;">
             <div>• Ăn rương để mở khóa các thông điệp về Learning Compass.</div>
             <div>• Trò chơi kết thúc khi bạn va phải chướng ngại vật - là đuôi của bạn hoặc 4 cạnh tường thành.</div>
@@ -1067,11 +1107,83 @@
     /* ==========================================
        GAME ENGINE & STATE MANAGEMENT
        ========================================== */
-    const STORAGE_KEY = 'garena_snake_state';
     const GRID_SIZE = 20;
     const CELL_SIZE = 18; // 20x20 grid in 360x360 canvas
-    const GAME_SPEED_MS = 110;
-    const IS_TEST_MODE = true;
+    const GAME_BASE_SPEED_MS = 95;
+    const GAME_SAFE_CHESTS = 4;
+    const GAME_CHESTS_PER_SPEEDUP = 2;
+    const GAME_SPEED_STEP_MS = 10;
+    const GAME_MIN_SPEED_MS = 16;
+    const GAME_PARAMS = new URLSearchParams(window.location.search);
+    const GAME_MODE = GAME_PARAMS.get('mode') === 'test' ? 'test' : 'production';
+    const GUEST_MODE = GAME_PARAMS.get('guest') === '1';
+    const GUEST_SCORE_KEY = 'minigame_guest_pending_score';
+    let currentRunToken = null;
+    let backendLeaderboard = [];
+    let backendUserId = null;
+    let startPending = false;
+
+    async function startBackendRun() {
+      if (GUEST_MODE) {
+        if (gameState.playsLeft < 1) throw new Error('NO_GUEST_PLAY_LEFT');
+        gameState.playsLeft -= 1;
+        updateHUD();
+        return;
+      }
+      const response = await fetch('/api/minigame/runs', { method: 'POST', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'RUN_START_FAILED');
+      const data = await response.json();
+      currentRunToken = data.run_token;
+      if (GAME_MODE === 'production' && Number.isFinite(Number(data.plays))) {
+        gameState.playsLeft = Number(data.plays);
+        updateHUD();
+      }
+    }
+
+    async function finishBackendRun(score) {
+      if (GUEST_MODE) {
+        const pendingScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+        window.localStorage.setItem(GUEST_SCORE_KEY, String(Math.max(pendingScore, score)));
+        return;
+      }
+      if (!currentRunToken) return;
+      const response = await fetch('/api/minigame/runs/finish', {
+        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-MinGame-Mode': GAME_MODE },
+        body: JSON.stringify({ run_token: currentRunToken, score }),
+      });
+      currentRunToken = null;
+      if (!response.ok) throw new Error('RUN_FINISH_FAILED');
+    }
+
+    async function refreshBackendState() {
+      const response = await fetch('/api/minigame/bootstrap', { cache: 'no-store', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (!response.ok) throw new Error('MINIGAME_BOOTSTRAP_FAILED');
+      const data = await response.json();
+      gameState.playsLeft = data.user.plays;
+      gameState.highScore = data.user.high_score;
+      backendUserId = data.user.id;
+      gameState.tasks = data.tasks.map(task => ({ ...task, progress: Number(task.progress || 0), reqTime: Number(task.seconds || 0) }));
+      backendLeaderboard = data.leaderboard || [];
+      const pendingGuestScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+      if (pendingGuestScore > 0) {
+        const imported = await fetch('/api/minigame/guest-score', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ score: pendingGuestScore }),
+        });
+        if (imported.ok) {
+          const result = await imported.json();
+          gameState.highScore = Math.max(gameState.highScore, Number(result.high_score || 0));
+          window.localStorage.removeItem(GUEST_SCORE_KEY);
+        }
+      }
+      (data.claimed || []).forEach(task => {
+        window.parent.postMessage({ type: 'GARENA_TASK_COMPLETED', title: task.title, reward: task.reward }, window.location.origin);
+      });
+      const userLb = officeLeaderboard.find(x => x.isUser);
+      if (userLb) userLb.score = gameState.highScore;
+    }
 
     const CHEST_TYPES = [
       { id: 1, name: 'Rương Đồng', xp: 10, color: '#D97706', chance: 0.75, imgKey: 'chest_lvl1' },
@@ -1098,86 +1210,36 @@
     }
 
     let gameState = {
-      playsLeft: '∞',
+      playsLeft: 0,
       highScore: 0,
       lastResetDate: new Date().toISOString().slice(0, 10),
       unlockedTipsHistory: [],
       tasks: [
-        { id: 'task_daily_login', title: '📅 Đăng nhập hàng ngày', reward: 1, reqTime: 0, progress: 1, status: 'READY_TO_CLAIM' },
-        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học bất kỳ', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
+        { id: 'task_first_login', title: '👋 Hoàn tất đăng nhập lần đầu', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_daily_login', title: '📅 Đăng nhập hằng ngày', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
+        { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_1', title: '🌐 Khám phá Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
+        { id: 'task_2', title: '📚 Khám phá Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' }
       ]
     };
 
-    function checkDailyReset() {
-      const today = new Date().toISOString().slice(0, 10);
-      if (gameState.lastResetDate !== today) {
-        gameState.lastResetDate = today;
-        gameState.playsLeft = '∞';
-        gameState.tasks.forEach(t => {
-          t.progress = 0;
-          t.status = t.id === 'task_daily_login' ? 'READY_TO_CLAIM' : 'NOT_STARTED';
-          if (t.id === 'task_daily_login') t.progress = 1;
-        });
-        saveState();
+    async function loadSavedState() {
+      if (GUEST_MODE) {
+        gameState.playsLeft = 1;
+        gameState.highScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+        gameState.tasks = [
+          { id: 'task_first_login', title: '👋 Đăng nhập và hoàn thành Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '__login__' },
+        ];
+        return;
       }
-    }
-
-    function resetGameStateForTesting() {
-      localStorage.removeItem(STORAGE_KEY);
-      gameState = {
-        playsLeft: '∞',
-        highScore: 0,
-        lastResetDate: new Date().toISOString().slice(0, 10),
-        tasks: [
-          { id: 'task_daily_login', title: '📅 Đăng nhập hàng ngày', reward: 1, reqTime: 0, progress: 1, status: 'READY_TO_CLAIM' },
-          { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học bất kỳ', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
-          { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
-          { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED' },
-          { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED' },
-          { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 2, reqTime: 0, progress: 0, status: 'NOT_STARTED' }
-        ]
-      };
-      saveState();
-      renderMissions();
-      renderLeaderboard();
-      showOverlay('startOverlay');
-    }
-
-    function loadSavedState() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          gameState.playsLeft = IS_TEST_MODE ? '∞' : (parsed.playsLeft ?? 3);
-          gameState.highScore = parsed.highScore ?? 0;
-          gameState.lastResetDate = parsed.lastResetDate ?? new Date().toISOString().slice(0, 10);
-          if (parsed.unlockedTipsHistory && Array.isArray(parsed.unlockedTipsHistory)) {
-            gameState.unlockedTipsHistory = parsed.unlockedTipsHistory;
-          }
-          if (parsed.tasks && Array.isArray(parsed.tasks)) {
-            parsed.tasks.forEach(st => {
-              const t = gameState.tasks.find(x => x.id === st.id);
-              if (t) {
-                t.progress = st.progress ?? 0;
-                t.status = st.status ?? 'NOT_STARTED';
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Error parsing saved state:", e);
-        }
-      }
-      checkDailyReset();
+      await refreshBackendState();
       const userLb = officeLeaderboard.find(x => x.isUser);
       if (userLb) userLb.score = gameState.highScore;
     }
 
     function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(gameState));
       const userLb = officeLeaderboard.find(x => x.isUser);
       if (userLb) userLb.score = gameState.highScore;
       updateHUD();
@@ -1197,6 +1259,9 @@
     let lastChestName = '--';
     let isRunning = false;
     let isWaitingForInput = false;
+    let currentSpeedMs = GAME_BASE_SPEED_MS;
+    let speedChestCount = 0;
+    let speedNoticeTimer = null;
 
     let animFrameId = null;
     let lastStepTimestamp = 0;
@@ -1224,6 +1289,8 @@
       nextDir = { x: 0, y: 0 };
       currentScore = 0;
       lastChestName = '--';
+      currentSpeedMs = GAME_BASE_SPEED_MS;
+      speedChestCount = 0;
       lastLvl1Index = -1;
       lastLvl2Index = -1;
       sessionUnlockedTips = [];
@@ -1235,6 +1302,18 @@
 
       spawnChest();
       updateHUD();
+    }
+
+    function showSpeedNotice() {
+      const notice = document.getElementById('speedNotice');
+      if (!notice) return;
+      notice.textContent = 'Tăng tốc ⏩';
+      notice.classList.remove('hidden');
+      if (speedNoticeTimer) window.clearTimeout(speedNoticeTimer);
+      speedNoticeTimer = window.setTimeout(() => {
+        notice.classList.add('hidden');
+        speedNoticeTimer = null;
+      }, 2000);
     }
 
     function spawnChest() {
@@ -1252,7 +1331,21 @@
     }
 
     /* OPTION 1: HIGH-PERFORMANCE REQUESTANIMATIONFRAME LOOP */
-    function startGame() {
+    async function startGame() {
+      if (startPending || isRunning) return;
+      startPending = true;
+      try {
+        await startBackendRun();
+      } catch (error) {
+        try {
+          await refreshBackendState();
+          updateHUD();
+        } catch (_) { /* keep the current state if bootstrap is unavailable */ }
+        showOverlay(gameState.playsLeft > 0 ? 'startOverlay' : 'noPlaysOverlay');
+        startPending = false;
+        return;
+      }
+      startPending = false;
       initGame();
       hideOverlays();
       document.getElementById('fullKnowledgeModal').classList.add('hidden');
@@ -1269,8 +1362,8 @@
       if (!isRunning) return;
 
       const elapsed = timestamp - lastStepTimestamp;
-      if (elapsed >= GAME_SPEED_MS) {
-        lastStepTimestamp = timestamp - (elapsed % GAME_SPEED_MS);
+      if (elapsed >= currentSpeedMs) {
+        lastStepTimestamp = timestamp - (elapsed % currentSpeedMs);
         if (!isWaitingForInput) {
           gameStepLogic();
         }
@@ -1318,6 +1411,16 @@
 
       if (head.x === currentChest.x && head.y === currentChest.y) {
         currentScore += currentChest.xp;
+        speedChestCount += 1;
+        const speedupChestCount = speedChestCount - GAME_SAFE_CHESTS;
+        if (speedupChestCount > 0 && speedupChestCount % GAME_CHESTS_PER_SPEEDUP === 0) {
+          const speedupCount = speedupChestCount / GAME_CHESTS_PER_SPEEDUP;
+          const nextSpeedMs = Math.max(GAME_MIN_SPEED_MS, GAME_BASE_SPEED_MS - speedupCount * GAME_SPEED_STEP_MS);
+          if (nextSpeedMs < currentSpeedMs) {
+            currentSpeedMs = nextSpeedMs;
+            showSpeedNotice();
+          }
+        }
         const promo = triggerLJTicker(currentChest);
         triggerChestFXPooled(head.x * CELL_SIZE + CELL_SIZE / 2, head.y * CELL_SIZE + CELL_SIZE / 2, currentChest, promo ? promo.shortText : null);
         spawnChest();
@@ -1327,7 +1430,7 @@
       }
     }
 
-    function handleGameOver() {
+    async function handleGameOver() {
       isRunning = false;
       isWaitingForInput = false;
       if (animFrameId) cancelAnimationFrame(animFrameId);
@@ -1337,13 +1440,14 @@
         gameState.highScore = currentScore;
         isNewRecord = true;
       }
+      try { await finishBackendRun(currentScore); } catch (error) { console.error(error); }
       saveState();
 
       window.parent.postMessage({
         type: 'GARENA_GAME_OVER',
         score: currentScore,
         highScore: gameState.highScore
-      }, '*');
+      }, window.location.origin);
 
       currentTipIndex = 0;
       renderSmartKnowledgeCarousel();
@@ -1351,6 +1455,11 @@
       document.getElementById('finalScore').textContent = `${currentScore} XP`;
       document.getElementById('finalHighScore').textContent = `${gameState.highScore} XP ${isNewRecord ? '🎉 (Kỷ Lục Mới!)' : ''}`;
       document.getElementById('gameOverSubtitle').textContent = `Chiến binh Garena đã xuất sắc thu thập được: ${currentScore} XP!`;
+      if (GUEST_MODE) {
+        document.getElementById('gameOverSubtitle').textContent = `Bạn đạt ${currentScore} XP ở lượt chơi thử. Đăng nhập và hoàn thành Quiz để lưu thành tích.`;
+        document.getElementById('btnReplay').textContent = 'ĐĂNG NHẬP VÀ LƯU THÀNH TÍCH';
+        document.getElementById('btnGameOverMissions').classList.add('hidden');
+      }
 
       showOverlay('gameOverOverlay');
     }
@@ -1575,9 +1684,8 @@
       document.getElementById('hudCurrentScore').textContent = `⭐ ${currentScore} XP`;
       document.getElementById('hudHighScore').textContent = `🏆 ${gameState.highScore} XP`;
       
-      const claimableCount = gameState.tasks.filter(t => t.status === 'READY_TO_CLAIM').length;
       const badge = document.getElementById('missionBadge');
-      badge.textContent = claimableCount > 0 ? claimableCount : gameState.tasks.filter(t => t.status !== 'CLAIMED').length;
+      badge.textContent = gameState.tasks.filter(task => task.status !== 'CLAIMED' && !(task.reqTime > 0 && Number(task.progress) >= task.reqTime)).length;
     }
 
     function showOverlay(overlayId) {
@@ -1604,13 +1712,14 @@
         let btnClass = 'btn-claim pending';
         let btnText = 'Chưa xong';
         let isReady = false;
+        const completed = task.status === 'CLAIMED' || (task.reqTime > 0 && task.progress >= task.reqTime);
 
-        if (task.status === 'CLAIMED') {
+        if (completed) {
           btnClass = 'btn-claim done';
-          btnText = 'Đã nhận';
-        } else if (task.status === 'READY_TO_CLAIM' || (task.reqTime > 0 && task.progress >= task.reqTime)) {
+          btnText = 'Đã hoàn thành';
+        } else if (task.path) {
           btnClass = 'btn-claim ready';
-          btnText = 'Nhận + ' + task.reward + ' lượt';
+          btnText = 'Thực hiện';
           isReady = true;
         } else if (task.reqTime > 0) {
           btnText = `Đang làm (${task.progress}/${task.reqTime}s)`;
@@ -1622,43 +1731,33 @@
             <div class="mission-reward">+${task.reward} lượt chơi</div>
             ${task.reqTime > 0 ? `<div class="mission-progress">Tiến độ: ${task.progress}/${task.reqTime}s</div>` : ''}
           </div>
-          <button class="${btnClass}" ${!isReady ? 'disabled' : ''} data-id="${task.id}">
-            ${btnText}
-          </button>
+          <button class="${btnClass}" ${!isReady ? 'disabled' : ''} data-id="${task.id}">${btnText}</button>
         `;
 
         if (isReady) {
-          card.querySelector('button').addEventListener('click', () => claimTaskReward(task.id));
+          card.querySelector('button').addEventListener('click', () => {
+            if (task.path === '__login__') {
+              window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+              return;
+            }
+            window.parent.postMessage({ type: 'GARENA_NAVIGATE', path: task.path }, window.location.origin);
+          });
         }
 
         container.appendChild(card);
       });
-    }
-
-    function claimTaskReward(taskId) {
-      const task = gameState.tasks.find(t => t.id === taskId);
-      if (!task || task.status === 'CLAIMED') return;
-
-      task.status = 'CLAIMED';
-      saveState();
-
-      window.parent.postMessage({
-        type: 'GARENA_TASK_CLAIMED',
-        taskId: taskId
-      }, '*');
-
-      renderMissions();
       updateHUD();
     }
 
     function renderLeaderboard() {
       const container = document.getElementById('leaderboardListContainer');
       container.innerHTML = '';
+      if (GUEST_MODE) {
+        container.innerHTML = '<div class="mission-card"><div class="mission-info"><div class="mission-title">Thành tích chơi thử chưa vào bảng xếp hạng</div><div class="mission-reward">Đăng nhập và hoàn thành Quiz để lưu kết quả.</div></div></div>';
+        return;
+      }
 
-      const userLb = officeLeaderboard.find(x => x.isUser);
-      if (userLb) userLb.score = gameState.highScore;
-
-      const sorted = [...officeLeaderboard].sort((a, b) => b.score - a.score);
+      const sorted = backendLeaderboard.length ? backendLeaderboard.map(item => ({ ...item, name: item.full_name || item.email, dept: item.team || 'Learning Journey', isUser: item.id === backendUserId })) : [...officeLeaderboard];
 
       sorted.forEach((item, index) => {
         const rankNum = index + 1;
@@ -1686,24 +1785,41 @@
       });
     }
 
-    let missionTimer = setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+    function syncMissionTabHeight() {
+      const modal = document.querySelector('.game-modal');
+      const gameTab = document.getElementById('gameTabContent');
+      const missionsTab = document.getElementById('missionsTabContent');
+      const leaderboardTab = document.getElementById('leaderboardTabContent');
+      if (!modal || !gameTab || !missionsTab || !leaderboardTab) return;
+      [gameTab, missionsTab, leaderboardTab].forEach(tab => {
+        tab.style.flex = '';
+        tab.style.height = '';
+      });
+      modal.style.height = '';
+    }
 
-      let stateChanged = false;
+    window.addEventListener('message', (event) => {
+      if (event.origin !== window.location.origin || event.data?.type !== 'GARENA_ACTIVITY') return;
+      const activity = String(event.data.activity || '');
+      const seconds = Math.max(0, Math.min(Number(event.data.seconds || 0), 10));
+      let changed = false;
       gameState.tasks.forEach(task => {
-        if (task.reqTime > 0 && task.status !== 'CLAIMED' && task.status !== 'READY_TO_CLAIM') {
-          task.progress++;
-          stateChanged = true;
-          if (task.progress >= task.reqTime) {
-            task.status = 'READY_TO_CLAIM';
-          }
+        if (task.activity === activity && task.reqTime > 0 && task.status !== 'CLAIMED' && task.status !== 'READY_TO_CLAIM') {
+          task.progress = Math.min(task.reqTime, task.progress + seconds);
+          task.status = task.progress >= task.reqTime ? 'READY_TO_CLAIM' : task.status;
+          changed = true;
         }
       });
+      if (changed) renderMissions();
+    });
 
-      if (stateChanged && document.getElementById('missionsTabContent').classList.contains('active')) {
+    setInterval(() => {
+      if (GUEST_MODE || document.visibilityState !== 'visible') return;
+      refreshBackendState().then(() => {
         renderMissions();
-      }
-    }, 1000);
+        updateHUD();
+      }).catch(() => {});
+    }, 5000);
 
     /* ==========================================
        KEYBOARD SHORTCUTS & ARROW KEYS ONLY
@@ -1799,10 +1915,10 @@
 
     // Close & Reset Buttons
     document.getElementById('closeBtn').addEventListener('click', () => {
-      window.parent.postMessage({ type: 'GARENA_CLOSE_GAME' }, '*');
+      window.parent.postMessage({ type: 'GARENA_CLOSE_GAME' }, window.location.origin);
     });
 
-    document.getElementById('btnResetDataTest').addEventListener('click', resetGameStateForTesting);
+    document.getElementById('btnResetDataTest').remove();
 
     // Tab Switching
     const tabGameBtn = document.getElementById('tabGameBtn');
@@ -1847,9 +1963,19 @@
 
     // Button Actions
     document.getElementById('btnStartGame').addEventListener('click', startGame);
-    document.getElementById('btnReplay').addEventListener('click', startGame);
+    document.getElementById('btnReplay').addEventListener('click', () => {
+      if (GUEST_MODE) {
+        window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+        return;
+      }
+      startGame();
+    });
 
     document.getElementById('btnGoToMissions').addEventListener('click', () => {
+      if (GUEST_MODE) {
+        window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+        return;
+      }
       tabMissionsBtn.click();
     });
 
@@ -1861,11 +1987,16 @@
        INITIALIZATION
        ========================================== */
     loadAssets();
-    loadSavedState();
-    renderMissions();
-    renderLeaderboard();
-    showOverlay('startOverlay');
-    render();
+    if (GUEST_MODE) {
+      document.getElementById('guestNotice').classList.remove('hidden');
+    }
+    loadSavedState().then(() => {
+      renderMissions();
+      renderLeaderboard();
+      syncMissionTabHeight();
+      showOverlay('startOverlay');
+      render();
+    }).catch(() => showOverlay('noPlaysOverlay'));
   </script>
 </body>
 </html>

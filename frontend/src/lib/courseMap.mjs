@@ -105,7 +105,6 @@ export function hasFeaturedTestimonial(row) {
 }
 
 export function publicCourseRating(row) {
-  if (!hasFeaturedTestimonial(row)) return null;
   const rating = Number(row.rating);
   return Number.isFinite(rating) && rating > 0 ? rating : null;
 }
@@ -310,7 +309,11 @@ export function getCourseCta(course, user = {}) {
 // Upcoming = future, non-cancelled sessions, soonest first, max 5.
 export function pickUpcoming(sessions, today = new Date()) {
   return (sessions || [])
-    .filter((s) => s.status !== "cancelled" && s.session_date)
+    .filter((s) =>
+      ["scheduled", "interest"].includes(String(s.type || "").trim().toLowerCase()) &&
+      s.status !== "cancelled" &&
+      s.session_date
+    )
     .map((s) => mapSessionToUpcoming(s, today))
     .filter((c) => c.countdown_days != null && c.countdown_days >= 0)
     .sort((a, b) => a.start_date.localeCompare(b.start_date))

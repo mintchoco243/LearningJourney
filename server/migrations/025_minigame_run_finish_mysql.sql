@@ -1,0 +1,1 @@
+ALTER TABLE minigame_runs MODIFY score INT NULL DEFAULT NULL;

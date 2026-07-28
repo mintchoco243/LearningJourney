@@ -8,7 +8,7 @@ import { getCalendarEvents } from '@/lib/mockApi';
 import { getCourseCta, getCourseJoinMeta, mapCourseToCard, sortCoursesByStatusPriority } from '@/lib/courseMap.mjs';
 import { trackEvent } from '@/lib/analytics';
 import { TRAINER_TYPE_OPTIONS, courseTrainerType } from '@/lib/trainerCatalog.mjs';
-import { courseHasSkill, skillLabel } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS, courseHasSkill, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const { Icon, FORMAT_LABEL, MONTHS_VI, DOW_VI } = GLHUI;
 const { useGame } = GLHEngine;
@@ -67,7 +67,7 @@ const selectionValues = (value) => Array.isArray(value) ? value : (value && valu
 export function getCourseFilterOptions(courses, targetOptions = {}) {
   return {
     trainers: TRAINER_TYPE_OPTIONS,
-    skills: [...new Set((courses || []).flatMap(c => c.skill_tags || []).map(skillLabel).filter(Boolean))],
+    skills: [...SKILL_OPTIONS],
     ranks: targetOptions.ranks?.length ? targetOptions.ranks : uniqueTargetOptions((courses || []).flatMap(c => c.target_ranks || c.rank_ids || [])),
     roles: targetOptions.roles?.length ? targetOptions.roles : uniqueTargetOptions((courses || []).flatMap(c => c.class_ids || [])),
   };
@@ -95,6 +95,44 @@ export function filterCourses(courses, filters) {
     }
     return true;
   });
+}
+
+export function getVisibleFilterOptions(courses, filters, options) {
+  const facets = [
+    ["rankFilter", "ranks"],
+    ["trainerFilter", "trainers"],
+    ["durationFilter", "duration"],
+    ["tagFilter", "skills"],
+  ];
+  return facets.reduce((result, [filterKey, optionKey]) => {
+    const selected = new Set(selectionValues(filters[filterKey]));
+    const visible = (options[optionKey] || []).filter((option) => {
+      const id = option.id || option;
+      if (selected.has(id)) return true;
+      const candidate = { ...filters, [filterKey]: [id] };
+      return filterCourses(courses, candidate).length > 0;
+    });
+    result[optionKey] = visible;
+    return result;
+  }, { ...options });
+}
+
+export function applyCourseFilters(courses, filters, user) {
+  const sortMode = filters?.sortMode || "rating_desc";
+  let filtered = filterCourses(courses, filters);
+
+  if (sortMode === "newest") filtered = sortCoursesByStatusPriority(filtered, user);
+  if (sortMode === "rating_desc") filtered = [...filtered].sort((a, b) => (b.rating ?? -Infinity) - (a.rating ?? -Infinity));
+  if (sortMode === "dur_asc") filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
+  if (sortMode === "dur_desc") filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
+
+  return filtered;
+}
+
+export function countActiveCourseFilters(filters) {
+  const f = Object.assign(defaultCourseFilters(), filters);
+  return [f.cmFilter, f.trainerFilter, f.durationFilter, f.tagFilter, f.rankFilter]
+    .reduce((count, value) => count + selectionValues(value).length, f.q.trim() ? 1 : 0);
 }
 
 function SearchableSelect({ placeholder, value, onChange, options, noDefault, multi = false, minWidth = 110, maxWidth = 180 }) {
@@ -199,6 +237,51 @@ function SearchableSelect({ placeholder, value, onChange, options, noDefault, mu
           }, "NEW"))) : React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 12, padding: "8px 10px" } }, "Không có kết quả"))));
 }
 
+function SkillChipFilter({ value, onChange, options, activeFilterCount, onClear }) {
+  const selectedValues = selectionValues(value);
+  const toggle = (skill) => onChange(
+    selectedValues.includes(skill)
+      ? selectedValues.filter((item) => item !== skill)
+      : [...selectedValues, skill]
+  );
+
+  return React.createElement("div", {
+    className: "catalog-filter-skill-chips",
+    role: "group",
+    "aria-label": "Kỹ năng",
+    style: { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, flex: "1 1 100%", minWidth: 0 },
+  },
+    React.createElement("span", { style: { color: "var(--ui-muted)", fontSize: 12, fontWeight: 800, marginRight: 2 } }, "Kỹ năng:"),
+    options.map((skill) => {
+      const active = selectedValues.includes(skill);
+      const visual = getSkillVisual(skill);
+      return React.createElement("button", {
+        key: skill,
+        type: "button",
+        onClick: () => toggle(skill),
+        "aria-pressed": active,
+        style: {
+          display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 999,
+          padding: "7px 10px", border: `1px solid ${active ? visual.color : "var(--rpg-border)"}`,
+          background: active ? `${visual.color}24` : "rgba(255,255,255,.06)",
+          color: active ? visual.color : "var(--ui-muted)", cursor: "pointer",
+          fontSize: 12, fontWeight: 700, lineHeight: 1.1,
+        },
+      },
+        React.createElement(Icon, { name: visual.icon, size: 12, color: active ? visual.color : "var(--ui-muted)" }),
+        skill,
+        active ? React.createElement("span", { style: { fontWeight: 900, fontSize: 12 } }, "✓") : null
+      );
+    }),
+    activeFilterCount > 0 && React.createElement("button", {
+      type: "button",
+      className: "catalog-filter-clear",
+      onClick: onClear,
+      style: { height: 36, padding: "0 4px", alignSelf: "center" },
+    }, "Xóa lọc ×")
+  );
+}
+
 export function CourseSearchFilters({ filters, setFilters, options, activeFilterCount }) {
   const setOne = (key) => (value) => setFilters(prev => Object.assign({}, prev, { [key]: value }));
   const clearAll = () => setFilters(prev => Object.assign({}, prev, defaultCourseFilters()));
@@ -208,22 +291,20 @@ export function CourseSearchFilters({ filters, setFilters, options, activeFilter
         React.createElement("div", { className: "catalog-filter-search__icon" },
           React.createElement(Icon, { name: "search", size: 15, color: "var(--ui-muted)" })),
         React.createElement("input", { className: "u-input", placeholder: "Tìm theo tên khóa học, trainer, kỹ năng, mô tả...", value: filters.q, onChange: e => setOne("q")(e.target.value) })),
-      React.createElement(SearchableSelect, { multi: true, placeholder: "Kỹ năng", value: filters.tagFilter, onChange: setOne("tagFilter"), options: options.skills.map(skill => ({ id: skill, label: skill })) }),
-      React.createElement(SearchableSelect, { multi: true, placeholder: "Rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }),
-      React.createElement(SearchableSelect, { multi: true, placeholder: "Trainer", value: filters.trainerFilter, onChange: setOne("trainerFilter"), options: options.trainers, minWidth: 150, maxWidth: 210 }),
-      React.createElement(SearchableSelect, { multi: true, placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: COURSE_DURATION_OPTIONS.map(d => ({ id: d.id, label: d.label })) }),
+      options.ranks?.length ? React.createElement(SearchableSelect, { multi: true, placeholder: "Rank", value: filters.rankFilter, onChange: setOne("rankFilter"), options: options.ranks }) : null,
+      options.trainers?.length ? React.createElement(SearchableSelect, { multi: true, placeholder: "Trainer", value: filters.trainerFilter, onChange: setOne("trainerFilter"), options: options.trainers, minWidth: 150, maxWidth: 210 }) : null,
+      options.duration?.length ? React.createElement(SearchableSelect, { multi: true, placeholder: "Thời lượng", value: filters.durationFilter, onChange: setOne("durationFilter"), options: options.duration }) : null,
       React.createElement("div", { className: "catalog-filter-sort" },
         React.createElement("span", null, "Sắp xếp:"),
         React.createElement(SearchableSelect, { noDefault: true, value: filters.sortMode, onChange: setOne("sortMode"), minWidth: 120, maxWidth: 170, options: [{ id: "rating_desc", label: "Rating cao nhất" }, { id: "newest", label: "Mới nhất" }, { id: "dur_asc", label: "Thời lượng ↑" }, { id: "dur_desc", label: "Thời lượng ↓" }] })
       ),
-      React.createElement("button", {
-        type: "button",
-        className: "catalog-filter-clear",
-        onClick: clearAll,
-        disabled: activeFilterCount === 0,
-        "aria-hidden": activeFilterCount === 0,
-        style: { visibility: activeFilterCount > 0 ? "visible" : "hidden" },
-      }, "Xóa lọc ×"));
+      React.createElement(SkillChipFilter, {
+        value: filters.tagFilter,
+        onChange: setOne("tagFilter"),
+        options: options.skills,
+        activeFilterCount,
+        onClear: clearAll,
+      }));
 }
 
 function ctaColor(cta) {
@@ -278,15 +359,11 @@ function ctaColor(cta) {
         });
     }, []);
 
+    const filters = { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode };
     const filterOptions = getCourseFilterOptions(courses, targetOptions);
-    const activeFilterCount = [cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter].reduce((count, value) => count + selectionValues(value).length, q.trim() ? 1 : 0);
-
-    let filtered = filterCourses(courses, { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode });
-
-    if (sortMode === "newest")      filtered = sortCoursesByStatusPriority(filtered, user);
-    if (sortMode === "rating_desc") filtered = [...filtered].sort((a, b) => (b.rating ?? -Infinity) - (a.rating ?? -Infinity));
-    if (sortMode === "dur_asc")     filtered = [...filtered].sort((a, b) => a.duration_minutes - b.duration_minutes);
-    if (sortMode === "dur_desc")    filtered = [...filtered].sort((a, b) => b.duration_minutes - a.duration_minutes);
+    const visibleFilterOptions = getVisibleFilterOptions(courses, filters, filterOptions);
+    const activeFilterCount = countActiveCourseFilters(filters);
+    const filtered = applyCourseFilters(courses, filters, user);
 
     const [page, setPage] = React.useState(1);
     const PAGE_SIZE = 9;
@@ -337,7 +414,7 @@ function ctaColor(cta) {
       React.createElement(CourseSearchFilters, {
         filters: { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode },
         setFilters,
-        options: filterOptions,
+        options: visibleFilterOptions,
         activeFilterCount,
       }),
 
@@ -472,7 +549,10 @@ function ctaColor(cta) {
     const today = startOfLocalDay(new Date());
     const upcoming = events.filter((event) => {
       const date = dateOnlyLocal(event.start_date);
-      return date && date >= today;
+      const isAllowedType = ["scheduled", "interest"].includes(
+        String(event.type || "").trim().toLowerCase()
+      );
+      return isAllowedType && date && date >= today;
     });
     const months = Array.from(new Map(upcoming.map((event) => {
       const date = dateOnlyLocal(event.start_date);

@@ -2,6 +2,8 @@ import express from "express";
 import { query, withTransaction } from "../db.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 import { getRecommendationsForUser } from "../services/recommendations.js";
+import { ranksForUser, rankGroupForUser } from "../services/rankGroups.js";
+import { syncMinigameTasks } from "./minigame.js";
 
 export const coursesRouter = express.Router();
 
@@ -150,8 +152,14 @@ coursesRouter.get("/options", async (req, res, next) => {
       return String(value).split(",").map((item) => item.trim()).filter(Boolean);
     };
     const unique = (values) => [...new Set(values.flatMap(listValue).map((item) => String(item).trim()).filter((item) => item && item.toLowerCase() !== "all"))].sort((a, b) => a.localeCompare(b));
+    const userResult = await query("SELECT role, rank, team FROM users WHERE id = $1", [req.user.id]);
+    const user = userResult.rows[0] || {};
     res.json({
-      ranks: uniqueTargets(result.rows, "rank_targets"),
+      rank_group: rankGroupForUser(user),
+      // Return the complete ladder for the current user's group, including
+      // ranks that do not yet have a course target (for example the newly
+      // added Senior Product Management Associate III).
+      ranks: ranksForUser(user),
       roles: uniqueTargets(result.rows, "role_targets"),
       trainers: unique(result.rows.map((row) => row.trainer)),
       locations: unique(result.rows.map((row) => row.location)),
@@ -182,7 +190,8 @@ coursesRouter.post("/:id/favorite", async (req, res, next) => {
       "SELECT * FROM course_favorites WHERE user_id = $1 AND course_id = $2",
       [req.user.id, req.params.id],
     );
-    res.status(201).json({ favorite: favorite.rows[0], is_favorite: true });
+    const minigame = await syncMinigameTasks(req.user.id);
+    res.status(201).json({ favorite: favorite.rows[0], is_favorite: true, minigame: { claimed: minigame.claimed || [] } });
   } catch (err) {
     next(err);
   }
@@ -264,6 +273,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
     });
     if (!result) return res.status(404).json({ error: "COURSE_NOT_FOUND" });
     if (result.duplicate) {
+      const minigame = await syncMinigameTasks(req.user.id);
       return res.status(409).json({
         error: "ALREADY_COMPLETED",
         course_id: result.course.id,
@@ -274,9 +284,11 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
         xp_total: result.user.xp_total,
         hours_total: result.user.hours_total,
         already_completed: true,
+        minigame: { claimed: minigame.claimed || [] },
       });
     }
     const [course] = await attachPublicCourseRatings([result.course]);
+    const minigame = await syncMinigameTasks(req.user.id);
     res.json({
       course_id: result.course.id,
       xp_earned: result.course.xp_reward,
@@ -286,6 +298,7 @@ coursesRouter.post("/:id/complete", async (req, res, next) => {
       already_completed: false,
       course,
       enrollment: result.enrollment,
+      minigame: { claimed: minigame.claimed || [] },
     });
   } catch (error) {
     next(error);
