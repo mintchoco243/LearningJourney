@@ -134,12 +134,14 @@ assert.equal(getCourseJoinMeta(mapCourseToCard({ id: "JOIN-9", type: "external",
 
 // pickUpcoming: drops past + cancelled, soonest first, caps at 5
 const upcoming = pickUpcoming([
-  { course_id: "A", session_date: "2026-06-01", session_time: "09:00", status: "open" }, // past -> drop
-  { course_id: "B", session_date: "2026-07-20", session_time: "09:00", status: "open" },
-  { course_id: "C", session_date: "2026-07-05", session_time: "09:00", status: "open" },
-  { course_id: "D", session_date: "2026-07-10", session_time: "09:00", status: "cancelled" }, // drop
+  { course_id: "A", type: "scheduled", session_date: "2026-06-01", session_time: "09:00", status: "open" }, // past -> drop
+  { course_id: "B", type: "scheduled", session_date: "2026-07-20", session_time: "09:00", status: "open" },
+  { course_id: "C", type: "scheduled", session_date: "2026-07-05", session_time: "09:00", status: "open" },
+  { course_id: "D", type: "scheduled", session_date: "2026-07-10", session_time: "09:00", status: "cancelled" }, // drop
+  { course_id: "E", type: "elearning", session_date: "2026-07-12", session_time: "09:00", status: "open" }, // wrong type -> drop
+  { course_id: "F", type: "interest", session_date: "2026-07-15", session_time: "09:00", status: "open" }, // allowed type
 ], TODAY);
-assert.deepEqual(upcoming.map((c) => c.course_id), ["C", "B"]);
+assert.deepEqual(upcoming.map((c) => c.course_id), ["C", "F", "B"]);
 
 // pickRecommended: best_fit first, cap 6
 const rec = pickRecommended([

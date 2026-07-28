@@ -549,7 +549,10 @@ function ctaColor(cta) {
     const today = startOfLocalDay(new Date());
     const upcoming = events.filter((event) => {
       const date = dateOnlyLocal(event.start_date);
-      return date && date >= today;
+      const isAllowedType = ["scheduled", "interest"].includes(
+        String(event.type || "").trim().toLowerCase()
+      );
+      return isAllowedType && date && date >= today;
     });
     const months = Array.from(new Map(upcoming.map((event) => {
       const date = dateOnlyLocal(event.start_date);
