@@ -78,12 +78,12 @@ export function MinigameLauncher({ authenticated }) {
       title: "Mở Mini Game Skill Snake",
       "aria-label": "Săn rương nhận quà ngay!",
       style: {
-        width: 224, height: 224, border: 0, borderRadius: 0,
+        width: 100, height: 100, border: 0, borderRadius: 0,
         background: "transparent", color: "#fff",
         boxShadow: "none", padding: 0,
         cursor: "pointer", display: "grid", placeItems: "center",
       },
-    }, React.createElement("img", { src: "/minigame/assets/logo.png", alt: "Skill Snake", style: { width: 224, height: 224, objectFit: "contain" } }))) : null,
+    }, React.createElement("img", { src: "/minigame/assets/logo.png", alt: "Skill Snake", style: { width: 100, height: 100, objectFit: "contain" } }))) : null,
     open && authenticated ? React.createElement("div", {
       role: "dialog", "aria-modal": "true", onClick: () => setOpen(false),
       style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(11,14,20,.85)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 16 },
