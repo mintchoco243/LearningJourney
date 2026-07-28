@@ -69,20 +69,21 @@ export function MinigameLauncher({ authenticated }) {
   return React.createElement(React.Fragment, null,
     enabled ? React.createElement("div", {
       style: { position: "fixed", right: 24, top: "50%", transform: "translateY(-50%)", zIndex: 101, display: "grid", justifyItems: "end", gap: 8 },
-    }, taskNotice ? React.createElement("div", {
-      role: "status",
-      style: { maxWidth: 260, padding: "10px 14px", borderRadius: 12, background: "#172235", border: "1px solid rgba(245,158,11,.7)", color: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.28)", fontSize: 12, fontWeight: 800, textAlign: "right" },
-    }, `✅ ${taskNotice.title} · +${taskNotice.reward} lượt chơi — Chơi tiếp ngay!`) : null, React.createElement("button", {
+    }, React.createElement("div", {
+      role: taskNotice ? "status" : undefined,
+      style: { maxWidth: 240, padding: "9px 12px", borderRadius: 14, background: "#172235", border: "1px solid rgba(245,158,11,.72)", color: "#fff", boxShadow: "0 8px 24px rgba(0,0,0,.28)", fontSize: 12, lineHeight: 1.25, fontWeight: 800, textAlign: "right", position: "relative" },
+    }, taskNotice ? `✅ ${taskNotice.title} · +${taskNotice.reward} lượt chơi — Chơi tiếp ngay!` : "Săn rương nhận quà ngay!"), React.createElement("button", {
       type: "button",
       onClick: launch,
       title: "Mở Mini Game Skill Snake",
+      "aria-label": "Săn rương nhận quà ngay!",
       style: {
-        border: "1px solid rgba(255,190,70,.65)", borderRadius: 999,
+        width: 72, height: 72, border: "1px solid rgba(255,190,70,.75)", borderRadius: 22,
         background: "linear-gradient(135deg, #e41e26, #ff8a00)", color: "#fff",
-        boxShadow: "0 8px 24px rgba(228,30,38,.32)", padding: "11px 16px",
-        fontWeight: 800, fontSize: 12, cursor: "pointer", letterSpacing: ".02em", display: "inline-flex", alignItems: "center", gap: 8,
+        boxShadow: "0 8px 24px rgba(228,30,38,.32)", padding: 8,
+        cursor: "pointer", display: "grid", placeItems: "center",
       },
-    }, React.createElement("img", { src: "/minigame/assets/head.png", alt: "Skill Snake", style: { width: 30, height: 30, objectFit: "contain" } }), "Chơi minigame ngay!")) : null,
+    }, React.createElement("img", { src: "/minigame/assets/logo.png", alt: "Skill Snake", style: { width: 56, height: 56, objectFit: "contain" } }))) : null,
     open && authenticated ? React.createElement("div", {
       role: "dialog", "aria-modal": "true", onClick: () => setOpen(false),
       style: { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(11,14,20,.85)", backdropFilter: "blur(8px)", display: "grid", placeItems: "center", padding: 16 },
