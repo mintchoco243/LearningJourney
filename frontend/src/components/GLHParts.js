@@ -7,6 +7,7 @@ import { GLH_DATA } from '@/data/glhData';
 import { getCourseCta, getCourseJoinMeta, publicCourseRating } from '@/lib/courseMap.mjs';
 import { trackEvent } from '@/lib/analytics';
 import { getSkillVisual } from '@/lib/skillCatalog';
+import { buildCourseDeepLink } from '@/lib/courseLinks.mjs';
 import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 
 const { Icon, fmtDate, fmtDuration } = GLHUI;
@@ -494,10 +495,9 @@ function formatCardDate(value) {
     const copyCourseLink = async () => {
       const courseLinkId = modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id;
       if (!courseLinkId || typeof window === "undefined") return;
-      const courseUrl = new URL("/library", window.location.origin);
-      courseUrl.searchParams.set("courseId", courseLinkId);
+      const courseUrl = buildCourseDeepLink(courseLinkId, window.location.origin);
       try {
-        await navigator.clipboard.writeText(courseUrl.toString());
+        await navigator.clipboard.writeText(courseUrl);
         setConfirmDialog({ type: "notice", title: "Đã sao chép link khóa học", message: "Bạn có thể gửi link này cho đồng nghiệp.", confirmText: "Đóng" });
       } catch {
         setConfirmDialog({ type: "notice", title: "Không thể sao chép", message: "Trình duyệt không cho phép truy cập clipboard. Vui lòng thử lại.", confirmText: "Đóng" });

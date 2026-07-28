@@ -6,6 +6,7 @@ import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
 import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
 import { SKILL_OPTIONS } from '@/lib/skillCatalog';
+import { buildCourseDeepLink } from '@/lib/courseLinks.mjs';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -484,12 +485,8 @@ const COURSE_STATUSES = [
       }
     }
     function openImport(c = null) { setImportTarget(c); setImportModal(true); }
-    function buildCourseDeepLink(c) {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      return `${origin}/library?courseId=${encodeURIComponent(c.id)}`;
-    }
     async function copyCourseLink(c) {
-      const link = buildCourseDeepLink(c);
+      const link = buildCourseDeepLink(c.id, window.location.origin);
       try {
         if (navigator?.clipboard?.writeText) {
           await navigator.clipboard.writeText(link);
