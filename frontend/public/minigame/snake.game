@@ -295,6 +295,7 @@
       border-radius: 999px;
       background: rgba(120, 53, 15, 0.92);
       color: #fff;
+      opacity: 0.78;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
       font-family: var(--font-brand);
       font-size: 0.76rem;
@@ -1268,10 +1269,10 @@
     function showSpeedNotice() {
       const notice = document.getElementById('speedNotice');
       if (!notice) return;
-      notice.textContent = `⚡ TỐC ĐỘ TĂNG · ${currentSpeedMs}ms/bước`;
+      notice.textContent = 'Tăng tốc ⏩';
       notice.classList.remove('hidden');
       if (speedNoticeTimer) window.clearTimeout(speedNoticeTimer);
-      speedNoticeTimer = window.setTimeout(() => notice.classList.add('hidden'), 2200);
+      speedNoticeTimer = window.setTimeout(() => notice.classList.add('hidden'), 3000);
     }
 
     function spawnChest() {
