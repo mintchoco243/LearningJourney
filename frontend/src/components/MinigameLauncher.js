@@ -3,7 +3,7 @@
 import React from "react";
 
 const DISMISSED_DATE_KEY = "minigame_launcher_dismissed_date";
-const LAUNCHER_POSITION_KEY = "minigame_launcher_position";
+const LAUNCHER_POSITION_KEY = "minigame_launcher_position_v2";
 const LAUNCHER_SIZE = 150;
 
 function localDateKey() {
@@ -25,7 +25,7 @@ function readLauncherPosition(userKey) {
     const saved = JSON.parse(window.localStorage.getItem(`${LAUNCHER_POSITION_KEY}:${userKey}`) || "null");
     if (saved && Number.isFinite(Number(saved.left)) && Number.isFinite(Number(saved.top))) return clampLauncherPosition(saved);
   } catch (_) { /* ignore malformed local preferences */ }
-  return clampLauncherPosition({ left: window.innerWidth - 174, top: window.innerHeight - 274 });
+  return clampLauncherPosition({ left: window.innerWidth - 174, top: (window.innerHeight - LAUNCHER_SIZE) / 2 });
 }
 
 export function MinigameLauncher({ authenticated, userKey = "guest" }) {
