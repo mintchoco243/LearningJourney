@@ -62,7 +62,7 @@ const { useGame } = GLHEngine;
         React.createElement("h1", { className: "ob-title", style: { marginBottom: 8, fontSize: "clamp(28px, 5vw, 40px)", whiteSpace: "nowrap" } },
           "Chào mừng bạn"),
         React.createElement("p", { className: "ob-sub", style: { marginBottom: 32, fontSize: 14 } },
-          "Đăng nhập để bắt đầu hành trình học tập của bạn và mở dần bản đồ kỹ năng."),
+          "Sau khi đăng nhập, bạn sẽ làm một Quiz ngắn để hoàn tất hồ sơ và nhận gợi ý học tập phù hợp."),
 
         React.createElement("div", { style: { marginBottom: 20 } },
           React.createElement("button", {

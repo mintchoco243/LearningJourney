@@ -794,7 +794,7 @@
         🎮 Chơi Game
       </button>
       <button class="tab-btn" id="tabMissionsBtn">
-        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">8</span>
+        🎯 Nhiệm Vụ <span class="tab-badge" id="missionBadge">7</span>
       </button>
       <button class="tab-btn" id="tabLeaderboardBtn">
         🏆 BXH Văn Phòng
@@ -826,6 +826,9 @@
         <!-- START OVERLAY -->
         <div class="canvas-overlay" id="startOverlay">
           <div class="overlay-title">GAME RẮN SĂN RƯƠNG</div>
+          <div id="guestNotice" class="overlay-subtitle hidden" style="width: 92%; margin-bottom: 12px; padding: 9px 11px; border: 1px solid rgba(245, 158, 11, .65); border-radius: 10px; background: rgba(245, 158, 11, .12); color: #fff;">
+            Chơi thử 1 lượt không cần đăng nhập. Thành tích chưa được lưu. Đăng nhập và hoàn thành Quiz để lưu thành tích, nhận thưởng.
+          </div>
           <div class="overlay-subtitle" style="text-align: left; display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; width: 92%;">
             <div>• Ăn rương để mở khóa các thông điệp về Learning Compass.</div>
             <div>• Trò chơi kết thúc khi bạn va phải chướng ngại vật - là đuôi của bạn hoặc 4 cạnh tường thành.</div>
@@ -1106,18 +1109,27 @@
        ========================================== */
     const GRID_SIZE = 20;
     const CELL_SIZE = 18; // 20x20 grid in 360x360 canvas
-    const GAME_BASE_SPEED_MS = 110;
+    const GAME_BASE_SPEED_MS = 95;
     const GAME_SAFE_CHESTS = 4;
     const GAME_CHESTS_PER_SPEEDUP = 2;
     const GAME_SPEED_STEP_MS = 10;
     const GAME_MIN_SPEED_MS = 16;
-    const GAME_MODE = new URLSearchParams(window.location.search).get('mode') === 'test' ? 'test' : 'production';
+    const GAME_PARAMS = new URLSearchParams(window.location.search);
+    const GAME_MODE = GAME_PARAMS.get('mode') === 'test' ? 'test' : 'production';
+    const GUEST_MODE = GAME_PARAMS.get('guest') === '1';
+    const GUEST_SCORE_KEY = 'minigame_guest_pending_score';
     let currentRunToken = null;
     let backendLeaderboard = [];
     let backendUserId = null;
     let startPending = false;
 
     async function startBackendRun() {
+      if (GUEST_MODE) {
+        if (gameState.playsLeft < 1) throw new Error('NO_GUEST_PLAY_LEFT');
+        gameState.playsLeft -= 1;
+        updateHUD();
+        return;
+      }
       const response = await fetch('/api/minigame/runs', { method: 'POST', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'RUN_START_FAILED');
       const data = await response.json();
@@ -1129,6 +1141,11 @@
     }
 
     async function finishBackendRun(score) {
+      if (GUEST_MODE) {
+        const pendingScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+        window.localStorage.setItem(GUEST_SCORE_KEY, String(Math.max(pendingScore, score)));
+        return;
+      }
       if (!currentRunToken) return;
       const response = await fetch('/api/minigame/runs/finish', {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-MinGame-Mode': GAME_MODE },
@@ -1147,6 +1164,20 @@
       backendUserId = data.user.id;
       gameState.tasks = data.tasks.map(task => ({ ...task, progress: Number(task.progress || 0), reqTime: Number(task.seconds || 0) }));
       backendLeaderboard = data.leaderboard || [];
+      const pendingGuestScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+      if (pendingGuestScore > 0) {
+        const imported = await fetch('/api/minigame/guest-score', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ score: pendingGuestScore }),
+        });
+        if (imported.ok) {
+          const result = await imported.json();
+          gameState.highScore = Math.max(gameState.highScore, Number(result.high_score || 0));
+          window.localStorage.removeItem(GUEST_SCORE_KEY);
+        }
+      }
       (data.claimed || []).forEach(task => {
         window.parent.postMessage({ type: 'GARENA_TASK_COMPLETED', title: task.title, reward: task.reward }, window.location.origin);
       });
@@ -1184,18 +1215,25 @@
       lastResetDate: new Date().toISOString().slice(0, 10),
       unlockedTipsHistory: [],
       tasks: [
-        { id: 'task_first_login', title: '👋 Đăng nhập lần đầu', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
-        { id: 'task_onboarding', title: '🧭 Hoàn thành Onboarding Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/' },
+        { id: 'task_first_login', title: '👋 Hoàn tất đăng nhập lần đầu', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
         { id: 'task_daily_login', title: '📅 Đăng nhập hằng ngày', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED' },
         { id: 'task_fav_3', title: '⭐ Yêu thích 3 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' },
-        { id: 'task_1', title: '🌐 Lướt Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
-        { id: 'task_2', title: '📚 Lướt Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
+        { id: 'task_1', title: '🌐 Khám phá Trang chủ 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/' },
+        { id: 'task_2', title: '📚 Khám phá Thư viện đào tạo 30s', reward: 1, reqTime: 30, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_3', title: '📖 Xem 1 khóa học bất kỳ 15s', reward: 1, reqTime: 15, progress: 0, status: 'NOT_STARTED', path: '/library' },
         { id: 'task_4', title: '✅ Đánh dấu hoàn thành 1 khóa học', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '/library' }
       ]
     };
 
     async function loadSavedState() {
+      if (GUEST_MODE) {
+        gameState.playsLeft = 1;
+        gameState.highScore = Number(window.localStorage.getItem(GUEST_SCORE_KEY) || 0);
+        gameState.tasks = [
+          { id: 'task_first_login', title: '👋 Đăng nhập và hoàn thành Quiz', reward: 1, reqTime: 0, progress: 0, status: 'NOT_STARTED', path: '__login__' },
+        ];
+        return;
+      }
       await refreshBackendState();
       const userLb = officeLeaderboard.find(x => x.isUser);
       if (userLb) userLb.score = gameState.highScore;
@@ -1272,7 +1310,10 @@
       notice.textContent = 'Tăng tốc ⏩';
       notice.classList.remove('hidden');
       if (speedNoticeTimer) window.clearTimeout(speedNoticeTimer);
-      speedNoticeTimer = window.setTimeout(() => notice.classList.add('hidden'), 3000);
+      speedNoticeTimer = window.setTimeout(() => {
+        notice.classList.add('hidden');
+        speedNoticeTimer = null;
+      }, 2000);
     }
 
     function spawnChest() {
@@ -1414,6 +1455,11 @@
       document.getElementById('finalScore').textContent = `${currentScore} XP`;
       document.getElementById('finalHighScore').textContent = `${gameState.highScore} XP ${isNewRecord ? '🎉 (Kỷ Lục Mới!)' : ''}`;
       document.getElementById('gameOverSubtitle').textContent = `Chiến binh Garena đã xuất sắc thu thập được: ${currentScore} XP!`;
+      if (GUEST_MODE) {
+        document.getElementById('gameOverSubtitle').textContent = `Bạn đạt ${currentScore} XP ở lượt chơi thử. Đăng nhập và hoàn thành Quiz để lưu thành tích.`;
+        document.getElementById('btnReplay').textContent = 'ĐĂNG NHẬP VÀ LƯU THÀNH TÍCH';
+        document.getElementById('btnGameOverMissions').classList.add('hidden');
+      }
 
       showOverlay('gameOverOverlay');
     }
@@ -1689,7 +1735,13 @@
         `;
 
         if (isReady) {
-          card.querySelector('button').addEventListener('click', () => window.parent.postMessage({ type: 'GARENA_NAVIGATE', path: task.path }, window.location.origin));
+          card.querySelector('button').addEventListener('click', () => {
+            if (task.path === '__login__') {
+              window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+              return;
+            }
+            window.parent.postMessage({ type: 'GARENA_NAVIGATE', path: task.path }, window.location.origin);
+          });
         }
 
         container.appendChild(card);
@@ -1700,6 +1752,10 @@
     function renderLeaderboard() {
       const container = document.getElementById('leaderboardListContainer');
       container.innerHTML = '';
+      if (GUEST_MODE) {
+        container.innerHTML = '<div class="mission-card"><div class="mission-info"><div class="mission-title">Thành tích chơi thử chưa vào bảng xếp hạng</div><div class="mission-reward">Đăng nhập và hoàn thành Quiz để lưu kết quả.</div></div></div>';
+        return;
+      }
 
       const sorted = backendLeaderboard.length ? backendLeaderboard.map(item => ({ ...item, name: item.full_name || item.email, dept: item.team || 'Learning Journey', isUser: item.id === backendUserId })) : [...officeLeaderboard];
 
@@ -1758,7 +1814,7 @@
     });
 
     setInterval(() => {
-      if (document.visibilityState !== 'visible') return;
+      if (GUEST_MODE || document.visibilityState !== 'visible') return;
       refreshBackendState().then(() => {
         renderMissions();
         updateHUD();
@@ -1907,9 +1963,19 @@
 
     // Button Actions
     document.getElementById('btnStartGame').addEventListener('click', startGame);
-    document.getElementById('btnReplay').addEventListener('click', startGame);
+    document.getElementById('btnReplay').addEventListener('click', () => {
+      if (GUEST_MODE) {
+        window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+        return;
+      }
+      startGame();
+    });
 
     document.getElementById('btnGoToMissions').addEventListener('click', () => {
+      if (GUEST_MODE) {
+        window.parent.postMessage({ type: 'GARENA_LOGIN' }, window.location.origin);
+        return;
+      }
       tabMissionsBtn.click();
     });
 
@@ -1921,6 +1987,9 @@
        INITIALIZATION
        ========================================== */
     loadAssets();
+    if (GUEST_MODE) {
+      document.getElementById('guestNotice').classList.remove('hidden');
+    }
     loadSavedState().then(() => {
       renderMissions();
       renderLeaderboard();

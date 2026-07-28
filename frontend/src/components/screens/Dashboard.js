@@ -12,6 +12,7 @@ import {
   applyCourseFilters,
   countActiveCourseFilters,
   defaultCourseFilters,
+  getVisibleFilterOptions,
   getCourseFilterOptions,
 } from './CatalogCalendar';
 import { getRecommendations } from '@/lib/mockApi';
@@ -356,6 +357,7 @@ function MyLearningSection({ registeredCourses, completedCourses, reservedCourse
   const active = groups[activeTab];
   const allCourses = [...registeredCourses, ...completedCourses, ...reservedCourses, ...favoriteCourses];
   const filterOptions = getCourseFilterOptions(allCourses);
+  const visibleFilterOptions = getVisibleFilterOptions(active.courses, filters, filterOptions);
   const activeFilterCount = countActiveCourseFilters(filters);
   const visibleCourses = applyCourseFilters(active.courses, filters, user);
 
@@ -367,7 +369,7 @@ function MyLearningSection({ registeredCourses, completedCourses, reservedCourse
     open ? React.createElement(React.Fragment, null,
       React.createElement("div", { className: "my-learning-tabs", role: "tablist" }, Object.entries(groups).map(([key, group]) =>
         React.createElement("button", { key, type: "button", role: "tab", "aria-selected": activeTab === key, className: activeTab === key ? "my-learning-tab is-active" : "my-learning-tab", onClick: () => setActiveTab(key) }, `${group.label} (${group.courses.length})`))),
-      React.createElement(CourseSearchFilters, { filters, setFilters, options: filterOptions, activeFilterCount }),
+      React.createElement(CourseSearchFilters, { filters, setFilters, options: visibleFilterOptions, activeFilterCount }),
       visibleCourses.length
         ? React.createElement("div", { className: "my-learning-list" }, visibleCourses.map((course) => React.createElement(SimpleCourseRow, { key: course._id || course.course_id, course, tab: activeTab, onOpenCourse })))
         : React.createElement("div", { className: "u-card my-learning-empty" }, active.courses.length ? "Không có khóa học phù hợp với bộ lọc." : "Chưa có dữ liệu.")) : null

@@ -5,7 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
 import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
-import { SKILL_OPTIONS, skillLabel } from '@/lib/skillCatalog';
+import { SKILL_OPTIONS } from '@/lib/skillCatalog';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -101,7 +101,8 @@ const COURSE_STATUSES = [
       rating: c.rating == null ? "" : parseFloat(c.rating),
       rank_targets: toList(c.rank_targets),
       role_targets: toList(c.role_targets),
-      skill_tags: [...new Set(toList(c.skill_tags).map(skillLabel).filter(Boolean))],
+      // Keep legacy course tags as stored; admins can migrate them deliberately.
+      skill_tags: [...new Set(toList(c.skill_tags).filter(Boolean))],
       xp: c.xp_reward || 0,
       xp_reward: c.xp_reward || 0,
       is_active: Boolean(c.is_active),

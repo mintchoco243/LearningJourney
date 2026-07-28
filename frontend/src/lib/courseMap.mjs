@@ -105,7 +105,6 @@ export function hasFeaturedTestimonial(row) {
 }
 
 export function publicCourseRating(row) {
-  if (!hasFeaturedTestimonial(row)) return null;
   const rating = Number(row.rating);
   return Number.isFinite(rating) && rating > 0 ? rating : null;
 }

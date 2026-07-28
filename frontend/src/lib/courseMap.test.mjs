@@ -58,7 +58,7 @@ assert.equal(card.format, "elearning");
 assert.equal(card.duration_minutes, 90);
 assert.equal(card.url, "#");
 assert.equal(card.course_status, "open");
-assert.equal(mapCourseToCard({ id: "row-003", rating: "4.9" }).rating, null);
+assert.equal(mapCourseToCard({ id: "row-003", rating: "4.9" }).rating, 4.9);
 assert.equal(mapCourseToCard({ id: "row-004", rating: "4.9", has_featured_testimonial: true }).rating, 4.9);
 
 // course -> card: ended status carries material_url through for the "Xem tài liệu" CTA

@@ -71,12 +71,11 @@ User mới bắt đầu với **0 lượt chơi**. Hệ thống có 2 nhiệm v�
 
 | Task ID | Tên Nhiệm Vụ | Thời Gian / Điều Kiện | Phần Thưởng | Tự Động Reset |
 | :--- | :--- | :--- | :--- | :--- |
-| `task_first_login` | 👋 Đăng nhập lần đầu | Lần đầu vào hệ thống | +1 lượt chơi | Không reset |
-| `task_onboarding` | 🧭 Hoàn thành Onboarding Quiz | Hoàn thành quiz | +1 lượt chơi | Không reset |
+| `task_first_login` | 👋 Hoàn tất đăng nhập lần đầu | Đăng nhập và hoàn thành Onboarding Quiz | +1 lượt chơi | Không reset |
 | `task_daily_login` | 📅 Đăng nhập hàng ngày | Mỗi ngày vào web | +1 lượt chơi | Tự động hoàn thành mỗi ngày |
 | `task_fav_3` | ⭐ Yêu thích 3 khóa học bất kỳ | Yêu thích 3 khóa trong ngày | +1 lượt chơi | Hàng ngày |
-| `task_1` | 🌐 Lướt Trang chủ 30s | 30 giây | +1 lượt chơi | Hàng ngày |
-| `task_2` | 📚 Lướt Thư viện đào tạo 30s | 30 giây | +1 lượt chơi | Hàng ngày |
+| `task_1` | 🌐 Khám phá Trang chủ 30s | 30 giây | +1 lượt chơi | Hàng ngày |
+| `task_2` | 📚 Khám phá Thư viện đào tạo 30s | 30 giây | +1 lượt chơi | Hàng ngày |
 | `task_3` | 📖 Xem 1 khóa học bất kỳ 15s | 15 giây | +1 lượt chơi | Hàng ngày |
 | `task_4` | ✅ Đánh dấu hoàn thành 1 khóa học | Tức thì khi xong | +1 lượt chơi | Hàng ngày |
 

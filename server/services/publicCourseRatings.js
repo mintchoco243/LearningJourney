@@ -33,7 +33,7 @@ export async function attachPublicCourseRatings(rows, getCourseId = (row) => row
       ...row,
       featured_testimonial_count: featuredCount,
       has_featured_testimonial: featuredCount > 0,
-      rating: featuredCount > 0 ? normalizeRating(row.rating) : null,
+      rating: normalizeRating(row.rating),
     };
   });
 }

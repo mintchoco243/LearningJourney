@@ -5,12 +5,11 @@ import { query, withTransaction } from "../db.js";
 export const minigameRouter = express.Router();
 
 const TASKS = [
-  { id: "task_first_login", title: "Đăng nhập lần đầu", reward: 1, reset: "never" },
-  { id: "task_onboarding", title: "Hoàn thành Onboarding Quiz", reward: 1, path: "/", reset: "never" },
+  { id: "task_first_login", title: "Hoàn tất đăng nhập lần đầu", reward: 1, reset: "never" },
   { id: "task_daily_login", title: "Đăng nhập hằng ngày", reward: 1 },
   { id: "task_fav_3", title: "Yêu thích 3 khóa học", reward: 1, path: "/library" },
-  { id: "task_1", title: "Lướt Trang chủ 30s", reward: 1, activity: "home", seconds: 30, path: "/" },
-  { id: "task_2", title: "Lướt Thư viện đào tạo 30s", reward: 1, activity: "library", seconds: 30, path: "/library" },
+  { id: "task_1", title: "Khám phá Trang chủ 30s", reward: 1, activity: "home", seconds: 30, path: "/" },
+  { id: "task_2", title: "Khám phá Thư viện đào tạo 30s", reward: 1, activity: "library", seconds: 30, path: "/library" },
   { id: "task_3", title: "Xem 1 khóa học bất kỳ 15s", reward: 1, activity: "course", seconds: 15, path: "/library" },
   { id: "task_4", title: "Đánh dấu hoàn thành 1 khóa học", reward: 1, path: "/library" },
 ];
@@ -83,8 +82,7 @@ async function taskState(user, mode = "production") {
   ]);
   const progressFor = (task) => Number(progress[taskStorageKey(task, today)] || 0);
   const available = {
-    task_first_login: "READY_TO_CLAIM",
-    task_onboarding: user.onboarding_done ? "READY_TO_CLAIM" : "NOT_STARTED",
+    task_first_login: user.onboarding_done ? "READY_TO_CLAIM" : "NOT_STARTED",
     task_daily_login: "READY_TO_CLAIM",
     task_fav_3: Number(favorites.rows[0]?.count || 0) >= 3 ? "READY_TO_CLAIM" : "NOT_STARTED",
     task_1: progressFor(TASKS.find((task) => task.id === "task_1")) >= 30 ? "READY_TO_CLAIM" : "NOT_STARTED",
@@ -172,6 +170,30 @@ minigameRouter.get("/bootstrap", async (req, res, next) => {
       claimed: synced.claimed || [],
       leaderboard: leaderboard.rows,
     });
+  } catch (error) { next(error); }
+});
+
+minigameRouter.post("/guest-score", async (req, res, next) => {
+  try {
+    const score = Number(req.body?.score);
+    if (suspiciousScore(score)) return res.status(400).json({ error: "INVALID_SCORE" });
+    const result = await withTransaction(async (client) => {
+      const locked = await client.query("SELECT * FROM users WHERE id = $1 FOR UPDATE", [req.user.id]);
+      const user = locked.rows[0];
+      if (!user) return null;
+      const state = claimState(user.minigame_task_claims);
+      if (state.claims.guest_demo_imported) {
+        return { high_score: Number(user.minigame_high_score || 0), imported: false };
+      }
+      state.claims.guest_demo_imported = new Date().toISOString();
+      await client.query(
+        "UPDATE users SET minigame_high_score = GREATEST(minigame_high_score, $2), minigame_total_runs = minigame_total_runs + 1, minigame_task_claims = $3 WHERE id = $1",
+        [req.user.id, score, JSON.stringify(state)],
+      );
+      return { high_score: Math.max(Number(user.minigame_high_score || 0), score), imported: true };
+    });
+    if (!result) return res.status(404).json({ error: "USER_NOT_FOUND" });
+    res.json(result);
   } catch (error) { next(error); }
 });
 
