@@ -1,5 +1,6 @@
 import express from "express";
 import { query } from "../../db.js";
+import { isAllowedGarenaEmail } from "../../lib/emailPolicy.js";
 
 export const adminAccountsRouter = express.Router();
 
@@ -31,8 +32,8 @@ adminAccountsRouter.post("/", async (req, res, next) => {
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
-    if (!cleanEmail.endsWith("@garena.vn")) {
-      return res.status(400).json({ error: "EMAIL_MUST_USE_GARENA_DOMAIN" });
+    if (!isAllowedGarenaEmail(cleanEmail)) {
+      return res.status(400).json({ error: "EMAIL_NOT_ALLOWED" });
     }
 
     const validRoles = new Set(["super_admin", "admin", "editor", "ld_admin"]);

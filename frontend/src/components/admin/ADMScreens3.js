@@ -362,6 +362,7 @@ const D = ADM_DATA;
   function AddAdminForm({ onClose, onAdd, error }) {
     const [form, setForm] = React.useState({ email: "", full_name: "", role: "ld_admin" });
     const [saving, setSaving] = React.useState(false);
+    const emailAllowed = /^[^@]+@garena\.vn$/i.test(form.email.trim()) && !/(?:_ctv|_ext)@garena\.vn$/i.test(form.email.trim());
     function set(k, v) { setForm(f => ({ ...f, [k]: v })); }
     async function handleAdd() { setSaving(true); await onAdd(form); setSaving(false); }
 
@@ -389,7 +390,7 @@ const D = ADM_DATA;
         </div>
         <div style={{ display: "flex", gap: 9, justifyContent: "flex-end" }}>
           <button className="adm-btn adm-btn--sec" onClick={onClose} disabled={saving}>Huỷ</button>
-          <button className="adm-btn adm-btn--primary" onClick={handleAdd} disabled={saving || !form.email.includes("@garena.vn")}>
+          <button className="adm-btn adm-btn--primary" onClick={handleAdd} disabled={saving || !emailAllowed}>
             {saving ? "Đang lưu..." : <><Icon name="check" size={13} /> Thêm vào whitelist</>}
           </button>
         </div>
