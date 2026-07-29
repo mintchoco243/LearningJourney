@@ -4,8 +4,12 @@ import { isAllowedGarenaEmail } from "./emailPolicy.js";
 assert.equal(isAllowedGarenaEmail("employee@garena.vn"), true);
 assert.equal(isAllowedGarenaEmail("Employee@GARENA.VN"), true);
 assert.equal(isAllowedGarenaEmail(" employee@garena.vn "), true);
+assert.equal(isAllowedGarenaEmail("employee@sea.com"), true);
+assert.equal(isAllowedGarenaEmail("Employee@SEA.COM"), true);
 assert.equal(isAllowedGarenaEmail("employee_ctv@garena.vn"), false);
 assert.equal(isAllowedGarenaEmail("employee_ext@garena.vn"), false);
+assert.equal(isAllowedGarenaEmail("employee_ctv@sea.com"), false);
+assert.equal(isAllowedGarenaEmail("employee_ext@sea.com"), false);
 assert.equal(isAllowedGarenaEmail("employee_ctv2@garena.vn"), true);
 assert.equal(isAllowedGarenaEmail("employee@gmail.com"), false);
 

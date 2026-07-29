@@ -274,14 +274,14 @@ async function validateRows(type, inputRows) {
 
     if (type === "admin-accounts") {
       if (!row.email) errors.push("email is required");
-      if (row.email && !isAllowedGarenaEmail(row.email)) errors.push("email must be an eligible @garena.vn address");
+      if (row.email && !isAllowedGarenaEmail(row.email)) errors.push("email must be an eligible @garena.vn or @sea.com address");
       if (!validAdminRoles.has(row.role)) errors.push("role must be super_admin/admin/editor");
       if (boolValue(row.is_active) === null) errors.push("is_active must be true/false");
     }
 
     if (type === "users") {
       if (!row.email) errors.push("email is required");
-      if (row.email && !isAllowedGarenaEmail(row.email)) errors.push("email must be an eligible @garena.vn address");
+      if (row.email && !isAllowedGarenaEmail(row.email)) errors.push("email must be an eligible @garena.vn or @sea.com address");
       if (!row.full_name) errors.push("full_name is required");
     }
 
