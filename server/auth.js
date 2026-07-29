@@ -60,7 +60,7 @@ export async function getGoogleProfile(code) {
 
 export async function upsertUser(profile) {
   if (!isGarenaEmail(profile.email)) {
-    const error = new Error("Only eligible @garena.vn accounts are allowed.");
+    const error = new Error("Only eligible @garena.vn or @sea.com accounts are allowed.");
     error.status = 401;
     throw error;
   }
