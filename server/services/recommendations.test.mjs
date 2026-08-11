@@ -21,7 +21,7 @@ test("prioritizes exact rank and role over All targets", () => {
   assert.deepEqual(result.map((course) => course.id), ["exact", "all"]);
 });
 
-test("returns at most three HR recommendations with different skills", () => {
+test("prefers different skills before backfilling HR recommendations", () => {
   const courses = [
     { ...base, id: "people-1", skill_tags: ["People"], rank_targets: ["Senior Associate"], role_targets: ["HRBP"] },
     { ...base, id: "people-2", skill_tags: ["People"], rank_targets: ["Senior Associate"], role_targets: ["HRBP"] },
@@ -31,7 +31,7 @@ test("returns at most three HR recommendations with different skills", () => {
 
   const result = selectHRRecommendedCourses(courses, "Senior Associate", ["HR", "HRBP"]);
 
-  assert.deepEqual(result.map((course) => course.id), ["people-1", "language", "data"]);
+  assert.deepEqual(result.map((course) => course.id), ["people-1", "data", "people-2"]);
 });
 
 test("does not cross-match ranks that only share part of their names", () => {
@@ -56,6 +56,40 @@ test("matches canonical rank ids to their full rank labels", () => {
   const result = selectHRRecommendedCourses(courses, "Senior Associate", ["HR"]);
 
   assert.deepEqual(result.map((course) => course.id), ["rank-id"]);
+});
+
+test("prioritizes exact rank over All even when All has a higher rating", () => {
+  const courses = [
+    { ...base, id: "all-high-rating", rating: 5, skill_tags: ["Data / BA"], rank_targets: ["All"], role_targets: ["All"] },
+    { ...base, id: "exact-low-rating", is_hr_recommended: false, rating: 1, skill_tags: ["Data / BA"], rank_targets: ["Senior Associate"], role_targets: ["All"] },
+  ];
+  const user = { rank: "Senior Associate", role: "HR", team: "HRBP", focus_skills: ["Data / BA"] };
+
+  const result = buildRecommendationsForUser(courses, user);
+
+  assert.equal(result.quiz_skill_courses[0].id, "exact-low-rating");
+  assert.equal(result.courses[0].id, "exact-low-rating");
+});
+
+test("deprioritizes Language and Other while keeping mixed-skill courses eligible", () => {
+  const course = (id, skill_tags, rating) => ({
+    ...base,
+    id,
+    rating,
+    is_hr_recommended: false,
+    skill_tags,
+    rank_targets: ["Senior Associate"],
+    role_targets: ["HRBP"],
+  });
+  const user = { rank: "Senior Associate", role: "HR", team: "HRBP", focus_skills: [] };
+  const result = buildRecommendationsForUser([
+    course("language", ["Language"], 5),
+    course("other", ["Other"], 5),
+    course("mixed", ["Data / BA", "Language"], 3),
+    course("data", ["Data / BA"], 1),
+  ], user);
+
+  assert.deepEqual(result.fallback_courses.map((item) => item.id), ["mixed", "data", "language", "other"]);
 });
 
 test("backfills repeated skills instead of leaving valid HR slots empty", () => {
@@ -96,7 +130,7 @@ test("fills up to six recommendations with valid catalog fallbacks", () => {
 
   assert.equal(result.courses.length, 6);
   assert.deepEqual(result.quiz_skill_courses.map((item) => item.id), ["people", "data", "ai"]);
-  assert.deepEqual(result.fallback_courses.map((item) => item.id), ["communication", "language", "management"]);
+  assert.deepEqual(result.fallback_courses.map((item) => item.id), ["communication", "management", "language"]);
   assert.ok(!result.courses.some((item) => item.id === "wrong-rank"));
 });
 
