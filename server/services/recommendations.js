@@ -11,6 +11,7 @@ const RANK_ALIASES = {
 };
 
 const MAX_RECOMMENDATIONS = 6;
+const LOW_PRIORITY_SKILLS = new Set(["language", "other", "others"]);
 
 function normalize(value) {
   return String(value || "")
@@ -82,7 +83,17 @@ function compareRatingThenDate(a, b) {
   return String(a.id).localeCompare(String(b.id));
 }
 
-function compareQuiz(a, b) {
+function rankFitScore(course, rankValues) {
+  const rankExact = targetIsExact(course.rank_targets, rankValues, { rank: true });
+  const rankWildcard = targetIsWildcard(course.rank_targets);
+  return rankExact ? 2 : rankWildcard ? 0 : -1;
+}
+
+function compareQuiz(a, b, rankValues) {
+  const rankDiff = rankFitScore(b, rankValues) - rankFitScore(a, rankValues);
+  if (rankDiff) return rankDiff;
+  const skillDiff = skillPriorityScore(b) - skillPriorityScore(a);
+  if (skillDiff) return skillDiff;
   const hrDiff = Number(Boolean(b.is_hr_recommended)) - Number(Boolean(a.is_hr_recommended));
   return hrDiff || compareRatingThenDate(a, b);
 }
@@ -108,25 +119,49 @@ function fitScore(course, rankValues, roleValues) {
   // Exact rank is weighted above exact role, then wildcard matches. This keeps
   // the strongest match (exact rank + exact role) first without changing the
   // existing eligibility rules.
-  const rankExact = targetIsExact(course.rank_targets, rankValues, { rank: true });
   const roleExact = targetIsExact(course.role_targets, roleValues);
-  const rankWildcard = targetIsWildcard(course.rank_targets);
   const roleWildcard = targetIsWildcard(course.role_targets);
-  return (rankExact ? 2 : rankWildcard ? 0 : -1) + (roleExact ? 1 : roleWildcard ? 0 : -1);
+  return rankFitScore(course, rankValues) + (roleExact ? 1 : roleWildcard ? 0 : -1);
 }
 
 function courseSkillKeys(course) {
   return new Set(asList(course.skill_tags).map((tag) => canonicalSkill(tag) || normalize(tag)).filter(Boolean));
 }
 
+function skillPriorityScore(course) {
+  const skills = courseSkillKeys(course);
+  if (!skills.size) return 0;
+  return [...skills].some((skill) => !LOW_PRIORITY_SKILLS.has(normalize(skill))) ? 1 : 0;
+}
+
+function compareTargeted(a, b, rankValues, roleValues) {
+  const fitDiff = fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues);
+  if (fitDiff) return fitDiff;
+  const skillDiff = skillPriorityScore(b) - skillPriorityScore(a);
+  if (skillDiff) return skillDiff;
+  const hrDiff = Number(Boolean(b.is_hr_recommended)) - Number(Boolean(a.is_hr_recommended));
+  return hrDiff || compareRatingThenDate(a, b);
+}
+
+function compareOverall(a, b, rankValues) {
+  const rankDiff = rankFitScore(b, rankValues) - rankFitScore(a, rankValues);
+  if (rankDiff) return rankDiff;
+  const skillDiff = skillPriorityScore(b) - skillPriorityScore(a);
+  if (skillDiff) return skillDiff;
+  const hrDiff = Number(Boolean(b.is_hr_recommended)) - Number(Boolean(a.is_hr_recommended));
+  return hrDiff || compareRatingThenDate(a, b);
+}
+
 function selectWithSkillDiversity(ranked, limit) {
   const selected = [];
   const selectedIds = new Set();
   const usedSkills = new Set();
+  const hasPreferredSkill = ranked.some((course) => skillPriorityScore(course) > 0);
 
   // First pass prefers different skills. Diversity is a ranking preference,
   // not a hard filter that is allowed to leave recommendation slots empty.
   for (const course of ranked) {
+    if (hasPreferredSkill && skillPriorityScore(course) === 0) continue;
     const skills = courseSkillKeys(course);
     if (!skills.size || ![...skills].some((skill) => !usedSkills.has(skill))) continue;
     selected.push(course);
@@ -152,7 +187,7 @@ export function selectHRRecommendedCourses(candidates, rankValues, roleValues, u
     .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
     .filter((course) => targetMatches(course.role_targets, roleValues))
     .filter((course) => !usedIds.has(String(course.id)))
-    .sort((a, b) => fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues) || compareRatingThenDate(a, b));
+    .sort((a, b) => compareTargeted(a, b, rankValues, roleValues));
 
   return selectWithSkillDiversity(ranked, limit);
 }
@@ -171,7 +206,7 @@ function selectFallbackCourses(candidates, rankValues, roleValues, usedIds, limi
     .filter((course) => !usedIds.has(String(course.id)))
     .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
     .filter((course) => targetMatches(course.role_targets, roleValues))
-    .sort((a, b) => fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues) || compareQuiz(a, b));
+    .sort((a, b) => compareTargeted(a, b, rankValues, roleValues));
   return selectWithSkillDiversity(ranked, limit);
 }
 
@@ -189,7 +224,7 @@ export function buildRecommendationsForUser(courses, user, completedIds = new Se
     const matches = candidates
       .filter((course) => asList(course.skill_tags).some((tag) => canonicalSkill(tag) === skillKey))
       .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
-      .sort(compareQuiz);
+      .sort((a, b) => compareQuiz(a, b, rankValues));
     const selected = matches.find((course) => !usedIds.has(String(course.id)));
     if (selected) {
       usedIds.add(String(selected.id));
@@ -213,12 +248,14 @@ export function buildRecommendationsForUser(courses, user, completedIds = new Se
     usedIds,
     MAX_RECOMMENDATIONS - quizSkillCourses.length - hrRecommendedCourses.length,
   );
+  const allCourses = [...quizSkillCourses, ...hrRecommendedCourses, ...fallbackCourses]
+    .sort((a, b) => compareOverall(a, b, rankValues));
 
   return {
     quiz_skill_courses: quizSkillCourses,
     hr_recommended_courses: hrRecommendedCourses,
     fallback_courses: fallbackCourses,
-    courses: [...quizSkillCourses, ...hrRecommendedCourses, ...fallbackCourses],
+    courses: allCourses,
   };
 }
 
@@ -253,6 +290,7 @@ export async function getRecommendationsForUser(userId) {
     quiz_skill_courses: quizWithRatings,
     hr_recommended_courses: hrWithRatings,
     fallback_courses: fallbackWithRatings,
-    courses: [...quizWithRatings, ...hrWithRatings, ...fallbackWithRatings],
+    courses: [...quizWithRatings, ...hrWithRatings, ...fallbackWithRatings]
+      .sort((a, b) => compareOverall(a, b, user.rank)),
   };
 }
