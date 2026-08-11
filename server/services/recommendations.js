@@ -4,11 +4,13 @@ import { attachPublicCourseRatings } from "./publicCourseRatings.js";
 
 const RANK_ALIASES = {
   rank_01: ["associate", "tan binh", "initiate"],
-  rank_02: ["senior associate", "senior", "hoc viec", "apprentice"],
+  rank_02: ["senior associate", "hoc viec", "apprentice"],
   rank_03: ["assistant manager", "lead", "thanh thao", "adept"],
   rank_04: ["manager", "chuyen gia", "specialist"],
   rank_05: ["senior manager", "bac thay", "master"],
 };
+
+const MAX_RECOMMENDATIONS = 6;
 
 function normalize(value) {
   return String(value || "")
@@ -48,6 +50,10 @@ function targetMatches(targets, userValues, { rank = false } = {}) {
   const values = asList(userValues).flatMap((value) => rank ? rankTokens(value) : [normalize(value)]).filter(Boolean);
   if (!values.length) return false;
   if (targetList.includes("all")) return true;
+  if (rank) {
+    const targetTokens = new Set(targetList.flatMap(rankTokens));
+    return values.some((value) => targetTokens.has(value));
+  }
   return targetList.some((target) => values.includes(target) || values.some((value) => target.includes(value) || value.includes(target)));
 }
 
@@ -87,6 +93,10 @@ function targetIsExact(targets, userValues, { rank = false } = {}) {
   const values = asList(userValues)
     .flatMap((value) => rank ? rankTokens(value) : [normalize(value)])
     .filter(Boolean);
+  if (rank) {
+    const targetTokens = new Set(targetList.flatMap(rankTokens));
+    return values.some((value) => targetTokens.has(value));
+  }
   return targetList.some((target) => values.includes(target));
 }
 
@@ -109,7 +119,34 @@ function courseSkillKeys(course) {
   return new Set(asList(course.skill_tags).map((tag) => canonicalSkill(tag) || normalize(tag)).filter(Boolean));
 }
 
-export function selectHRRecommendedCourses(candidates, rankValues, roleValues, usedIds = new Set()) {
+function selectWithSkillDiversity(ranked, limit) {
+  const selected = [];
+  const selectedIds = new Set();
+  const usedSkills = new Set();
+
+  // First pass prefers different skills. Diversity is a ranking preference,
+  // not a hard filter that is allowed to leave recommendation slots empty.
+  for (const course of ranked) {
+    const skills = courseSkillKeys(course);
+    if (!skills.size || ![...skills].some((skill) => !usedSkills.has(skill))) continue;
+    selected.push(course);
+    selectedIds.add(String(course.id));
+    skills.forEach((skill) => usedSkills.add(skill));
+    if (selected.length === limit) return selected;
+  }
+
+  // Backfill with remaining valid courses, including repeated or missing
+  // skill tags, until the requested limit is reached.
+  for (const course of ranked) {
+    if (selectedIds.has(String(course.id))) continue;
+    selected.push(course);
+    if (selected.length === limit) break;
+  }
+  return selected;
+}
+
+export function selectHRRecommendedCourses(candidates, rankValues, roleValues, usedIds = new Set(), limit = 3) {
+  if (limit <= 0) return [];
   const ranked = candidates
     .filter((course) => Boolean(course.is_hr_recommended))
     .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
@@ -117,16 +154,7 @@ export function selectHRRecommendedCourses(candidates, rankValues, roleValues, u
     .filter((course) => !usedIds.has(String(course.id)))
     .sort((a, b) => fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues) || compareRatingThenDate(a, b));
 
-  const selected = [];
-  const usedSkills = new Set();
-  for (const course of ranked) {
-    const skills = courseSkillKeys(course);
-    if (!skills.size || ![...skills].some((skill) => !usedSkills.has(skill))) continue;
-    selected.push(course);
-    skills.forEach((skill) => usedSkills.add(skill));
-    if (selected.length === 3) break;
-  }
-  return selected;
+  return selectWithSkillDiversity(ranked, limit);
 }
 
 function eligible(course, completedIds, reservedIds) {
@@ -135,6 +163,63 @@ function eligible(course, completedIds, reservedIds) {
     !isEnded(course) &&
     !completedIds.has(String(course.id)) &&
     !reservedIds.has(String(course.id));
+}
+
+function selectFallbackCourses(candidates, rankValues, roleValues, usedIds, limit) {
+  if (limit <= 0) return [];
+  const ranked = candidates
+    .filter((course) => !usedIds.has(String(course.id)))
+    .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
+    .filter((course) => targetMatches(course.role_targets, roleValues))
+    .sort((a, b) => fitScore(b, rankValues, roleValues) - fitScore(a, rankValues, roleValues) || compareQuiz(a, b));
+  return selectWithSkillDiversity(ranked, limit);
+}
+
+export function buildRecommendationsForUser(courses, user, completedIds = new Set(), reservedIds = new Set()) {
+  const candidates = courses.filter((course) => eligible(course, completedIds, reservedIds));
+  const rankValues = user.rank;
+  const roleValues = [user.role, user.team];
+  const skills = asList(user.focus_skills).map((skill) => String(skill).trim()).filter(Boolean).slice(0, 3);
+  const usedIds = new Set();
+  const quizSkillCourses = [];
+
+  for (const skill of skills) {
+    const skillKey = canonicalSkill(skill);
+    if (!skillKey) continue;
+    const matches = candidates
+      .filter((course) => asList(course.skill_tags).some((tag) => canonicalSkill(tag) === skillKey))
+      .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
+      .sort(compareQuiz);
+    const selected = matches.find((course) => !usedIds.has(String(course.id)));
+    if (selected) {
+      usedIds.add(String(selected.id));
+      quizSkillCourses.push(selected);
+    }
+  }
+
+  const hrRecommendedCourses = selectHRRecommendedCourses(
+    candidates,
+    rankValues,
+    roleValues,
+    usedIds,
+    MAX_RECOMMENDATIONS - quizSkillCourses.length,
+  );
+  hrRecommendedCourses.forEach((course) => usedIds.add(String(course.id)));
+
+  const fallbackCourses = selectFallbackCourses(
+    candidates,
+    rankValues,
+    roleValues,
+    usedIds,
+    MAX_RECOMMENDATIONS - quizSkillCourses.length - hrRecommendedCourses.length,
+  );
+
+  return {
+    quiz_skill_courses: quizSkillCourses,
+    hr_recommended_courses: hrRecommendedCourses,
+    fallback_courses: fallbackCourses,
+    courses: [...quizSkillCourses, ...hrRecommendedCourses, ...fallbackCourses],
+  };
 }
 
 export async function getRecommendationsForUser(userId) {
@@ -156,36 +241,18 @@ export async function getRecommendationsForUser(userId) {
 
   const completedIds = new Set(completedResult.rows.map((row) => String(row.course_id)));
   const reservedIds = new Set(reservedResult.rows.map((row) => String(row.session_id)));
-  const candidates = coursesResult.rows.filter((course) => eligible(course, completedIds, reservedIds));
-  const rankValues = user.rank;
-  const roleValues = [user.role, user.team];
-  const skills = asList(user.focus_skills).map((skill) => String(skill).trim()).filter(Boolean).slice(0, 3);
-  const usedIds = new Set();
-  const quizSkillCourses = [];
+  const recommendations = buildRecommendationsForUser(coursesResult.rows, user, completedIds, reservedIds);
+  const { quiz_skill_courses: quizSkillCourses, hr_recommended_courses: hrRecommendedCourses, fallback_courses: fallbackCourses } = recommendations;
 
-  for (const skill of skills) {
-    const skillKey = canonicalSkill(skill);
-    if (!skillKey) continue;
-    const matches = candidates
-      .filter((course) => asList(course.skill_tags).some((tag) => canonicalSkill(tag) === skillKey))
-      .filter((course) => targetMatches(course.rank_targets, rankValues, { rank: true }))
-      .sort(compareQuiz);
-    const selected = matches.find((course) => !usedIds.has(String(course.id)));
-    if (selected) {
-      usedIds.add(String(selected.id));
-      quizSkillCourses.push(selected);
-    }
-  }
-
-  const hrRecommendedCourses = selectHRRecommendedCourses(candidates, rankValues, roleValues, usedIds);
-
-  const [quizWithRatings, hrWithRatings] = await Promise.all([
+  const [quizWithRatings, hrWithRatings, fallbackWithRatings] = await Promise.all([
     attachPublicCourseRatings(quizSkillCourses),
     attachPublicCourseRatings(hrRecommendedCourses),
+    attachPublicCourseRatings(fallbackCourses),
   ]);
   return {
     quiz_skill_courses: quizWithRatings,
     hr_recommended_courses: hrWithRatings,
-    courses: [...quizWithRatings, ...hrWithRatings],
+    fallback_courses: fallbackWithRatings,
+    courses: [...quizWithRatings, ...hrWithRatings, ...fallbackWithRatings],
   };
 }

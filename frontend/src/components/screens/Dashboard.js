@@ -240,7 +240,7 @@ export function Dashboard(props) {
   ].filter(Boolean);
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
-  const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], courses: [] });
+  const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], fallback_courses: [], courses: [] });
   const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {
@@ -253,7 +253,10 @@ export function Dashboard(props) {
 
   const quizCourses = recommendations.quiz_skill_courses || [];
   const hrCourses = recommendations.hr_recommended_courses || [];
-  const rankCourses = [...quizCourses, ...hrCourses];
+  const fallbackCourses = recommendations.fallback_courses || [];
+  const rankCourses = recommendations.courses?.length
+    ? recommendations.courses
+    : [...quizCourses, ...hrCourses, ...fallbackCourses];
   const reservationCourses = (user.reservation_details || []).map((item) => mapCourseToCard(item));
   const registeredCourses = reservationCourses.filter((course) => course.type === "scheduled");
   const reservedCourses = reservationCourses.filter((course) => course.type === "interest");
@@ -333,7 +336,7 @@ export function Dashboard(props) {
             React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có khóa gợi ý cho rank này."),
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))
         : React.createElement(React.Fragment, null,
-            React.createElement("div", { className: "rec-grid" }, [...quizCourses, ...hrCourses].map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
+            React.createElement("div", { className: "rec-grid" }, rankCourses.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse, showDate: true })))),
       progressTotal > 0 && React.createElement("div", { className: "dashboard-section-action" },
         React.createElement("button", { type: "button", className: "u-btn u-btn--ghost my-learning-section__toggle", onClick: () => props.onNav("library") }, "Khám phá toàn bộ thư viện →")),
 

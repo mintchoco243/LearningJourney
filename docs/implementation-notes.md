@@ -28,11 +28,13 @@ The header dropdown only exposes actions with working behavior: Profile,
 Theme, About, Rating, and Logout. Notification center and standalone Settings
 are deferred.
 
-## NOTE-005 — Recommendation can contain fewer than six courses
+## NOTE-005 — Recommendation fills up to six valid courses
 
-The recommendation service never fills empty slots with a course that does not
-match the requested skill/rank/role rules. Empty result slots are expected when
-the database has insufficient eligible courses.
+The recommendation service prioritizes focus-skill and HR-recommended courses,
+then fills remaining slots from the catalog with courses that still match the
+user's exact rank and role/team. It never fills a slot with an inactive, ended,
+completed, reserved, or targeting-mismatched course. Fewer than six results are
+expected only when the database has insufficient eligible courses.
 
 ## NOTE-006 — Course title cleanup is whitelist-based
 
