@@ -671,7 +671,7 @@ function formatCardDate(value) {
               const reviewerName = t.full_name || t.user_name || t.author || "Người học";
               const reviewerTeam = t.user_team || t.team || "";
               return React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
-                React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.content || t.quote) + "”"),
+                React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.applied_learning || "Chưa có chia sẻ về việc áp dụng.") + "”"),
                 React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + reviewerName + (reviewerTeam ? " · " + reviewerTeam : "")));
             })) : null,
           React.createElement(React.Fragment, null,
