@@ -16,6 +16,7 @@ import {
   getCourseFilterOptions,
 } from './CatalogCalendar';
 import { getRecommendations } from '@/lib/mockApi';
+import { apiFetchResponse } from '@/lib/apiClient';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
 import { SKILL_OPTIONS, getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
@@ -241,15 +242,23 @@ export function Dashboard(props) {
 
   const [showAvatarEdit, setShowAvatarEdit] = React.useState(false);
   const [recommendations, setRecommendations] = React.useState({ quiz_skill_courses: [], hr_recommended_courses: [], fallback_courses: [], courses: [] });
+  const [recommendationsLoading, setRecommendationsLoading] = React.useState(true);
+  const [recommendationsError, setRecommendationsError] = React.useState("");
+  const [recommendationReloadKey, setRecommendationReloadKey] = React.useState(0);
   const [requestCount, setRequestCount] = React.useState(0);
 
   React.useEffect(() => {
-    getRecommendations().then(setRecommendations);
-    fetch("/api/ld-requests/mine", { credentials: "include" })
+    getRecommendations()
+      .then(setRecommendations)
+      .catch((error) => {
+        if (error?.message !== "AUTH_REQUIRED") setRecommendationsError("Không tải được gợi ý khóa học.");
+      })
+      .finally(() => setRecommendationsLoading(false));
+    apiFetchResponse("/api/ld-requests/mine")
       .then((response) => response.ok ? response.json() : null)
       .then((data) => setRequestCount((data?.requests || []).filter((item) => ["new", "pending", "in_review"].includes(String(item.status || "").toLowerCase())).length))
       .catch(() => {});
-  }, []);
+  }, [recommendationReloadKey]);
 
   const quizCourses = recommendations.quiz_skill_courses || [];
   const hrCourses = recommendations.hr_recommended_courses || [];
@@ -331,7 +340,13 @@ export function Dashboard(props) {
       completedAllRankCourses && React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, lineHeight: 1.6, margin: "-6px 0 16px" } },
         React.createElement("div", { style: { color: "var(--ui-heading)", fontWeight: 700 } }, "Bạn đã hoàn thành các khóa gợi ý cho rank này."),
         React.createElement("div", null, "Khám phá thêm các khóa học khác khi bạn sẵn sàng.")),
-      progressTotal === 0
+      recommendationsError
+        ? React.createElement("div", { className: "u-card", style: { padding: 24, margin: "-4px 0 16px", color: "var(--ui-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } },
+            React.createElement("span", null, recommendationsError),
+            React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => { setRecommendationsError(""); setRecommendationsLoading(true); setRecommendationReloadKey((value) => value + 1); } }, "Thử lại"))
+        : recommendationsLoading
+        ? React.createElement("div", { className: "u-card", style: { padding: 24, color: "var(--ui-muted)" } }, "Đang tải gợi ý khóa học...")
+        : progressTotal === 0
         ? React.createElement("div", { className: "u-card", style: { padding: 24, background: "var(--rpg-panel)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" } },
             React.createElement("div", { style: { color: "var(--ui-muted)", fontSize: 14, fontWeight: 700 } }, "Chưa có khóa gợi ý cho rank này."),
             React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => props.onNav("library") }, "Xem tất cả các khóa"))

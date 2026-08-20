@@ -1131,6 +1131,9 @@
         return;
       }
       const response = await fetch('/api/minigame/runs', { method: 'POST', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (response.status === 401) {
+        window.parent.postMessage({ type: 'glh:auth-required' }, window.location.origin);
+      }
       if (!response.ok) throw new Error((await response.json().catch(() => ({}))).error || 'RUN_START_FAILED');
       const data = await response.json();
       currentRunToken = data.run_token;
@@ -1151,12 +1154,18 @@
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-MinGame-Mode': GAME_MODE },
         body: JSON.stringify({ run_token: currentRunToken, score }),
       });
+      if (response.status === 401) {
+        window.parent.postMessage({ type: 'glh:auth-required' }, window.location.origin);
+      }
       currentRunToken = null;
       if (!response.ok) throw new Error('RUN_FINISH_FAILED');
     }
 
     async function refreshBackendState() {
       const response = await fetch('/api/minigame/bootstrap', { cache: 'no-store', credentials: 'include', headers: { 'X-MinGame-Mode': GAME_MODE } });
+      if (response.status === 401) {
+        window.parent.postMessage({ type: 'glh:auth-required' }, window.location.origin);
+      }
       if (!response.ok) throw new Error('MINIGAME_BOOTSTRAP_FAILED');
       const data = await response.json();
       gameState.playsLeft = data.user.plays;

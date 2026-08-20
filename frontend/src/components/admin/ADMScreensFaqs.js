@@ -3,14 +3,13 @@
 import React from "react";
 import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
+import { apiFetch as sharedApiFetch } from '@/lib/apiClient';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, Modal, SearchInput } = ADMComponents;
 
 async function apiFetch(path, opts = {}) {
-  const res = await fetch(path, { credentials: "include", ...opts });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.status); }
-  return res.json();
+  return sharedApiFetch(path, opts);
 }
 
 export function FaqsScreen() {

@@ -4,6 +4,7 @@ import React from "react";
 import { GLHUI } from "../GLHUI";
 import { ADMComponents } from "./ADMComponents";
 import { ADM_DATA } from "@/data/admData";
+import { apiFetch as sharedApiFetch, apiFetchResponse } from "@/lib/apiClient";
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, Modal, SearchInput } = ADMComponents;
@@ -15,12 +16,7 @@ const RESERVATION_STATUSES = ["pending", "confirmed", "cancelled"];
 const RECORD_STATUSES = ["completed", "not_completed"];
 
 async function apiFetch(path, opts = {}) {
-  const res = await fetch(path, { credentials: "include", ...opts });
-  if (!res.ok) {
-    const e = await res.json().catch(() => ({}));
-    throw new Error(e.error || res.status);
-  }
-  return res.json();
+  return sharedApiFetch(path, opts);
 }
 
 function asList(value) {
@@ -491,7 +487,7 @@ export function UsersScreen() {
   }
 
   async function exportSelected() {
-    const res = await fetch("/admin/api/users/export", {
+    const res = await apiFetchResponse("/admin/api/users/export", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

@@ -9,6 +9,7 @@ import { GLH_DATA } from '@/data/glhData';
 import { getRecommendedCourses, getCalendarEvents } from '@/lib/mockApi';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
 import { rankCompassCourses, isCompletedCourse, Stat } from './Dashboard';
+import { apiFetchResponse } from '@/lib/apiClient';
 
 const D = GLH_DATA;
 const { Icon, fmtDate } = GLHUI;
@@ -53,7 +54,7 @@ function MyLdRequestsPanel() {
 
   React.useEffect(() => {
     let cancelled = false;
-    fetch("/api/ld-requests/mine", { credentials: "include" })
+    apiFetchResponse("/api/ld-requests/mine")
       .then((res) => res.ok ? res.json() : { requests: [] })
       .then((data) => {
         if (!cancelled) setRequests(Array.isArray(data.requests) ? data.requests : []);
@@ -197,10 +198,17 @@ export function Profile(props) {
   const [selectedCourse, setSelectedCourse] = React.useState(null);
   const [recommended, setRecommended] = React.useState([]);
   const [calendarCourses, setCalendarCourses] = React.useState([]);
+  const [courseDataError, setCourseDataError] = React.useState("");
 
   React.useEffect(() => {
-    getRecommendedCourses().then(setRecommended);
-    getCalendarEvents().then(setCalendarCourses);
+    Promise.all([getRecommendedCourses(), getCalendarEvents()])
+      .then(([nextRecommended, nextCalendar]) => {
+        setRecommended(nextRecommended);
+        setCalendarCourses(nextCalendar);
+      })
+      .catch((error) => {
+        if (error?.message !== "AUTH_REQUIRED") setCourseDataError("Không tải được dữ liệu khóa học.");
+      });
   }, []);
 
   const qr = user.quiz_result;
@@ -246,6 +254,7 @@ export function Profile(props) {
 
   return React.createElement("div", { className: "glh-light", style: { minHeight: "100vh", paddingBottom: 80 } },
     React.createElement("div", { className: "glh-container", style: { paddingTop: 24, paddingBottom: 80 } },
+      courseDataError ? React.createElement("div", { className: "u-card", style: { padding: 16, marginBottom: 20, color: "var(--ui-muted)" } }, courseDataError) : null,
       showAvatarEdit && React.createElement(AvatarEditModal, {
         initialChar: user.character,
         crisp: props.crisp,
@@ -524,7 +533,7 @@ export function Policy(props) {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetch("/api/policies", { credentials: "include" })
+    apiFetchResponse("/api/policies")
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (!data || !data.policies) return;

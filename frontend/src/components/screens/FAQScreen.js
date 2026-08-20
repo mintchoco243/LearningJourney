@@ -2,6 +2,7 @@
 
 import React from "react";
 import { GLHUI } from '@/components/GLHUI';
+import { apiGet } from '@/lib/apiClient';
 
 const { Icon } = GLHUI;
 
@@ -34,8 +35,8 @@ export function FAQScreen(props) {
 
   React.useEffect(() => {
     Promise.all([
-      fetch("/api/faqs").then(r => r.ok ? r.json() : {}).catch(() => ({})),
-      fetch("/api/policies", { credentials: "include" }).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+      apiGet("/api/faqs"),
+      apiGet("/api/policies"),
     ]).then(([faqData, policyData]) => {
       if (Array.isArray(faqData.faqs)) setFaqs(faqData.faqs);
       const grouped = policyData.policies || {};

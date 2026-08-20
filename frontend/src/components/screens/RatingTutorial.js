@@ -6,6 +6,7 @@ import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { FaceScale, RATING_FACES } from '../ratings/EmojiScale';
 import { trackEvent } from '@/lib/analytics';
+import { apiFetchResponse } from '@/lib/apiClient';
 
 const D = GLH_DATA;
 const { Icon } = GLHUI;
@@ -46,7 +47,7 @@ const { useGame } = GLHEngine;
       setSubmitting(true);
       setSubmitError("");
       try {
-        const res = await fetch("/api/site-feedback", {
+        const res = await apiFetchResponse("/api/site-feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",

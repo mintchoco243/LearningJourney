@@ -98,8 +98,8 @@ const { useGame } = GLHEngine;
           }, "dev")
         )) : null,
 
-        error ? React.createElement("div", { style: { color: "var(--glh-accent)", fontSize: 13, marginTop: 8, marginBottom: 0, textAlign: "center" } },
-          "⚠ " + error) : null
+        (error || props.notice) ? React.createElement("div", { style: { color: "var(--glh-accent)", fontSize: 13, marginTop: 8, marginBottom: 0, textAlign: "center" } },
+          "⚠ " + (error || props.notice)) : null
       )
     );
   }

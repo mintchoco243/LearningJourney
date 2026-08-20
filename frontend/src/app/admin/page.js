@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { apiFetchResponse } from "@/lib/apiClient";
 import Link from "next/link";
 import { ADMComponents } from '@/components/admin/ADMComponents';
 import { Dashboard, CoursesScreen } from '@/components/admin/ADMScreens1';
@@ -94,6 +95,12 @@ function DevLoginButton() {
     const [adminSession, setAdminSession] = React.useState({ status: "loading", user: null, role: null });
     const [requestBadge, setRequestBadge] = React.useState(0);
 
+    React.useEffect(() => {
+      const handleAuthRequired = () => setAdminSession({ status: "unauthenticated", user: null, role: null });
+      window.addEventListener("glh:auth-required", handleAuthRequired);
+      return () => window.removeEventListener("glh:auth-required", handleAuthRequired);
+    }, []);
+
     const [page, setPage] = React.useState(
       () => {
         try {
@@ -140,8 +147,16 @@ function DevLoginButton() {
 
     React.useEffect(() => {
       if (adminSession.status !== "ready") return;
+      const refresh = () => {
+        fetch("/auth/refresh", { method: "POST", credentials: "include" })
+          .then((response) => {
+            if (response.status === 401) window.dispatchEvent(new CustomEvent("glh:auth-required"));
+          })
+          .catch(() => {});
+      };
+      const refreshTimer = window.setInterval(refresh, 24 * 60 * 60 * 1000);
       let cancelled = false;
-      fetch("/admin/api/ld-requests", { credentials: "include" })
+      apiFetchResponse("/admin/api/ld-requests")
         .then(async (res) => {
           if (!res.ok) return { requests: [] };
           return res.json();
@@ -157,7 +172,7 @@ function DevLoginButton() {
         .catch(() => {
           if (!cancelled) setRequestBadge(0);
         });
-      return () => { cancelled = true; };
+      return () => { cancelled = true; window.clearInterval(refreshTimer); };
     }, [adminSession.status, page]);
 
     function navigate(p) {

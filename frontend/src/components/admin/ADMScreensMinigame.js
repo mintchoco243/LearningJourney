@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { apiFetchResponse } from "@/lib/apiClient";
 
 export function MinigameAdminScreen() {
   const [rows, setRows] = React.useState([]);
@@ -11,8 +12,8 @@ export function MinigameAdminScreen() {
   async function load() {
     setLoading(true);
     const [leaderboardResponse, campaignResponse] = await Promise.all([
-      fetch("/admin/api/minigame/leaderboard", { credentials: "include" }),
-      fetch("/admin/api/minigame/campaign", { credentials: "include" }),
+      apiFetchResponse("/admin/api/minigame/leaderboard"),
+      apiFetchResponse("/admin/api/minigame/campaign"),
     ]);
     const data = leaderboardResponse.ok ? await leaderboardResponse.json() : { leaderboard: [] };
     const campaign = campaignResponse.ok ? await campaignResponse.json() : {};
@@ -25,7 +26,7 @@ export function MinigameAdminScreen() {
   React.useEffect(() => { load(); }, []);
 
   async function toggle() {
-    const response = await fetch("/admin/api/minigame/campaign/toggle", {
+    const response = await apiFetchResponse("/admin/api/minigame/campaign/toggle", {
       method: "POST", credentials: "include", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ enabled: !enabled }),
     });
@@ -34,7 +35,7 @@ export function MinigameAdminScreen() {
 
   async function resetUser() {
     if (!resetId.trim() || !window.confirm("Reset toàn bộ dữ liệu minigame của user này?")) return;
-    const response = await fetch(`/admin/api/minigame/users/${encodeURIComponent(resetId.trim())}/reset`, { method: "POST", credentials: "include" });
+    const response = await apiFetchResponse(`/admin/api/minigame/users/${encodeURIComponent(resetId.trim())}/reset`, { method: "POST" });
     if (response.ok) { setResetId(""); await load(); }
   }
 

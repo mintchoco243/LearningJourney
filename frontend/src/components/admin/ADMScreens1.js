@@ -7,6 +7,7 @@ import { ADM_DATA } from '@/data/admData';
 import { TRAINER_TYPE_OPTIONS, normalizeTrainerType } from '@/lib/trainerCatalog.mjs';
 import { SKILL_OPTIONS } from '@/lib/skillCatalog';
 import { buildCourseDeepLink } from '@/lib/courseLinks.mjs';
+import { apiFetch as sharedApiFetch, apiFetchResponse } from '@/lib/apiClient';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -33,9 +34,7 @@ const COURSE_STATUSES = [
   
 
   async function apiFetch(path, opts = {}) {
-    const res = await fetch(path, { credentials: "include", ...opts });
-    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.status); }
-    return res.json();
+    return sharedApiFetch(path, opts);
   }
 
   function toList(value) {
@@ -1576,7 +1575,7 @@ const COURSE_STATUSES = [
       if (!courseId || !fileData) return;
       setLoading(true);
       try {
-        const res = await fetch(`/admin/api/courses/${courseId}/import-participants`, {
+        const res = await apiFetchResponse(`/admin/api/courses/${courseId}/import-participants`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -1662,7 +1661,7 @@ const COURSE_STATUSES = [
       if (!csvText) return;
       setLoading(true); setError("");
       try {
-        const res = await fetch("/admin/api/data-prep/catalog/import-csv", {
+        const res = await apiFetchResponse("/admin/api/data-prep/catalog/import-csv", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -1687,7 +1686,7 @@ const COURSE_STATUSES = [
       if (!batch) return;
       setLoading(true); setError("");
       try {
-        const res = await fetch("/admin/api/data-prep/catalog/promote", {
+        const res = await apiFetchResponse("/admin/api/data-prep/catalog/promote", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

@@ -5,6 +5,7 @@ import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
+import { apiFetchResponse } from '@/lib/apiClient';
 
 const D = GLH_DATA;
 const { Icon } = GLHUI;
@@ -173,7 +174,7 @@ export function LdRequestPopup(props) {
         form.weekly_hours ? `Weekly hours: ${form.weekly_hours}` : "",
         form.preferred_trainers ? `Preferred trainers: ${form.preferred_trainers}` : "",
       ].filter(Boolean).join("\n");
-      const res = await fetch("/api/ld-requests", {
+      const res = await apiFetchResponse("/api/ld-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -427,7 +428,7 @@ export function LdRequestStatusModal(props) {
   const loadRequests = React.useCallback(() => {
     setLoading(true);
     setError("");
-    fetch("/api/ld-requests/mine", { credentials: "include" })
+    apiFetchResponse("/api/ld-requests/mine")
       .then((response) => {
         if (!response.ok) throw new Error("Không thể tải danh sách yêu cầu.");
         return response.json();
@@ -502,7 +503,7 @@ export function ChatBot(props) {
           content: m.text
         }));
 
-      const res = await fetch("/api/bot/chat", {
+      const res = await apiFetchResponse("/api/bot/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

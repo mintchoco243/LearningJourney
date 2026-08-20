@@ -7,6 +7,7 @@ import { GLHAvatar } from '../GLHAvatar';
 import { GLH_DATA } from '@/data/glhData';
 import { Step4LearningStyle, Step5Availability, Step6TrainerPreference, Step7FocusSkills } from './OnboardingSteps';
 import { trackEvent } from '@/lib/analytics';
+import { apiFetchResponse } from '@/lib/apiClient';
 import { getSkillVisual, skillLabel } from '@/lib/skillCatalog';
 
 const D = GLH_DATA;
@@ -52,7 +53,7 @@ const { Avatar } = GLHAvatar;
       setSaving(true);
       setSaveError("");
       try {
-        const response = await fetch("/api/me/onboarding", {
+        const response = await apiFetchResponse("/api/me/onboarding", {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },

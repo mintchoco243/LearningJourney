@@ -19,6 +19,7 @@ import { AboutModal } from '@/components/screens/AboutModal';
 import { trackEvent, trackPageView } from '@/lib/analytics';
 import { mapCourseToCard } from '@/lib/courseMap.mjs';
 import { MinigameLauncher } from '@/components/MinigameLauncher';
+import { apiFetchResponse, clearAuthRequiredNotice } from '@/lib/apiClient';
 
 import { useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSlider, TweakToggle, TweakButton } from '@/components/TweaksPanel';
 
@@ -451,6 +452,8 @@ function AppInner() {
   const { user, actions } = useGame();
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const verifiedSessionRef = React.useRef(false);
+  const authHandlingRef = React.useRef(false);
+  const [authNotice, setAuthNotice] = React.useState("");
   const previewPhase = (() => {
     if (process.env.NODE_ENV === "production" || typeof window === "undefined") return "";
     const value = new URLSearchParams(window.location.search).get("preview");
@@ -480,6 +483,48 @@ function AppInner() {
     }
     return "home";
   });
+
+  React.useEffect(() => {
+    const handleAuthRequired = () => {
+      if (authHandlingRef.current) return;
+      authHandlingRef.current = true;
+      actions.reset();
+      setAuthNotice("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.");
+      setPhase("login");
+      setActiveTab("home");
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", "/");
+        window.scrollTo(0, 0);
+      }
+    };
+    const handleAuthMessage = (event) => {
+      if (event.origin === window.location.origin && event.data?.type === "glh:auth-required") handleAuthRequired();
+    };
+    const handleStorage = (event) => {
+      if (event.key === "glh_user_v1" && event.newValue === null) handleAuthRequired();
+    };
+    window.addEventListener("glh:auth-required", handleAuthRequired);
+    window.addEventListener("message", handleAuthMessage);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("glh:auth-required", handleAuthRequired);
+      window.removeEventListener("message", handleAuthMessage);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [actions]);
+
+  React.useEffect(() => {
+    if (!user.email || previewPhase || typeof window === "undefined") return undefined;
+    const refresh = () => {
+      fetch("/auth/refresh", { method: "POST", credentials: "include" })
+        .then((response) => {
+          if (response.status === 401) window.dispatchEvent(new CustomEvent("glh:auth-required"));
+        })
+        .catch(() => {});
+    };
+    const timer = window.setInterval(refresh, 24 * 60 * 60 * 1000);
+    return () => window.clearInterval(timer);
+  }, [user.email, previewPhase]);
 
   // Helper to sync phase and tab based on pathname
   const syncRouteState = React.useCallback((path = typeof window !== "undefined" ? window.location.pathname : "/") => {
@@ -522,12 +567,16 @@ function AppInner() {
               .then((meRes) => (meRes?.ok ? meRes.json() : null));
           }
           if (!user.email && !user.onboarded && !user.quiz_result) setPhase("login");
+          else window.dispatchEvent(new CustomEvent("glh:auth-required"));
           return null;
         }
         return r.ok ? r.json() : null;
       })
       .then((data) => {
         if (data && data.user && data.user.email) {
+          authHandlingRef.current = false;
+          clearAuthRequiredNotice();
+          setAuthNotice("");
           actions.setUserProfile(data.user, data.enrollments, data.reservations, data.favorites);
           if (user.quiz_result || data.user.quiz_result || data.user.onboarding_done) {
             syncRouteState();
@@ -575,7 +624,7 @@ function AppInner() {
       const gameIsOpen = Boolean(document.querySelector('[data-minigame-open="true"]'));
       if (document.visibilityState !== "visible" || gameIsOpen) return;
       window.dispatchEvent(new CustomEvent("minigame:activity", { detail: { activity, seconds: 5 } }));
-      fetch("/api/minigame/activity", {
+      apiFetchResponse("/api/minigame/activity", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -602,7 +651,7 @@ function AppInner() {
     setCourseLinkNotice("");
     setPhase("app");
     setActiveTab("library");
-    fetch(`/api/courses/${encodeURIComponent(courseId)}`, { credentials: "include" })
+    apiFetchResponse(`/api/courses/${encodeURIComponent(courseId)}`)
       .then((res) => {
         if (!res.ok) throw new Error("COURSE_NOT_FOUND");
         return res.json();
@@ -692,11 +741,14 @@ function AppInner() {
   if (!mounted) return null;
   let body;
   if (phase === "login") {
-    body = React.createElement(Login, { onLogin: (email) => {
+    body = React.createElement(Login, { notice: authNotice, onLogin: (email) => {
       fetch("/api/me", { credentials: "include" })
         .then((r) => r.ok ? r.json() : null)
         .then((data) => {
           if (data && data.user) {
+            authHandlingRef.current = false;
+            clearAuthRequiredNotice();
+            setAuthNotice("");
             actions.setUserProfile(data.user, data.enrollments, data.reservations, data.favorites);
             if (data.user.onboarding_done) {
               syncRouteState();
@@ -704,13 +756,11 @@ function AppInner() {
               setPhase("onboarding");
             }
           } else {
-            actions.setEmail(email);
-            setPhase("onboarding");
+            window.dispatchEvent(new CustomEvent("glh:auth-required"));
           }
         })
         .catch(() => {
-          actions.setEmail(email);
-          setPhase("onboarding");
+          setAuthNotice("Không thể tải phiên đăng nhập. Vui lòng thử lại.");
         });
     } });
   } else if (phase === "onboarding") {

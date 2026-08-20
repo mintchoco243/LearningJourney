@@ -14,7 +14,7 @@ const googleClient = new OAuth2Client(
 export const isGarenaEmail = isAllowedGarenaEmail;
 
 export function signToken(user) {
-  return jwt.sign({ userId: user.id, email: user.email }, config.jwtSecret, {
+  return jwt.sign({ userId: user.id, email: user.email, ver: config.authTokenVersion }, config.jwtSecret, {
     expiresIn: config.jwtExpiresIn,
   });
 }
@@ -28,12 +28,12 @@ export function setAuthCookie(res, token) {
     httpOnly: true,
     sameSite: "lax",
     secure: config.nodeEnv === "production",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: config.authSessionMs,
   });
 }
 
 export function clearAuthCookie(res) {
-  res.clearCookie("glh_token");
+  res.clearCookie("glh_token", { path: "/" });
 }
 
 export function googleAuthUrl() {

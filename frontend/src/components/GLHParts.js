@@ -9,6 +9,7 @@ import { trackEvent } from '@/lib/analytics';
 import { getSkillVisual } from '@/lib/skillCatalog';
 import { buildCourseDeepLink } from '@/lib/courseLinks.mjs';
 import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
+import { apiFetchResponse } from '@/lib/apiClient';
 
 const { Icon, fmtDate, fmtDuration } = GLHUI;
 const { useGame } = GLHEngine;
@@ -193,7 +194,7 @@ function formatCardDate(value) {
       setError("");
       try {
         const courseId = course._id || course.id || course.course_row_id || course.course_id || course.course_code;
-        const res = await fetch(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
+        const res = await apiFetchResponse(`/api/courses/${encodeURIComponent(courseId)}/testimonials`, {
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -412,7 +413,7 @@ function formatCardDate(value) {
       if (!c) return;
       let active = true;
       const rowId = c._id || c.course_id;
-      fetch(`/api/courses/${encodeURIComponent(rowId)}/testimonials`, { credentials: "include" })
+      apiFetchResponse(`/api/courses/${encodeURIComponent(rowId)}/testimonials`)
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => { if (active) setTestimonials(Array.isArray(data?.testimonials) ? data.testimonials : []); })
         .catch(() => {});

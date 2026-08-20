@@ -3,6 +3,16 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const nodeEnv = process.env.NODE_ENV || "development";
+function positiveNumber(value, fallback) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+const authSessionDays = Math.max(positiveNumber(process.env.AUTH_SESSION_DAYS, 30), 1);
+const authRenewBeforeDays = Math.min(
+  Math.max(positiveNumber(process.env.AUTH_RENEW_BEFORE_DAYS, 7), 1),
+  authSessionDays,
+);
 
 export const config = {
   nodeEnv,
@@ -10,7 +20,14 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   databaseUrl: process.env.DATABASE_URL,
   jwtSecret: process.env.JWT_SECRET || "gLh2xK9mNpQrVwYzA4bDfJtSuCeHiOkR7vXnMqWsZyBcFjUlPdTgEaImKoNhLw",
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  authSessionDays,
+  authRenewBeforeDays,
+  authSessionMs: authSessionDays * 24 * 60 * 60 * 1000,
+  authRenewBeforeMs: authRenewBeforeDays * 24 * 60 * 60 * 1000,
+  authTokenVersion: String(process.env.AUTH_TOKEN_VERSION || "2"),
+  authAcceptLegacyTokens:
+    (process.env.AUTH_ACCEPT_LEGACY_TOKENS || (nodeEnv === "production" ? "false" : "true")).toLowerCase() === "true",
+  jwtExpiresIn: `${authSessionDays}d`,
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || "95451265968-8rajr2ljr9kf68grc3v7psbg45f2mgtb.apps.googleusercontent.com",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "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",
@@ -35,5 +52,8 @@ export const config = {
 export function assertRuntimeConfig() {
   const warnings = [];
   if (!config.databaseUrl) warnings.push("DATABASE_URL is not set; DB-backed API routes will fail.");
+  if (config.nodeEnv === "production" && config.authAcceptLegacyTokens) {
+    warnings.push("AUTH_ACCEPT_LEGACY_TOKENS is enabled in production; old sessions will not be forced to re-login.");
+  }
   return warnings;
 }

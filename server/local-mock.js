@@ -1,6 +1,7 @@
 import express from "express";
 import crypto from "node:crypto";
 import { setAuthCookie, signToken, verifyToken } from "./auth.js";
+import { config } from "./config.js";
 import { SKILL_OPTIONS, canonicalSkill, canonicalizeFocusSkills } from "./lib/skillCatalog.js";
 import { isAllowedGarenaEmail } from "./lib/emailPolicy.js";
 
@@ -198,6 +199,9 @@ function currentUser(req) {
   try {
     const token = req.cookies?.glh_token;
     const payload = token ? verifyToken(token) : null;
+    const legacy = payload && !payload.ver;
+    const current = payload && String(payload.ver) === config.authTokenVersion;
+    if (payload && !current && !(legacy && config.authAcceptLegacyTokens)) return null;
     return payload ? state.users.get(payload.userId) : null;
   } catch {
     return null;
@@ -207,6 +211,15 @@ function currentUser(req) {
 function requireMockUser(req, res, next) {
   const user = currentUser(req);
   if (!user) return res.status(401).json({ error: "AUTH_REQUIRED" });
+  try {
+    const payload = verifyToken(req.cookies?.glh_token);
+    const expiresAt = Number(payload.exp || 0) * 1000;
+    if (!payload.ver || (expiresAt > 0 && expiresAt - Date.now() <= config.authRenewBeforeMs)) {
+      setAuthCookie(res, signToken(user));
+    }
+  } catch {
+    return res.status(401).json({ error: "AUTH_REQUIRED" });
+  }
   req.user = user;
   next();
 }
@@ -240,7 +253,13 @@ localMockAuthRouter.post("/dev-login", (req, res) => {
   res.json({ token, user: publicUser(user) });
 });
 localMockAuthRouter.post("/logout", (_req, res) => {
-  res.clearCookie("glh_token");
+  res.clearCookie("glh_token", { path: "/" });
+  res.json({ ok: true });
+});
+localMockAuthRouter.post("/refresh", (req, res) => {
+  const user = currentUser(req);
+  if (!user) return res.status(401).json({ error: "AUTH_REQUIRED" });
+  setAuthCookie(res, signToken(user));
   res.json({ ok: true });
 });
 

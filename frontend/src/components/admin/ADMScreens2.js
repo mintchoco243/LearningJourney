@@ -4,6 +4,7 @@ import React from "react";
 import { GLHUI } from '../GLHUI';
 import { ADMComponents } from './ADMComponents';
 import { ADM_DATA } from '@/data/admData';
+import { apiFetch as sharedApiFetch } from '@/lib/apiClient';
 
 const { Icon } = GLHUI;
 const { Badge, PageHeader, StatCard, SectionCard, Modal, Toggle, SearchInput } = ADMComponents;
@@ -14,9 +15,7 @@ const D = ADM_DATA;
   
 
   async function apiFetch(path, opts = {}) {
-    const res = await fetch(path, { credentials: "include", ...opts });
-    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || res.status); }
-    return res.json();
+    return sharedApiFetch(path, opts);
   }
 
   function mapSession(s) {

@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { apiGet } from "@/lib/apiClient";
 import { GLHUI } from '../GLHUI';
 import { GLHEngine } from '@/context/GameContext';
 import { GLHParts } from '../GLHParts';
@@ -321,6 +322,9 @@ function ctaColor(cta) {
   export function Catalog(props) {
     const { user } = useGame();
     const [courses, setCourses] = React.useState([]);
+    const [coursesLoading, setCoursesLoading] = React.useState(true);
+    const [coursesError, setCoursesError] = React.useState("");
+    const [reloadKey, setReloadKey] = React.useState(0);
     const [q, setQ] = React.useState("");
     const [cmFilter,       setCmFilter]       = React.useState([]);
     const [trainerFilter,  setTrainerFilter]  = React.useState([]);
@@ -330,33 +334,42 @@ function ctaColor(cta) {
     const [sortMode,       setSortMode]       = React.useState("rating_desc");
     const [targetOptions,  setTargetOptions]  = React.useState({ ranks: [], roles: [] });
 
+    const retryCourses = () => {
+      setCoursesLoading(true);
+      setCoursesError("");
+      setReloadKey((value) => value + 1);
+    };
+
     React.useEffect(() => {
+      let cancelled = false;
       const params = new URLSearchParams({ limit: "100" });
-      fetch(`/api/courses?${params.toString()}`, { credentials: "include" })
-        .then((res) => (res.ok ? res.json() : null))
+      apiGet(`/api/courses?${params.toString()}`)
         .then((data) => {
+          if (cancelled) return;
           const sourceCourses = Array.isArray(data?.courses)
             ? data.courses.map((course) => mapCourseToCard(course))
             : [];
           setCourses(sourceCourses);
         })
-        .catch(() => {
-          setCourses([]);
+        .catch((error) => {
+          if (cancelled || error?.code === "AUTH_REQUIRED") return;
+          setCoursesError("Không tải được danh sách khóa học.");
+        })
+        .finally(() => {
+          if (!cancelled) setCoursesLoading(false);
         });
-    }, []);
+      return () => { cancelled = true; };
+    }, [reloadKey]);
 
     React.useEffect(() => {
-      fetch("/api/courses/options", { credentials: "include" })
-        .then((res) => (res.ok ? res.json() : null))
+      apiGet("/api/courses/options")
         .then((data) => {
           setTargetOptions({
             ranks: uniqueTargetOptions(data?.ranks || []),
             roles: uniqueTargetOptions(data?.roles || []),
           });
         })
-        .catch(() => {
-          setTargetOptions({ ranks: [], roles: [] });
-        });
+        .catch(() => {});
     }, []);
 
     const filters = { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode };
@@ -423,7 +436,13 @@ function ctaColor(cta) {
         filtered.length + " / " + courses.length + " khóa học"
         + (activeFilterCount > 0 || q.trim() ? " · đang lọc" : "")),
 
-      filtered.length
+      coursesError
+        ? React.createElement("div", { className: "u-card", style: { padding: 24, color: "var(--ui-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } },
+            React.createElement("span", null, coursesError),
+            React.createElement("button", { className: "u-btn u-btn--primary", onClick: retryCourses }, "Thử lại"))
+        : coursesLoading
+        ? React.createElement("div", { style: { textAlign: "center", padding: 60, color: "var(--ui-muted)" } }, "Đang tải khóa học...")
+        : filtered.length
         ? React.createElement("div", null,
             React.createElement("div", { className: "catalog-card-grid", style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 18, marginBottom: 24 } },
               paginated.map(c => React.createElement(CourseCard, { key: c._id || c.session_id || c.course_id, course: c, onClick: props.onOpenCourse }))),
@@ -533,14 +552,26 @@ function ctaColor(cta) {
   /* ---------------- Calendar ---------------- */
   export function Calendar(props) {
     const [calendarEvents, setCalendarEvents] = React.useState([]);
+    const [calendarError, setCalendarError] = React.useState("");
+    const [calendarReloadKey, setCalendarReloadKey] = React.useState(0);
 
-    React.useEffect(() => { getCalendarEvents().then(setCalendarEvents); }, []);
+    React.useEffect(() => {
+      getCalendarEvents()
+        .then(setCalendarEvents)
+        .catch((error) => {
+          if (error?.message !== "AUTH_REQUIRED") setCalendarError("Không tải được lịch học.");
+        });
+    }, [calendarReloadKey]);
 
     const selectedSkills = Array.isArray(props.selectedSkills) ? props.selectedSkills : [];
     const events = calendarEvents.filter((event) => !selectedSkills.length || courseHasSkill(event, selectedSkills));
     return React.createElement("div", { className: props.embedded ? "dashboard-calendar-section" : "glh-container fade-screen", style: { padding: props.embedded ? undefined : "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("h2", { className: "u-h2 dash-section-heading", style: { margin: "0 0 14px" } }, "Lịch sắp tới"),
-      React.createElement(CalendarBoard, { events, onOpen: props.onOpenCourse })
+      calendarError
+        ? React.createElement("div", { className: "u-card", style: { padding: 18, color: "var(--ui-muted)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" } },
+            React.createElement("span", null, calendarError),
+            React.createElement("button", { className: "u-btn u-btn--primary", onClick: () => { setCalendarError(""); setCalendarReloadKey((value) => value + 1); } }, "Thử lại"))
+        : React.createElement(CalendarBoard, { events, onOpen: props.onOpenCourse })
     );
   }
 

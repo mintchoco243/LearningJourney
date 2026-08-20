@@ -58,6 +58,12 @@ authRouter.post("/logout", (req, res) => {
   res.json({ ok: true });
 });
 
+// Refresh is intentionally protected by the same middleware as user APIs.
+// The middleware upgrades legacy tokens and renews near-expiry current tokens.
+authRouter.post("/refresh", requireAuth, (_req, res) => {
+  res.json({ ok: true });
+});
+
 authRouter.post("/dev-login", async (req, res, next) => {
   try {
     const email = (req.body?.email || "demo@garena.vn").toLowerCase();

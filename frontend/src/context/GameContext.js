@@ -2,6 +2,7 @@
 
 import React from "react";
 import { GLH_DATA } from '@/data/glhData';
+import { apiFetchResponse } from '@/lib/apiClient';
 
 const D = GLH_DATA;
 
@@ -179,7 +180,7 @@ const D = GLH_DATA;
         }));
       },
       setCharacter(character) {
-        fetch("/api/me", {
+        apiFetchResponse("/api/me", {
           method: "PUT",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
@@ -203,7 +204,7 @@ const D = GLH_DATA;
       },
       async resetOnboarding() {
         try {
-          const response = await fetch("/api/me/onboarding", {
+          const response = await apiFetchResponse("/api/me/onboarding", {
             method: "DELETE",
             credentials: "include",
           });
@@ -230,7 +231,7 @@ const D = GLH_DATA;
       async toggleFavoriteCourse(course, shouldFavorite) {
         const apiCourseId = course?._id || course?.id || course?.course_row_id || course?.course_id;
         if (!apiCourseId) return false;
-        const response = await fetch(`/api/courses/${encodeURIComponent(apiCourseId)}/favorite`, {
+        const response = await apiFetchResponse(`/api/courses/${encodeURIComponent(apiCourseId)}/favorite`, {
           method: shouldFavorite ? "POST" : "DELETE",
           credentials: "include",
         });
@@ -262,7 +263,7 @@ const D = GLH_DATA;
         if ((user.completed_courses || []).includes(apiCourseId)) return false;
         if (!apiCourseId) return false;
 
-        const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
+        const response = await apiFetchResponse("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
           method: "POST",
           credentials: "include",
         });
@@ -307,7 +308,7 @@ const D = GLH_DATA;
         const apiCourseId = course._id || course.id || course.course_row_id || course.course_id;
         if (!apiCourseId) return false;
 
-        const response = await fetch("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
+        const response = await apiFetchResponse("/api/courses/" + encodeURIComponent(apiCourseId) + "/complete", {
           method: "DELETE",
           credentials: "include",
         });
@@ -333,7 +334,7 @@ const D = GLH_DATA;
         const sessionId = course.session_id || course._id || course.id || course.course_row_id || course.course_id;
         if (!sessionId || (user.registered_events || []).includes(sessionId)) return false;
 
-        const response = await fetch("/api/sessions/" + encodeURIComponent(sessionId) + "/reserve", {
+        const response = await apiFetchResponse("/api/sessions/" + encodeURIComponent(sessionId) + "/reserve", {
           method: "POST",
           credentials: "include",
         });
@@ -356,7 +357,7 @@ const D = GLH_DATA;
         setXpBurst({ amount: D.XP.event_register, label: "Đăng ký sự kiện", id: Date.now() });
         // Persist to backend (fire-and-forget)
         if (ev.event_id) {
-          fetch("/api/sessions/" + ev.event_id + "/reserve", { method: "POST", credentials: "include" }).catch(() => {});
+          apiFetchResponse("/api/sessions/" + ev.event_id + "/reserve", { method: "POST" }).catch(() => {});
         }
         return true;
       },
