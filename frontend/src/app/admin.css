@@ -992,6 +992,69 @@ textarea {
   background: #171d29;
 }
 
+.adm-testimonials-table {
+  min-width: 1880px;
+}
+
+.adm-testimonials-table .adm-testimonial-sticky-left,
+.adm-testimonials-table .adm-testimonial-sticky-right {
+  position: sticky;
+  z-index: 2;
+  background: var(--rpg-panel);
+}
+
+.adm-testimonials-table th.adm-testimonial-sticky-left,
+.adm-testimonials-table th.adm-testimonial-sticky-right {
+  z-index: 3;
+  background: #171d29;
+}
+
+.adm-testimonials-table .adm-testimonial-sticky-left {
+  left: 0;
+  min-width: 280px;
+  width: 280px;
+  box-shadow: 12px 0 18px rgba(7, 10, 16, 0.42);
+}
+
+.adm-testimonials-table .adm-testimonial-featured-cell {
+  right: 150px;
+  min-width: 125px;
+  width: 125px;
+}
+
+.adm-testimonials-table .adm-testimonial-actions-cell {
+  right: 0;
+  min-width: 150px;
+  width: 150px;
+  box-shadow: -12px 0 18px rgba(7, 10, 16, 0.42);
+}
+
+.adm-testimonials-table tbody tr:hover .adm-testimonial-sticky-left,
+.adm-testimonials-table tbody tr:hover .adm-testimonial-sticky-right {
+  background: #171d29;
+}
+
+.adm-testimonial-actions-cell {
+  white-space: nowrap;
+}
+
+.adm-testimonial-actions-cell .adm-btn + .adm-btn {
+  margin-left: 6px;
+}
+
+.adm-testimonial-rating-input {
+  width: 64px;
+  min-width: 64px;
+  padding: 7px 8px;
+}
+
+.adm-testimonial-edit-textarea {
+  min-width: 200px;
+  min-height: 74px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
 /* ===== MODAL ===== */
 .adm-modal-overlay {
   position: fixed;

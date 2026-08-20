@@ -404,6 +404,7 @@ const D = ADM_DATA;
       course_id: t.course_id,
       course_code: t.course_code || t.course_id,
       course_title: t.course_title || t.title || t.course_code || t.course_id,
+      course_type: t.course_type || t.type || "",
       user_name: t.user_name || t.full_name || "Người dùng",
       user_role: t.user_role || "Learner",
       user_team: t.user_team || "",
@@ -603,7 +604,11 @@ const D = ADM_DATA;
   export function TestimonialsScreen() {
     const [testimonials, setTestimonials] = React.useState(() => D.ADMIN_TESTIMONIALS.map(normalizeTestimonial));
     const [filterCourse, setFilterCourse] = React.useState("all");
+    const [filterType, setFilterType] = React.useState("all");
     const [selected, setSelected] = React.useState(null);
+    const [editingId, setEditingId] = React.useState(null);
+    const [editDraft, setEditDraft] = React.useState(null);
+    const [savingId, setSavingId] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const aspectLabels = {
       overall: "Tổng thể",
@@ -625,7 +630,11 @@ const D = ADM_DATA;
       id, title: (testimonials.find(t => t.course_id === id) || {}).course_title || id,
     }));
 
-    const filtered = filterCourse === "all" ? testimonials : testimonials.filter(t => t.course_id === filterCourse);
+    const typeOptions = [...new Set(testimonials.map(t => t.course_type).filter(Boolean))].sort();
+    const filteredTestimonials = testimonials.filter(t =>
+      (filterCourse === "all" || t.course_id === filterCourse)
+      && (filterType === "all" || t.course_type === filterType)
+    );
 
     async function toggleFeatured(id) {
       const current = testimonials.find(t => t.id === id);
@@ -647,6 +656,37 @@ const D = ADM_DATA;
       }
     }
 
+    function startEdit(testimonial) {
+      setEditingId(testimonial.id);
+      setEditDraft({
+        rating: testimonial.rating,
+        content: testimonial.content,
+        applied_learning: testimonial.applied_learning,
+        improvement_feedback: testimonial.improvement_feedback,
+      });
+    }
+
+    async function saveEdit(id) {
+      if (!editDraft) return;
+      setSavingId(id);
+      try {
+        const data = await apiFetch(`/admin/api/testimonials/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editDraft),
+        });
+        if (data.testimonial) {
+          const updated = normalizeTestimonial(data.testimonial);
+          setTestimonials(ts => ts.map(t => t.id === id ? updated : t));
+          setSelected(current => current?.id === id ? updated : current);
+        }
+        setEditingId(null);
+        setEditDraft(null);
+      } finally {
+        setSavingId(null);
+      }
+    }
+
     return (
       <div data-screen-label="Testimonials">
         <PageHeader
@@ -657,18 +697,18 @@ const D = ADM_DATA;
         {loading && <div style={{ color: "var(--rpg-muted)", textAlign: "center", padding: 32 }}>Đang tải testimonials...</div>}
 
         <div className="adm-filter-row">
-          <div className="adm-tab-filter">
-            <button className={`adm-tab-filter__item${filterCourse==="all"?" is-active":""}`} onClick={()=>setFilterCourse("all")}>Tất cả</button>
-            {courses.map(c => (
-              <button key={c.id} className={`adm-tab-filter__item${filterCourse===c.id?" is-active":""}`} onClick={()=>setFilterCourse(c.id)}>
-                {c.title}
-              </button>
-            ))}
-          </div>
+          <select className="adm-select" value={filterCourse} onChange={e => setFilterCourse(e.target.value)} style={{ minWidth: 280 }}>
+            <option value="all">Tất cả khóa học</option>
+            {courses.sort((a, b) => a.title.localeCompare(b.title, "vi")).map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+          </select>
+          <select className="adm-select" value={filterType} onChange={e => setFilterType(e.target.value)} style={{ minWidth: 180 }}>
+            <option value="all">Tất cả loại khóa</option>
+            {typeOptions.map(type => <option key={type} value={type}>{type}</option>)}
+          </select>
         </div>
 
         <div className="adm-table-wrap">
-          <table className="adm-table">
+          <table className="adm-table adm-testimonials-table">
             <thead>
               <tr>
                 <th>Khóa học</th>
@@ -685,44 +725,51 @@ const D = ADM_DATA;
               </tr>
             </thead>
             <tbody>
-              {filtered.map(t => (
-                <tr key={t.id}>
-                  <td>
+              {filteredTestimonials.map(t => {
+                const isEditing = editingId === t.id;
+                return <tr key={t.id}>
+                  <td className="adm-testimonial-sticky-left">
                     <div style={{ fontWeight: 700, color: "#fff" }}>{t.course_title}</div>
-                    <div style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{t.course_code}</div>
+                    <div style={{ color: "var(--rpg-faint)", fontSize: 11 }}>{t.course_code} · {t.course_type || "-"}</div>
                   </td>
                   <td>
                     <div style={{ fontWeight: 700, color: "#fff" }}>{t.user_name}</div>
                     <div style={{ color: "var(--rpg-muted)", fontSize: 11 }}>{[t.user_team, t.user_role].filter(Boolean).join(" · ")}</div>
                   </td>
-                  <td style={{ color: "var(--amber)", fontWeight: 800 }}>{t.aspect_ratings.overall || t.rating}/5</td>
+                  <td style={{ color: "var(--amber)", fontWeight: 800 }}>
+                    {isEditing ? <input className="adm-input adm-testimonial-rating-input" type="number" min="1" max="5" value={editDraft.rating} onChange={e => setEditDraft(d => ({ ...d, rating: e.target.value }))} /> : `${t.aspect_ratings.overall || t.rating}/5`}
+                  </td>
                   <td>{t.aspect_ratings.content || "-"}/5</td>
                   <td>{t.aspect_ratings.trainer || "-"}/5</td>
                   <td>{t.aspect_ratings.organization_support || "-"}/5</td>
                   <td style={{ maxWidth: 220 }}>
-                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.applied_learning || "-"}</div>
+                    {isEditing ? <textarea className="adm-input adm-testimonial-edit-textarea" value={editDraft.applied_learning} onChange={e => setEditDraft(d => ({ ...d, applied_learning: e.target.value }))} /> : <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.applied_learning || "-"}</div>}
                   </td>
                   <td style={{ maxWidth: 220 }}>
-                    <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.improvement_feedback || t.content || "-"}</div>
+                    {isEditing ? <textarea className="adm-input adm-testimonial-edit-textarea" value={editDraft.improvement_feedback} onChange={e => setEditDraft(d => ({ ...d, improvement_feedback: e.target.value }))} /> : <div style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.improvement_feedback || t.content || "-"}</div>}
                   </td>
                   <td>{t.created_at}</td>
-                  <td>
+                  <td className="adm-testimonial-sticky-right adm-testimonial-featured-cell">
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       {t.is_featured && <Badge status="featured" />}
                       <Toggle value={t.is_featured} onChange={() => toggleFeatured(t.id)} />
                     </div>
                   </td>
-                  <td>
-                    <button className="adm-btn adm-btn--sec" onClick={() => setSelected(t)}>
-                      <Icon name="eye" size={13} /> Xem
-                    </button>
+                  <td className="adm-testimonial-sticky-right adm-testimonial-actions-cell">
+                    {isEditing ? <>
+                      <button className="adm-btn adm-btn--primary adm-btn--sm" onClick={() => saveEdit(t.id)} disabled={savingId === t.id}>{savingId === t.id ? "Đang lưu" : "Lưu"}</button>
+                      <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => { setEditingId(null); setEditDraft(null); }}>Huỷ</button>
+                    </> : <>
+                      <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => startEdit(t)}>Sửa</button>
+                      <button className="adm-btn adm-btn--sec adm-btn--sm" onClick={() => setSelected(t)}><Icon name="eye" size={13} /> Xem</button>
+                    </>}
                   </td>
                 </tr>
-              ))}
+              })}
             </tbody>
           </table>
         </div>
-        {!loading && filtered.length === 0 && (
+        {!loading && filteredTestimonials.length === 0 && (
           <div className="adm-empty" style={{ marginTop: 28 }}>Chưa có testimonial nào từ user.</div>
         )}
 
