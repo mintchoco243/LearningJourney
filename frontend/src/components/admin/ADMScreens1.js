@@ -109,6 +109,8 @@ const COURSE_STATUSES = [
       is_hr_recommended: Boolean(c.is_hr_recommended),
       status: c.status || "open",
       material_url: c.material_url || "",
+      reference_url: c.reference_url || "",
+      calendar_note: c.calendar_note || "",
       enrollments: Number(c.enrollment_count ?? c.enrolled_count ?? 0),
       description: c.description || "",
       type: c.type || "scheduled",
@@ -461,6 +463,8 @@ const COURSE_STATUSES = [
           registration_url: nextCourse.registration_url,
           status: nextCourse.status,
           material_url: nextCourse.material_url,
+          reference_url: nextCourse.reference_url,
+          calendar_note: nextCourse.calendar_note,
           min_participants: nextCourse.min_participants || null,
           session_date: nextCourse.session_date || null,
           session_time: nextCourse.session_time || null,
@@ -551,6 +555,8 @@ const COURSE_STATUSES = [
             registration_url: course.registration_url,
             status: course.status,
             material_url: course.material_url,
+            reference_url: course.reference_url,
+            calendar_note: course.calendar_note,
             min_participants: course.min_participants ?? null,
             session_date: course.session_date || null,
             session_time: course.session_time || null,
@@ -588,6 +594,8 @@ const COURSE_STATUSES = [
           is_active: formData.is_active !== false,
           status: formData.status || "open",
           material_url: formData.material_url || "",
+          reference_url: formData.reference_url || "",
+          calendar_note: formData.calendar_note || "",
           min_participants: parseInt(formData.min_participants) || null,
           session_date: formData.session_date || null,
           session_time: formData.session_time || null,
@@ -682,6 +690,8 @@ const COURSE_STATUSES = [
             registration_url: course.registration_url,
             status: course.status,
             material_url: course.material_url,
+            reference_url: course.reference_url,
+            calendar_note: course.calendar_note,
             min_participants: course.min_participants ?? null,
             session_date: course.session_date || null,
             session_time: course.session_time || null,
@@ -1291,6 +1301,8 @@ const COURSE_STATUSES = [
       is_active: course ? course.is_active : true,
       status: course?.status || "open",
       material_url: course?.material_url || "",
+      reference_url: course?.reference_url || "",
+      calendar_note: course?.calendar_note || "",
       min_participants: course?.min_participants || "",
       session_date: course?.session_date || "",
       session_time: course?.session_time || "",
@@ -1406,6 +1418,16 @@ const COURSE_STATUSES = [
             <label className="adm-label">Giờ tổ chức</label>
             <input className="adm-input" type="time" value={form.session_time} onChange={e => set("session_time", e.target.value)} />
           </div>
+        </div>
+
+        <div className="adm-form-group" style={{ marginBottom: 14 }}>
+          <label className="adm-label">Ghi chú lịch</label>
+          <input className="adm-input" value={form.calendar_note} onChange={e => set("calendar_note", e.target.value)} placeholder="VD: Dự kiến 2 tuần đầu tháng 9" />
+        </div>
+
+        <div className="adm-form-group" style={{ marginBottom: 14 }}>
+          <label className="adm-label">Link tham khảo</label>
+          <input className="adm-input" value={form.reference_url} onChange={e => set("reference_url", e.target.value)} placeholder="https://..." />
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>

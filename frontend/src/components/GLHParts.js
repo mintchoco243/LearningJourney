@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { GLHUI } from './GLHUI';
+import { GLHAvatar } from './GLHAvatar';
 import { GLHEngine } from '@/context/GameContext';
 import { GLH_DATA } from '@/data/glhData';
 import { getCourseCta, getCourseJoinMeta, publicCourseRating } from '@/lib/courseMap.mjs';
@@ -12,6 +14,7 @@ import { FaceScale, RATING_FACES } from './ratings/EmojiScale';
 import { apiFetchResponse } from '@/lib/apiClient';
 
 const { Icon, fmtDate, fmtDuration } = GLHUI;
+const { Avatar: SystemAvatar } = GLHAvatar;
 const { useGame } = GLHEngine;
 const D = GLH_DATA;
 
@@ -54,6 +57,38 @@ function formatCardDate(value) {
     },
       React.createElement(Icon, { name: meta.icon, size: size === "sm" ? 12 : size === "lg" ? 15 : 14, color: meta.color, stroke: 2 }),
       meta.label);
+  }
+
+  function SkillOverflowBadge({ tags }) {
+    const [tooltip, setTooltip] = React.useState({ open: false, x: 0, y: 0 });
+    const tooltipId = React.useId();
+    const labels = tags.map((tag) => getSkillVisual(tag).label);
+    const showAt = (x, y) => setTooltip({ open: true, x, y });
+    const hide = () => setTooltip((current) => ({ ...current, open: false }));
+    const handleMouseMove = (event) => showAt(event.clientX, event.clientY);
+    const handleFocus = (event) => {
+      const rect = event.currentTarget.getBoundingClientRect();
+      showAt(rect.left + rect.width / 2, rect.top);
+    };
+
+    return React.createElement(React.Fragment, null,
+      React.createElement("span", {
+        className: "course-card__more-skills",
+        "aria-label": `Còn ${tags.length} kỹ năng: ${labels.join(", ")}`,
+        "aria-describedby": tooltip.open ? tooltipId : undefined,
+        tabIndex: 0,
+        onMouseMove: handleMouseMove,
+        onMouseEnter: handleMouseMove,
+        onMouseLeave: hide,
+        onFocus: handleFocus,
+        onBlur: hide,
+      }, `+${tags.length}`),
+      tooltip.open && typeof document !== "undefined" && createPortal(React.createElement("div", {
+        id: tooltipId,
+        className: "course-card__skills-tooltip",
+        role: "tooltip",
+        style: { left: tooltip.x, top: tooltip.y },
+      }, tags.map((tag, index) => React.createElement(SkillPill, { key: `${tag}-${index}`, id: tag, wrap: true }))), document.body));
   }
 
   /* ---------- Star rating ---------- */
@@ -135,6 +170,47 @@ function formatCardDate(value) {
           : [part]
       ));
     });
+  }
+
+  function firstReferenceUrl(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    const match = text.match(/(?:https?:\/\/|www\.)[^\s,;]+|[a-z0-9.-]+\.[a-z]{2,}[^\s,;]*/i);
+    if (!match) return "";
+    const cleaned = match[0].replace(/[)\].,;!?]+$/g, "");
+    if (/^https?:\/\//i.test(cleaned)) return cleaned;
+    return `https://${cleaned}`;
+  }
+
+  function CourseTestimonialBubble({ testimonial, index }) {
+    const [avatarFailed, setAvatarFailed] = React.useState(false);
+    const reviewerName = String(testimonial.full_name || testimonial.user_name || testimonial.author || "").trim();
+    const reviewerTeam = String(testimonial.user_team || testimonial.team || "").trim();
+    const feedback = String(testimonial.applied_learning || testimonial.content || "Chưa có chia sẻ về việc áp dụng.").trim();
+    const avatarUrl = String(testimonial.avatar_url || testimonial.user_avatar || "").trim();
+    const shouldUseExternalAvatar = avatarUrl
+      && !/gravatar\.com|googleusercontent\.com/i.test(avatarUrl);
+    const showAvatarImage = shouldUseExternalAvatar && !avatarFailed;
+    const tone = ["red", "cyan", "amber", "purple"][index % 4];
+    const defaultAvatar = { hair: "short", hairColor: "espresso", outfit: "red", accessory: "none", skin: "s1", rank: 1 };
+
+    return React.createElement("div", { className: `course-testimonial course-testimonial--${tone}`, key: testimonial.id || index },
+      React.createElement("div", { className: "course-testimonial__person" },
+        showAvatarImage
+          ? React.createElement("img", {
+            className: "course-testimonial__avatar",
+            src: avatarUrl,
+            alt: reviewerName ? `Avatar của ${reviewerName}` : "Avatar người gửi",
+            loading: "lazy",
+            onError: () => setAvatarFailed(true),
+          })
+          : React.createElement("div", { className: "course-testimonial__avatar course-testimonial__avatar--fallback", "aria-hidden": "true" },
+            React.createElement(SystemAvatar, { size: 30, crisp: true, opts: defaultAvatar })),
+        (reviewerName || reviewerTeam) ? React.createElement("div", { className: "course-testimonial__meta" },
+          reviewerName ? React.createElement("div", { className: "course-testimonial__name" }, reviewerName) : null,
+          reviewerTeam ? React.createElement("div", { className: "course-testimonial__team" }, reviewerTeam) : null) : null),
+      React.createElement("div", { className: "course-testimonial__bubble" },
+        React.createElement("p", null, feedback)));
   }
 
   function ConfirmPopup({ dialog, busy, onCancel, onConfirm }) {
@@ -293,6 +369,11 @@ function formatCardDate(value) {
 
   export function CourseCard({ course: c, onClick, showDate }) {
     const { user, actions } = useGame();
+    const skillTags = Array.isArray(c.skill_tags)
+      ? c.skill_tags.filter((tag) => typeof tag === "string" && tag.trim())
+      : [];
+    const visibleSkillTags = skillTags.slice(0, 2);
+    const hiddenSkillTags = skillTags.slice(2);
     const joinMeta = getCourseJoinMeta(c);
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
@@ -354,7 +435,8 @@ function formatCardDate(value) {
     };
     const topRow = React.createElement("div", { className: "course-card__top" },
       React.createElement("div", { className: "course-card__chips" },
-        (c.skill_tags || []).slice(0, 1).map((sid) => React.createElement(SkillPill, { key: sid, id: sid, wrap: true })),
+        visibleSkillTags.map((sid, index) => React.createElement(SkillPill, { key: `${sid}-${index}`, id: sid, wrap: true })),
+        hiddenSkillTags.length > 0 && React.createElement(SkillOverflowBadge, { tags: hiddenSkillTags }),
         statusChipText && React.createElement("span", { style: { flexShrink: 0, fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } }, statusChipText)),
       React.createElement("div", { className: "course-card__top-actions" },
         rating ? React.createElement(Stars, { value: rating }) : null,
@@ -469,6 +551,7 @@ function formatCardDate(value) {
     });
     const cta = getCourseCta(modalCourse, effectiveUser);
     const modalJoinMeta = getCourseJoinMeta(modalCourse);
+    const referenceUrl = firstReferenceUrl(modalCourse.reference_url);
     const isReserved = Boolean(modalCourse.session_id && (effectiveUser.registered_events || []).includes(modalCourse.session_id));
     const canOpenMaterial = Boolean(modalCourse.material_url) && (modalCourse.course_status === "ended" || done);
     const completionButtonStyle = { minWidth: 180 };
@@ -666,18 +749,23 @@ function formatCardDate(value) {
             c.duration_minutes ? React.createElement(DetailItem, { icon: "clock", label: "Thời lượng", value: fmtDuration(c.duration_minutes) }) : null,
             modalCourse.location ? React.createElement(DetailItem, { icon: "map-pin", label: "Địa điểm", value: modalCourse.location }) : null,
             modalCourse.start_date ? React.createElement(DetailItem, { icon: "calendar", label: "Ngày tổ chức", value: fmtDate(modalCourse.start_date) }) : null,
+            !modalCourse.start_date && modalCourse.calendar_note ? React.createElement(DetailItem, { icon: "calendar", label: "Ghi chú lịch", value: modalCourse.calendar_note }) : null,
             modalCourse.start_time ? React.createElement(DetailItem, { icon: "clock", label: "Giờ tổ chức", value: modalCourse.start_time }) : null,
-            modalCourse.min_participants && !modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Tối thiểu mở lớp", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.min_participants }) : null,
+            modalCourse.min_participants && !modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Đã đăng ký / Tối thiểu mở\u00a0lớp", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.min_participants }) : null,
             modalCourse.max_participants ? React.createElement(DetailItem, { icon: "users", label: "Số lượng", value: (modalCourse.current_count ?? 0) + "/" + modalCourse.max_participants }) : null,
-            modalCourse.total_learners ? React.createElement(DetailItem, { icon: "graduation-cap", label: "Đã có người học", value: modalCourse.total_learners + " người" }) : null),
-          testimonialList.length ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 } },
-            testimonialList.map((t, i) => {
-              const reviewerName = t.full_name || t.user_name || t.author || "Người học";
-              const reviewerTeam = t.user_team || t.team || "";
-              return React.createElement("div", { key: i, style: { background: "rgba(255,255,255,0.04)", borderLeft: "3px solid var(--amber)", borderRadius: "0 8px 8px 0", padding: "14px 16px" } },
-                React.createElement("p", { style: { fontSize: 14, fontStyle: "italic", color: "var(--ui-text)", margin: "0 0 8px", lineHeight: 1.55 } }, "“" + (t.applied_learning || "Chưa có chia sẻ về việc áp dụng.") + "”"),
-                React.createElement("div", { style: { fontSize: 12, color: "var(--ui-muted)", fontWeight: 600 } }, "— " + reviewerName + (reviewerTeam ? " · " + reviewerTeam : "")));
-            })) : null,
+            modalCourse.total_learners ? React.createElement(DetailItem, { icon: "graduation-cap", label: "Đã có người học", value: modalCourse.total_learners + " người" }) : null,
+            referenceUrl ? React.createElement(DetailItem, {
+              icon: "link",
+              label: "Link tham khảo",
+              value: React.createElement("a", {
+                href: referenceUrl,
+                target: "_blank",
+                rel: "noreferrer",
+                style: { color: "var(--glh-accent)", fontWeight: 800, textDecoration: "none" },
+              }, "TẠI ĐÂY"),
+            }) : null),
+          testimonialList.length ? React.createElement("div", { className: "course-testimonials" },
+            testimonialList.map((t, i) => React.createElement(CourseTestimonialBubble, { testimonial: t, index: i, key: t.id || i }))) : null,
           React.createElement(React.Fragment, null,
             guidanceText ? React.createElement("p", { style: { margin: "0 0 12px", color: "var(--ui-muted)", fontSize: 13, fontStyle: "italic", lineHeight: 1.55 } }, guidanceText) : null,
             React.createElement("div", { className: "course-modal__actions", style: { display: "flex", gap: 12, flexWrap: "wrap" } },

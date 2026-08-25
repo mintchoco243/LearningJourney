@@ -917,6 +917,23 @@ button.glh-filter-sel.is-active {
   font-weight: 800;
   line-height: 1;
 }
+.glh-filter-sel__clear {
+  position: absolute;
+  top: 50%;
+  right: 30px;
+  z-index: 2;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--glh-accent);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.glh-filter-sel__clear:hover { color: var(--ui-heading); }
+.glh-filter-sel__clear:focus-visible { outline: 2px solid rgba(255,158,0,.45); outline-offset: 2px; border-radius: 4px; }
 
 /* Library toolbar — flex-wrap adapts to the real container width instead of guessing viewport breakpoints. */
 .catalog-filter-toolbar {
@@ -1000,6 +1017,7 @@ button.glh-filter-sel.is-active {
 .calendar-board { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; overflow-x: auto; padding-bottom: 4px; }
 .calendar-month { min-width: 220px; }
 .calendar-month__title { margin: 0 0 14px; color: var(--ui-muted); font-family: var(--glh-display); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.calendar-month__title--natural-case { letter-spacing: 0; text-transform: none; }
 .calendar-timeline { position: relative; display: grid; gap: 12px; }
 .calendar-timeline::before { content: ""; position: absolute; left: 7px; top: 10px; bottom: 10px; width: 2px; background: var(--rpg-border-strong); }
 .calendar-event { position: relative; display: block; width: 100%; min-width: 0; padding: 0 0 0 28px; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
@@ -1007,6 +1025,9 @@ button.glh-filter-sel.is-active {
 .calendar-event__card { display: block; min-height: 64px; padding: 11px 14px; box-sizing: border-box; border: 1px solid var(--ui-box-border); border-radius: 8px; background: var(--ui-box); transition: border-color .14s, transform .14s; }
 .calendar-event:hover .calendar-event__card { border-color: var(--garena-red); transform: translateY(-1px); }
 .calendar-event__date { display: block; margin-bottom: 4px; color: var(--garena-red); font-size: 15px; font-weight: 800; line-height: 1.1; }
+.calendar-event__date--blank::before { content: "\00a0"; }
+.calendar-event__date--note { font-size: 12px; line-height: 1.2; overflow-wrap: anywhere; }
+.calendar-event__date--open-registration { font-size: 12px; line-height: 1.2; }
 .calendar-event__title { display: -webkit-box; overflow: hidden; color: var(--ui-heading); font-size: 14px; font-weight: 700; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; min-height: calc(1.35em * 2); }
 
 @media (max-width: 860px) {
@@ -1150,6 +1171,9 @@ button.glh-filter-sel.is-active {
 .course-card { box-sizing: border-box; height: 200px; }
 .course-card__top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px; }
 .course-card__chips { min-width: 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.course-card__more-skills { flex-shrink: 0; display: inline-flex; align-items: center; padding: 3px 8px; border: 1px solid rgba(148,163,184,.35); border-radius: 999px; background: rgba(148,163,184,.12); color: var(--rpg-muted); font-size: 11px; font-weight: 700; line-height: 1.2; cursor: help; outline: none; }
+.course-card__more-skills:focus-visible { border-color: var(--glh-accent); box-shadow: 0 0 0 2px rgba(255,158,0,.25); }
+.course-card__skills-tooltip { position: fixed; z-index: 1000; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; max-width: min(260px, calc(100vw - 24px)); padding: 0; pointer-events: none; transform: translate(-50%, calc(-100% - 8px)); }
 .course-card__top-actions { display: inline-flex; align-items: center; gap: 9px; flex-shrink: 0; }
 .course-card__title {
   display: -webkit-box;
@@ -1236,12 +1260,136 @@ button.glh-filter-sel.is-active {
   border-bottom-color: var(--glh-accent);
 }
 
+/* Course modal testimonials */
+.course-testimonials {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.course-testimonial {
+  --testimonial-bg: rgba(255,255,255,0.055);
+  --testimonial-border: rgba(255,255,255,0.10);
+  --testimonial-accent: var(--glh-accent);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 9px;
+  align-items: flex-start;
+}
+.course-testimonial--red {
+  --testimonial-bg: linear-gradient(135deg, rgba(228,30,38,0.13), rgba(255,255,255,0.052));
+  --testimonial-border: rgba(228,30,38,0.24);
+  --testimonial-accent: #ff767b;
+}
+.course-testimonial--cyan {
+  --testimonial-bg: linear-gradient(135deg, rgba(45,190,220,0.14), rgba(255,255,255,0.052));
+  --testimonial-border: rgba(45,190,220,0.24);
+  --testimonial-accent: #66d9ef;
+}
+.course-testimonial--amber {
+  --testimonial-bg: linear-gradient(135deg, rgba(245,166,35,0.14), rgba(255,255,255,0.052));
+  --testimonial-border: rgba(245,166,35,0.24);
+  --testimonial-accent: #ffc65c;
+}
+.course-testimonial--purple {
+  --testimonial-bg: linear-gradient(135deg, rgba(139,92,246,0.14), rgba(255,255,255,0.052));
+  --testimonial-border: rgba(139,92,246,0.24);
+  --testimonial-accent: #a78bfa;
+}
+.course-testimonial__person {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  text-align: left;
+}
+.course-testimonial__avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--testimonial-border);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+}
+.course-testimonial__avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--testimonial-accent) 20%, rgba(255,255,255,0.08));
+}
+.course-testimonial__meta {
+  width: 100%;
+  min-width: 0;
+}
+.course-testimonial__name,
+.course-testimonial__team {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.course-testimonial__name {
+  color: var(--ui-heading);
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1.12;
+}
+.course-testimonial__team {
+  margin-top: 1px;
+  color: color-mix(in srgb, var(--testimonial-accent) 55%, var(--ui-muted));
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1.12;
+}
+.course-testimonial__bubble {
+  position: relative;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 12px 12px 12px 4px;
+  background: var(--testimonial-bg);
+  border: 1px solid var(--testimonial-border);
+  color: var(--ui-text);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 10px 28px rgba(0,0,0,0.12);
+}
+.course-testimonial__bubble p {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: inherit;
+  font-size: 10.5px;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 @media (max-width: 600px) {
   .contact-footer {
     padding: 26px 18px 30px;
   }
   .contact-footer__text {
     font-size: 12px;
+  }
+  .course-testimonial {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 8px;
+  }
+  .course-testimonial__avatar {
+    width: 28px;
+    height: 28px;
+  }
+  .course-testimonial__name {
+    font-size: 8.5px;
+  }
+  .course-testimonial__team {
+    font-size: 7.8px;
+  }
+  .course-testimonial__bubble {
+    padding: 7px 9px;
+  }
+  .course-testimonial__bubble p {
+    font-size: 10px;
   }
 }
 

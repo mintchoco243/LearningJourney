@@ -69,6 +69,8 @@ assert.equal(endedCard.material_url, "https://docs.example/lc-003");
 assert.equal(mapCourseToCard({ id: "LC-003B", status: "ended", materials_url: "https://docs.example/lc-003b" }).material_url, "https://docs.example/lc-003b");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "Ended " }).course_status, "ended");
 assert.equal(mapCourseToCard({ id: "LC-004", status: "ended", session_date: "2026-07-15", material_url: "https://docs.example" }, TODAY).course_status, "upcoming_open");
+assert.equal(mapCourseToCard({ id: "LC-004R", reference_url: "https://reference.example/first https://reference.example/second" }, TODAY).reference_url, "https://reference.example/first https://reference.example/second");
+assert.equal(mapSessionToUpcoming({ id: "LC-004S", reference_url: "https://reference.example/session", session_date: "2026-07-08", status: "open" }, TODAY).reference_url, "https://reference.example/session");
 
 // shared CTA logic
 assert.equal(getCourseCta({ course_id: "LC-001", type: "elearning", url: "https://learn.example" }).key, "learn");

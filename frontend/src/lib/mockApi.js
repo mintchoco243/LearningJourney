@@ -42,9 +42,7 @@ export async function getRecommendations() {
 export async function getCalendarEvents() {
   try {
     const { sessions } = await apiGet("/api/sessions");
-    return (sessions || [])
-      .map((session) => mapSessionToCourse(session))
-      .filter((course) => course.start_date);
+    return (sessions || []).map((session) => mapSessionToCourse(session));
   } catch {
     throw new Error("COURSE_DATA_UNAVAILABLE");
   }

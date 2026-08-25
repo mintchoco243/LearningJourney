@@ -116,8 +116,9 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       course_code: bodyCourseCode,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
-      registration_url, description, xp_reward, rating, is_active, status, material_url,
+      registration_url, description, xp_reward, rating, is_active, status, material_url, reference_url,
       session_date, session_time, location, max_participants, is_hr_recommended, total_learners,
+      calendar_note,
     } = req.body;
     const course_code = String(id || bodyCourseCode || await nextCourseCode()).trim().toUpperCase();
 
@@ -138,18 +139,18 @@ adminCoursesRouter.post("/", async (req, res, next) => {
       `INSERT INTO courses
          (id, course_code, title, trainer, trainer_type, format, duration_hours,
           rating, skill_tags, rank_targets, role_targets, type, min_participants,
-          registration_url, description, xp_reward, is_active, status, material_url,
-          session_date, session_time, location, max_participants, current_count, session_status, is_hr_recommended, total_learners)
-       VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
-          $18, $19, $20, $21, $22, 0, $17, $23, $24)`,
+          registration_url, description, xp_reward, is_active, status, material_url, reference_url,
+          session_date, session_time, location, max_participants, current_count, session_status, is_hr_recommended, total_learners, calendar_note)
+        VALUES (UUID(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17,
+          $18, $19, $20, $21, $22, $23, 0, $17, $24, $25, $26)`,
       [
         course_code, title, trainer, trainer_type || "internal", format, duration_hours,
         normalizedRating, normalizedSkillTags, normalizedRankTargets, normalizedRoleTargets, type, cleanMin,
         registration_url, description, xp_reward,
         normalizeBoolean(is_active, true),
-        status || "open", material_url || null,
+        status || "open", material_url || null, reference_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
-        normalizeBoolean(is_hr_recommended), cleanTotalLearners,
+        normalizeBoolean(is_hr_recommended), cleanTotalLearners, calendar_note || null,
       ]
     );
 
@@ -168,8 +169,9 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       course_code,
       title, trainer, trainer_type, format, duration_hours,
       skill_tags, rank_targets, role_targets, type, min_participants,
-      registration_url, description, xp_reward, rating, is_active, status, material_url,
+      registration_url, description, xp_reward, rating, is_active, status, material_url, reference_url,
       session_date, session_time, location, max_participants, is_hr_recommended, total_learners,
+      calendar_note,
     } = req.body;
 
     if (!title || !trainer || !format || !duration_hours || !type || xp_reward === undefined) {
@@ -192,10 +194,11 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
       `UPDATE courses
        SET course_code = $2, title = $3, trainer = $4, trainer_type = $5, format = $6, duration_hours = $7,
            rating = $8, skill_tags = $9, rank_targets = $10, role_targets = $11, type = $12,
-           min_participants = $13, registration_url = $14, description = $15,
-           xp_reward = $16, is_active = $17, status = $18, material_url = $19,
-           session_date = $20, session_time = $21, location = $22, max_participants = $23,
-           session_status = $18, is_hr_recommended = $24, total_learners = $25,
+            min_participants = $13, registration_url = $14, description = $15,
+           xp_reward = $16, is_active = $17, status = $18, material_url = $19, reference_url = $20,
+           session_date = $21, session_time = $22, location = $23, max_participants = $24,
+           session_status = $18, is_hr_recommended = $25, total_learners = $26,
+           calendar_note = $27,
            updated_at = NOW()
        WHERE id = $1`,
       [
@@ -203,9 +206,9 @@ adminCoursesRouter.put("/:id", async (req, res, next) => {
         normalizedRating, normalizedSkillTags, normalizedRankTargets, normalizedRoleTargets, type, cleanMin,
         registration_url, description, xp_reward,
         normalizeBoolean(is_active, true),
-        status || "open", material_url || null,
+        status || "open", material_url || null, reference_url || null,
         session_date || null, session_time || null, location || null, cleanMax,
-        normalizeBoolean(is_hr_recommended), cleanTotalLearners,
+        normalizeBoolean(is_hr_recommended), cleanTotalLearners, calendar_note || null,
       ]
     );
 

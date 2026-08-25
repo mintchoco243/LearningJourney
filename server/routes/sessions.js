@@ -6,17 +6,18 @@ import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 export const sessionsRouter = express.Router();
 
 // Compatibility calendar view over `courses`.
-// `session_date IS NOT NULL` is allowed here only to render calendar/upcoming
-// views. It must not become a separate session data model again.
+// Calendar/upcoming compatibility view over courses. Dated rows render on their
+// date; open interest rows without a date render in Calendar's registration group.
 sessionsRouter.get("/", async (req, res) => {
   const params = [];
   const filters = [
     "c.is_active = TRUE",
     "c.status <> 'draft'",
     "c.type IN ('scheduled', 'interest')",
-    "c.session_date IS NOT NULL",
+    "(c.session_date IS NOT NULL OR (c.type = 'interest' AND c.status NOT IN ('ended', 'cancelled', 'canceled') AND COALESCE(c.session_status, 'open') NOT IN ('ended', 'cancelled', 'canceled')))",
   ];
   if (req.query.month) {
+    filters.push("c.session_date IS NOT NULL");
     params.push(`${req.query.month}-01`);
     filters.push(`c.session_date >= $${params.length}`);
     params.push(`${req.query.month}-01`);
@@ -29,9 +30,10 @@ sessionsRouter.get("/", async (req, res) => {
 
   const result = await query(
     `SELECT c.id, c.course_code, c.title, c.trainer, c.format, c.type, c.registration_url,
-            c.description, c.duration_hours, c.xp_reward, c.rating, c.status AS course_status, c.material_url,
+            c.description, c.duration_hours, c.xp_reward, c.rating, c.status AS course_status, c.material_url, c.reference_url,
             c.skill_tags, c.min_participants, c.session_date, c.session_time, c.location,
             c.max_participants, c.current_count, c.session_status AS status
+            , c.calendar_note
      FROM courses c
      WHERE ${filters.join(" AND ")}
      ORDER BY c.session_date ASC, c.session_time ASC`,

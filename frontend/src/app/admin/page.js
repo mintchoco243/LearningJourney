@@ -41,6 +41,7 @@ function AdminGateMessage({ title, message, action }) {
 
 function DevLoginButton() {
   const [loading, setLoading] = React.useState(false);
+  const devAdminEmail = "minhngoc.phamnguyen@garena.vn";
 
   async function login() {
     setLoading(true);
@@ -49,7 +50,7 @@ function DevLoginButton() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: "demo@garena.vn" }),
+        body: JSON.stringify({ email: devAdminEmail }),
       });
       if (!res.ok) throw new Error("DEV_LOGIN_FAILED");
       window.location.reload();
@@ -87,10 +88,9 @@ function DevLoginButton() {
   };
 
   export default function AdminApp() {
-    const [mounted, setMounted] = React.useState(false);
+    const [mounted, setMounted] = React.useState(true);
     React.useEffect(() => {
-      const frame = requestAnimationFrame(() => setMounted(true));
-      return () => cancelAnimationFrame(frame);
+      setMounted(true);
     }, []);
     const [adminSession, setAdminSession] = React.useState({ status: "loading", user: null, role: null });
     const [requestBadge, setRequestBadge] = React.useState(0);
@@ -210,7 +210,12 @@ function DevLoginButton() {
         <AdminGateMessage
           title="Không có quyền admin"
           message="Tài khoản của bạn chưa nằm trong danh sách admin được phê duyệt."
-          action={<button className="adm-btn" onClick={() => { window.location.href = "/"; }}>Về trang chính</button>}
+          action={
+            <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+              {process.env.NODE_ENV !== "production" && <DevLoginButton />}
+              <button className="adm-btn" onClick={() => { window.location.href = "/"; }}>Về trang chính</button>
+            </div>
+          }
         />
       );
     }
