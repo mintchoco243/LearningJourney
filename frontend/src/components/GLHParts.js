@@ -438,8 +438,9 @@ function formatCardDate(value) {
     };
     const topRow = React.createElement("div", { className: "course-card__top" },
       React.createElement("div", { className: "course-card__chips" },
-        visibleSkillTags.map((sid, index) => React.createElement(SkillPill, { key: `${sid}-${index}`, id: sid, wrap: true })),
-        hiddenSkillTags.length > 0 && React.createElement(SkillOverflowBadge, { tags: hiddenSkillTags }),
+        React.createElement("span", { className: "course-card__skill-cluster" },
+          visibleSkillTags.map((sid, index) => React.createElement(SkillPill, { key: `${sid}-${index}`, id: sid, wrap: true })),
+          hiddenSkillTags.length > 0 && React.createElement(SkillOverflowBadge, { tags: hiddenSkillTags })),
         statusChipText && React.createElement("span", { style: { flexShrink: 0, fontSize: 11, fontWeight: 600, textTransform: "none", letterSpacing: 0, padding: "3px 9px", borderRadius: 999, background: statusBg, color: statusColor, border: statusBorder } }, statusChipText)),
       React.createElement("div", { className: "course-card__top-actions" },
         rating ? React.createElement(Stars, { value: rating }) : null,
