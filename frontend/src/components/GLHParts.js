@@ -38,11 +38,11 @@ function formatCardDate(value) {
     const p = size === "sm" ? "3px 8px" : size === "lg" ? "6px 14px" : "5px 12px";
     const fs = size === "lg" ? 12 : 11;
     return React.createElement("span", {
+        className: "course-card__skill",
       style: {
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        maxWidth: "100%",
         background: meta.color + "1a",
         border: "1px solid " + meta.color + "4d",
         color: meta.color,
@@ -50,6 +50,7 @@ function formatCardDate(value) {
         padding: p,
         fontSize: fs,
         fontWeight: 700,
+        maxWidth: "100%",
         whiteSpace: props.wrap ? "normal" : "nowrap",
         overflowWrap: props.wrap ? "anywhere" : undefined,
         lineHeight: 1.2,
@@ -185,7 +186,8 @@ function formatCardDate(value) {
   function CourseTestimonialBubble({ testimonial, index }) {
     const [avatarFailed, setAvatarFailed] = React.useState(false);
     const reviewerName = String(testimonial.full_name || testimonial.user_name || testimonial.author || "").trim();
-    const reviewerTeam = String(testimonial.user_team || testimonial.team || "").trim();
+    const rawReviewerTeam = String(testimonial.user_team || testimonial.team || "").trim();
+    const reviewerTeam = /^AOV(?:\b|[\/\s-])/i.test(rawReviewerTeam) ? "AOV" : rawReviewerTeam;
     const feedback = String(testimonial.applied_learning || testimonial.content || "Chưa có chia sẻ về việc áp dụng.").trim();
     const avatarUrl = String(testimonial.avatar_url || testimonial.user_avatar || "").trim();
     const shouldUseExternalAvatar = avatarUrl
@@ -208,7 +210,7 @@ function formatCardDate(value) {
             React.createElement(SystemAvatar, { size: 30, crisp: true, opts: defaultAvatar })),
         (reviewerName || reviewerTeam) ? React.createElement("div", { className: "course-testimonial__meta" },
           reviewerName ? React.createElement("div", { className: "course-testimonial__name" }, reviewerName) : null,
-          reviewerTeam ? React.createElement("div", { className: "course-testimonial__team" }, reviewerTeam) : null) : null),
+          reviewerTeam ? React.createElement("div", { className: "course-testimonial__team", title: rawReviewerTeam || reviewerTeam }, reviewerTeam) : null) : null),
       React.createElement("div", { className: "course-testimonial__bubble" },
         React.createElement("p", null, feedback)));
   }
@@ -372,12 +374,13 @@ function formatCardDate(value) {
     const skillTags = Array.isArray(c.skill_tags)
       ? c.skill_tags.filter((tag) => typeof tag === "string" && tag.trim())
       : [];
-    const visibleSkillTags = skillTags.slice(0, 2);
-    const hiddenSkillTags = skillTags.slice(2);
+    const visibleSkillTags = skillTags.slice(0, 1);
+    const hiddenSkillTags = skillTags.slice(1);
     const joinMeta = getCourseJoinMeta(c);
     const isEnded = c.course_status === "ended";
     const rowId = c._id || c.id || c.course_row_id;
-    const done = rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id);
+    const done = c.__mockStatus === "completed"
+      || (rowId ? (user.completed_courses || []).includes(rowId) : (user.completed_courses || []).includes(c.course_id));
     const isRegistered = c.session_id && (user.registered_events || []).includes(c.session_id);
     const [favoriteDialog, setFavoriteDialog] = React.useState(null);
     const [favoriteBusy, setFavoriteBusy] = React.useState(false);

@@ -336,6 +336,8 @@ function ctaColor(cta) {
   /* ---------------- Catalog ---------------- */
   export function Catalog(props) {
     const { user } = useGame();
+    const mockCardEnabled = typeof window !== "undefined"
+      && new URLSearchParams(window.location.search).get("uiMock") === "completed-card";
     const [courses, setCourses] = React.useState([]);
     const [coursesLoading, setCoursesLoading] = React.useState(true);
     const [coursesError, setCoursesError] = React.useState("");
@@ -348,6 +350,20 @@ function ctaColor(cta) {
     const [rankFilter,     setRankFilter]     = React.useState([]);
     const [sortMode,       setSortMode]       = React.useState("rating_desc");
     const [targetOptions,  setTargetOptions]  = React.useState({ ranks: [], roles: [] });
+    const mockCompletedCard = {
+      _id: "ui-mock-completed-card",
+      course_id: "ui-mock-completed-card",
+      __mockStatus: "completed",
+            title: "Figma for Designer",
+      trainer: "Mock Trainer",
+      format: "online",
+      location: "Online",
+      skill_tags: ["it-dev", "game-design", "communication"],
+      rating: 5.1,
+      start_date: "2026-08-03",
+      session_time: "19:00",
+      duration_minutes: 24 * 60,
+    };
 
     const retryCourses = () => {
       setCoursesLoading(true);
@@ -364,10 +380,15 @@ function ctaColor(cta) {
           const sourceCourses = Array.isArray(data?.courses)
             ? data.courses.map((course) => mapCourseToCard(course))
             : [];
-          setCourses(sourceCourses);
+          setCourses(mockCardEnabled ? [mockCompletedCard, ...sourceCourses] : sourceCourses);
         })
         .catch((error) => {
           if (cancelled || error?.code === "AUTH_REQUIRED") return;
+          if (mockCardEnabled) {
+            setCourses([mockCompletedCard]);
+            setCoursesError("");
+            return;
+          }
           setCoursesError("Không tải được danh sách khóa học.");
         })
         .finally(() => {
@@ -438,6 +459,7 @@ function ctaColor(cta) {
     return React.createElement("div", { className: "glh-container fade-screen", style: { padding: "28px clamp(16px,4vw,40px) 80px" } },
       React.createElement("h2", { style: { margin: "0 0 16px", fontSize: "clamp(18px,2.2vw,24px)", fontWeight: 700, color: "var(--ui-heading)" } },
         "Kho khóa đào tạo"),
+      mockCardEnabled && React.createElement("div", { className: "ui-mock-banner" }, "Mock UI: card có nhiều tag và trạng thái Đã hoàn thành"),
 
       React.createElement(CourseSearchFilters, {
         filters: { q, cmFilter, trainerFilter, durationFilter, tagFilter, rankFilter, sortMode },
