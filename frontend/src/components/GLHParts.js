@@ -43,8 +43,8 @@ function formatCardDate(value) {
         display: "inline-flex",
         alignItems: "center",
         gap: 5,
-        background: meta.color + "1a",
-        border: "1px solid " + meta.color + "4d",
+        background: props.floating ? "var(--rpg-panel)" : meta.color + "1a",
+        border: "1px solid " + meta.color + (props.floating ? "b3" : "4d"),
         color: meta.color,
         borderRadius: 999,
         padding: p,
@@ -89,7 +89,7 @@ function formatCardDate(value) {
         className: "course-card__skills-tooltip",
         role: "tooltip",
         style: { left: tooltip.x, top: tooltip.y },
-      }, tags.map((tag, index) => React.createElement(SkillPill, { key: `${tag}-${index}`, id: tag, wrap: true }))), document.body));
+      }, tags.map((tag, index) => React.createElement(SkillPill, { key: `${tag}-${index}`, id: tag, wrap: true, floating: true }))), document.body));
   }
 
   /* ---------- Star rating ---------- */
