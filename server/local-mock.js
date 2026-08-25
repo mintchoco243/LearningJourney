@@ -338,10 +338,14 @@ localMockApiRouter.delete("/courses/:id/complete", (req, res) => {
   state.enrollments.delete(`${req.user.id}:${req.params.id}`);
   res.json({ ok: true, user: publicUser(req.user) });
 });
-localMockApiRouter.get("/courses/:id/testimonials", (req, res) => res.json({ testimonials: testimonials.get(req.params.id) || [] }));
-localMockApiRouter.post("/courses/:id/testimonials", (req, res) => {
-  const testimonial = { id: crypto.randomUUID(), user_name: req.user.full_name, rating: req.body?.rating || 5, content: req.body?.content || "", created_at: now() };
+localMockApiRouter.get("/courses/:id/testimonials", (req, res) => {
   const list = testimonials.get(req.params.id) || [];
+  res.json({ testimonials: list, has_submitted: list.some((item) => item.user_id === req.user.id) });
+});
+localMockApiRouter.post("/courses/:id/testimonials", (req, res) => {
+  const list = testimonials.get(req.params.id) || [];
+  if (list.some((item) => item.user_id === req.user.id)) return res.status(409).json({ error: "RATING_ALREADY_SUBMITTED" });
+  const testimonial = { id: crypto.randomUUID(), user_id: req.user.id, user_name: req.user.full_name, rating: req.body?.rating || 5, content: req.body?.content || "", created_at: now() };
   list.unshift(testimonial);
   testimonials.set(req.params.id, list);
   res.status(201).json({ testimonial });

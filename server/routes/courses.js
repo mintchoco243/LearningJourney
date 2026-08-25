@@ -361,15 +361,21 @@ coursesRouter.delete("/:id/complete", async (req, res, next) => {
 });
 
 coursesRouter.get("/:id/testimonials", async (req, res) => {
-  const result = await query(
+  const [result, ownResult] = await Promise.all([
+    query(
     `SELECT t.*, u.full_name, u.team AS user_team, u.role AS user_role, u.avatar_url
      FROM testimonials t
      JOIN users u ON u.id = t.user_id
      WHERE t.course_id = $1 AND t.is_featured = TRUE
      ORDER BY t.is_featured DESC, t.created_at DESC`,
     [req.params.id]
-  );
-  res.json({ testimonials: result.rows });
+    ),
+    query(
+      "SELECT id FROM testimonials WHERE course_id = $1 AND user_id = $2 LIMIT 1",
+      [req.params.id, req.user.id]
+    ),
+  ]);
+  res.json({ testimonials: result.rows, has_submitted: ownResult.rowCount > 0 });
 });
 
 coursesRouter.post("/:id/testimonials", async (req, res, next) => {
@@ -383,6 +389,12 @@ coursesRouter.post("/:id/testimonials", async (req, res, next) => {
 
     const completed = await query("SELECT id FROM enrollments WHERE user_id = $1 AND course_id = $2", [req.user.id, req.params.id]);
     if (!completed.rowCount) return res.status(403).json({ error: "COMPLETE_COURSE_FIRST" });
+
+    const existing = await query(
+      "SELECT id FROM testimonials WHERE course_id = $1 AND user_id = $2 LIMIT 1",
+      [req.params.id, req.user.id]
+    );
+    if (existing.rowCount) return res.status(409).json({ error: "RATING_ALREADY_SUBMITTED" });
 
     const appliedLearning = cleanOptionalText(req.body.applied_learning);
     const improvementFeedback = cleanOptionalText(req.body.improvement_feedback);

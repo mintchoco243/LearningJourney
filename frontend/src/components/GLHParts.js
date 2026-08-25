@@ -415,7 +415,11 @@ function formatCardDate(value) {
       const rowId = c._id || c.course_id;
       apiFetchResponse(`/api/courses/${encodeURIComponent(rowId)}/testimonials`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((data) => { if (active) setTestimonials(Array.isArray(data?.testimonials) ? data.testimonials : []); })
+        .then((data) => {
+          if (!active) return;
+          setTestimonials(Array.isArray(data?.testimonials) ? data.testimonials : []);
+          setRatingSubmittedCourseId(data?.has_submitted ? c.course_id : null);
+        })
         .catch(() => {});
       return () => { active = false; };
     }, [c]);
@@ -530,7 +534,7 @@ function formatCardDate(value) {
       }
       setCompletedCourseId(courseActionId);
       setUncompletedCourseId(null);
-      setRatingFormCourseId(null);
+      setRatingFormCourseId(c.course_id);
     };
     const unmarkComplete = async () => {
       setBusyAction("uncomplete");
