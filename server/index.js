@@ -26,6 +26,7 @@ import { adminSiteFeedbackRouter } from "./routes/admin/siteFeedback.js";
 import { adminAccountsRouter } from "./routes/admin/accounts.js";
 import { adminTestimonialsRouter } from "./routes/admin/testimonials.js";
 import { adminAnalyticsRouter } from "./routes/admin/analytics.js";
+import { adminReportRouter } from "./routes/admin/report.js";
 import { adminSettingsRouter } from "./routes/admin/settings.js";
 import { adminMinigameRouter } from "./routes/admin/minigame.js";
 import { botRouter } from "./routes/bot.js";
@@ -120,6 +121,7 @@ app.use("/admin/api/site-feedback", requireAuth, requireAdmin, adminSiteFeedback
 app.use("/admin/api/accounts", requireAuth, requireAdmin, adminAccountsRouter);
 app.use("/admin/api/testimonials", requireAuth, requireAdmin, adminTestimonialsRouter);
 app.use("/admin/api/analytics", requireAuth, requireAdmin, adminAnalyticsRouter);
+app.use("/admin/api/report", requireAuth, requireAdmin, adminReportRouter);
 app.use("/admin/api/settings", requireAuth, requireAdmin, adminSettingsRouter);
 app.use("/admin/api/minigame", requireAuth, requireAdmin, adminMinigameRouter);
 

@@ -573,7 +573,13 @@ function formatCardDate(value) {
       ? (cta.tone === "success" ? "check-circle" : cta.tone === "warning" ? "clock" : "x")
       : (cta.action === "reserve" ? "check-circle" : "arrow-right");
     const openMaterial = () => {
-      if (modalCourse.material_url) window.open(modalCourse.material_url, "_blank", "noreferrer");
+      if (!modalCourse.material_url) return;
+      trackEvent("material_view", {
+        course_id: modalCourse._id || modalCourse.id || modalCourse.course_row_id || modalCourse.course_id,
+        course_code: modalCourse.course_code || modalCourse.course_id,
+        course_title: modalCourse.title,
+      });
+      window.open(modalCourse.material_url, "_blank", "noreferrer");
     };
     // Keyed by modalJoinMeta.id so the guidance stays aligned with the course's join method.
     const guidanceText = (done || isReserved) ? null : ({

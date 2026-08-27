@@ -129,22 +129,182 @@ const COURSE_STATUSES = [
   }
 
   /* ===================== DASHBOARD ===================== */
+
+  const DATE_RANGE_PRESETS = [
+    { id: "7d", label: "7 ngày" },
+    { id: "30d", label: "30 ngày" },
+    { id: "launch", label: "Từ ra mắt" },
+    { id: "custom", label: "Tùy chọn" },
+  ];
+  const LAUNCH_DATE = "2026-07-29";
+
+  function toDateStr(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
+  function computeDateRange(preset, customStart, customEnd) {
+    const end = new Date();
+    if (preset === "custom") {
+      return { startDate: customStart || "", endDate: customEnd || "" };
+    }
+    if (preset === "launch") {
+      return { startDate: LAUNCH_DATE, endDate: toDateStr(end) };
+    }
+    const start = new Date(end);
+    start.setDate(start.getDate() - (preset === "7d" ? 6 : 29));
+    return { startDate: toDateStr(start), endDate: toDateStr(end) };
+  }
+
+  function formatDelta(value) {
+    if (value === null || value === undefined) return null;
+    return `${value >= 0 ? "↑" : "↓"} ${Math.abs(value)}% so với kỳ trước`;
+  }
+
+  function csvCell(value) {
+    const text = value === null || value === undefined ? "" : String(value);
+    return `"${text.replace(/"/g, '""')}"`;
+  }
+
+  function downloadCsv(filename, rows) {
+    const csv = rows.map(row => row.map(csvCell).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  function buildReportCsvRows(analytics, report, range) {
+    const rows = [["Garena Learning Compass — Báo cáo"], [`Khoảng ngày: ${range.startDate} → ${range.endDate}`], []];
+    if (analytics?.implemented) {
+      const m = analytics.metrics || {};
+      const f = analytics.onboarding_funnel || {};
+      rows.push(["GA4 — Traffic", "Giá trị"]);
+      rows.push(["Users", m.users]);
+      rows.push(["Sessions", m.sessions]);
+      rows.push(["Pageviews", m.pageviews]);
+      rows.push(["Thời gian phiên TB", m.avg_session_duration]);
+      rows.push(["TB thời gian/lượt xem (toàn site)", m.avg_time_per_view]);
+      rows.push([]);
+      rows.push(["GA4 — Funnel onboarding", "Giá trị"]);
+      rows.push(["Bắt đầu", f.start]);
+      rows.push(["Tạo avatar", f.avatar_created]);
+      rows.push(["Hoàn tất", f.completed]);
+      rows.push([]);
+      rows.push(["GA4 — Funnel khóa học", "Giá trị"]);
+      rows.push(["Xem khóa học", m.course_views]);
+      rows.push(["Bấm đăng ký", m.register_clicks]);
+      rows.push(["Tỷ lệ chuyển đổi", m.conversion_rate]);
+      rows.push(["Xem tài liệu", m.material_views]);
+      rows.push([]);
+      rows.push(["Top trang", "Lượt xem", "Người dùng", "TB thời gian/lượt xem"]);
+      (analytics.top_pages || []).forEach(p => rows.push([p.path, p.views, p.users, p.avg_time_per_view]));
+      rows.push([]);
+    }
+    if (report?.current) {
+      const c = report.current;
+      const d = report.deltas || {};
+      rows.push(["Vận hành hệ thống (SQL)", "Giá trị", "So với kỳ trước"]);
+      rows.push(["Onboarding hoàn tất", c.onboarding.completed, d.onboarding_completed]);
+      rows.push(["Khóa học hoàn thành", c.course_completions, d.course_completions]);
+      rows.push(["Giữ chỗ session", c.reservations, d.reservations]);
+      rows.push(["Lưu khóa học yêu thích", c.favorites, ""]);
+      rows.push(["Feedback (số lượt)", c.feedback.count, ""]);
+      rows.push(["Feedback rating TB", c.feedback.avg_rating, ""]);
+      rows.push(["Testimonials", c.testimonials, ""]);
+      rows.push(["Minigame — lượt chơi", c.minigame.runs, d.minigame_runs]);
+      rows.push(["Minigame — người chơi", c.minigame.players, ""]);
+      rows.push([]);
+      rows.push(["Top khóa học", "Đăng ký", "Hoàn thành", "Rating", "Testimonial"]);
+      (c.top_courses || []).forEach(course =>
+        rows.push([course.title, course.registrations, course.completions, course.rating, course.testimonials])
+      );
+    }
+    return rows;
+  }
+
+  function WeeklyLineChart({ data, series, height = 160 }) {
+    if (!data || data.length === 0) {
+      return <div style={{ color: "var(--rpg-muted)", fontSize: 13 }}>Chưa đủ dữ liệu theo tuần.</div>;
+    }
+    const width = 640;
+    const padding = { top: 10, right: 12, bottom: 22, left: 8 };
+    const innerW = width - padding.left - padding.right;
+    const innerH = height - padding.top - padding.bottom;
+    const maxVal = Math.max(1, ...data.flatMap(d => series.map(s => Number(d[s.key]) || 0)));
+    const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+    const xAt = i => padding.left + stepX * i;
+    const yAt = v => padding.top + innerH - (v / maxVal) * innerH;
+
+    return (
+      <div>
+        <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", display: "block" }}>
+          {[0, 0.5, 1].map(f => (
+            <line
+              key={f}
+              x1={padding.left} x2={width - padding.right}
+              y1={padding.top + innerH * (1 - f)} y2={padding.top + innerH * (1 - f)}
+              stroke="var(--rpg-border)" strokeWidth="1"
+            />
+          ))}
+          {series.map(s => (
+            <g key={s.key}>
+              <polyline
+                points={data.map((d, i) => `${xAt(i)},${yAt(Number(d[s.key]) || 0)}`).join(" ")}
+                fill="none" stroke={s.color} strokeWidth="2"
+              />
+              {data.map((d, i) => (
+                <circle key={i} cx={xAt(i)} cy={yAt(Number(d[s.key]) || 0)} r="3" fill={s.color}>
+                  <title>{`${s.label} · tuần ${d.week_start} → ${d.week_end}: ${d[s.key]}`}</title>
+                </circle>
+              ))}
+            </g>
+          ))}
+          {data.map((d, i) => (
+            <text key={i} x={xAt(i)} y={height - 6} fontSize="9" textAnchor="middle" fill="var(--rpg-muted)">
+              {d.week_start.slice(5)}
+            </text>
+          ))}
+        </svg>
+        <div style={{ display: "flex", gap: 14, marginTop: 4, flexWrap: "wrap" }}>
+          {series.map(s => (
+            <span key={s.key} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--rpg-muted)" }}>
+              <span style={{ width: 9, height: 9, borderRadius: 2, background: s.color, display: "inline-block" }} />
+              {s.label}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   export function Dashboard({ onNavigate }) {
     const [stats, setStats] = React.useState(D.ADMIN_STATS);
     const [pendingReqs, setPendingReqs] = React.useState(D.ADMIN_REQUESTS.filter(r => r.status === "pending"));
     const [analytics, setAnalytics] = React.useState(null);
+    const [report, setReport] = React.useState(null);
+    const [rangePreset, setRangePreset] = React.useState("30d");
+    const [customStart, setCustomStart] = React.useState("");
+    const [customEnd, setCustomEnd] = React.useState("");
+
+    const range = React.useMemo(
+      () => computeDateRange(rangePreset, customStart, customEnd),
+      [rangePreset, customStart, customEnd]
+    );
 
     React.useEffect(() => {
       apiFetch("/admin/api/stats").then(data => {
         setStats(prev => ({
           ...prev,
-          total_users: data.total_users ?? prev.total_users,
+          total_users: data.onboarded_users ?? prev.total_users,
           enrollments_this_month: data.enrollments_this_month ?? prev.enrollments_this_month,
+          enrollments_delta: data.enrollments_delta ?? null,
           pending_ld_requests: data.pending_ld_requests ?? prev.pending_ld_requests,
           active_courses: data.active_courses ?? prev.active_courses,
-          top_courses: data.top_courses?.length
-            ? data.top_courses.map(c => ({ name: c.title, code: c.id, enrollments: c.enrolled_count || 0 }))
-            : prev.top_courses,
         }));
       }).catch(() => {});
       apiFetch("/admin/api/ld-requests?status=pending").then(data => {
@@ -157,17 +317,35 @@ const COURSE_STATUSES = [
           status: "pending",
         })));
       }).catch(() => {});
-      apiFetch("/admin/api/analytics").then(data => setAnalytics(data)).catch(() => setAnalytics(null));
     }, []);
 
+    React.useEffect(() => {
+      if (!range.startDate || !range.endDate) return;
+      let cancelled = false;
+      const qs = `?startDate=${range.startDate}&endDate=${range.endDate}`;
+      apiFetch(`/admin/api/analytics${qs}`).then(data => { if (!cancelled) setAnalytics(data); }).catch(() => { if (!cancelled) setAnalytics(null); });
+      apiFetch(`/admin/api/report${qs}`).then(data => { if (!cancelled) setReport(data); }).catch(() => { if (!cancelled) setReport(null); });
+      return () => { cancelled = true; };
+    }, [range.startDate, range.endDate]);
+
     const s = stats;
-    const maxE  = Math.max(...(s.top_courses || []).map(c => c.enrollments), 1);
     const metrics = analytics?.metrics || {};
+    const onboardingFunnel = analytics?.onboarding_funnel || {};
     const topGaPages = analytics?.top_pages || [];
     const maxGaViews = Math.max(...topGaPages.map(page => Number(page.views) || 0), 1);
     const courseViews = Number(metrics.course_views) || 0;
     const registerClicks = Number(metrics.register_clicks) || 0;
-    const maxGaEvent = Math.max(courseViews, registerClicks, 1);
+    const reservations = Number(report?.current?.reservations) || 0;
+    const courseCompletions = Number(report?.current?.course_completions) || 0;
+    const maxCourseFunnel = Math.max(courseViews, registerClicks, reservations, courseCompletions, 1);
+    const maxOnboardingFunnel = Math.max(
+      Number(onboardingFunnel.start) || 0,
+      Number(onboardingFunnel.avatar_created) || 0,
+      Number(onboardingFunnel.completed) || 0,
+      1
+    );
+    const topCourses = report?.current?.top_courses || [];
+    const canExport = Boolean(analytics?.implemented || report?.current);
 
     return (
       <div data-screen-label="Dashboard">
@@ -178,25 +356,117 @@ const COURSE_STATUSES = [
 
         <div className="adm-stat-grid">
           <StatCard label="Người dùng onboard"        value={(s.total_users || 0).toLocaleString("vi-VN")} icon="users"          color="#6aa3e0" iconBg="rgba(59,111,176,.14)" />
-          <StatCard label="Enrollments tháng này"     value={s.enrollments_this_month || 0}                icon="trending-up"    color="#2BB6A3" iconBg="rgba(43,182,163,.14)" delta={s.enrollments_delta} />
+          <StatCard label="Enrollments tháng này"     value={s.enrollments_this_month || 0}                icon="trending-up"    color="#2BB6A3" iconBg="rgba(43,182,163,.14)" delta={s.enrollments_delta ?? undefined} />
           <StatCard label="L&D Requests chờ duyệt"   value={s.pending_ld_requests || 0}                   icon="message-square" color="#E41E26" iconBg="rgba(228,30,38,.12)" />
           <StatCard label="Khóa học đang hoạt động"  value={s.active_courses || 0}                        icon="book-open"      color="#9b7fff" iconBg="rgba(124,92,255,.14)" />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 260px", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <SectionCard title="Top 5 khóa học · Enrollments tháng này">
-              <div className="adm-bar-chart">
-                {(s.top_courses || []).map((c, i) => (
-                  <div key={i} className="adm-bar-row">
-                    <span className="adm-bar-name" title={c.name}>{c.name}</span>
-                    <div className="adm-bar-track">
-                      <div className="adm-bar-fill" style={{ width: `${(c.enrollments / maxE) * 100}%` }} />
-                    </div>
-                    <span className="adm-bar-val">{c.enrollments}</span>
-                  </div>
+            <div className="adm-filter-row">
+              <div className="adm-tab-filter">
+                {DATE_RANGE_PRESETS.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`adm-tab-filter__item${rangePreset === p.id ? " is-active" : ""}`}
+                    onClick={() => setRangePreset(p.id)}
+                  >
+                    {p.label}
+                  </button>
                 ))}
               </div>
+              {rangePreset === "custom" && (
+                <>
+                  <input type="date" className="adm-input" style={{ width: 140 }} value={customStart} onChange={e => setCustomStart(e.target.value)} />
+                  <span style={{ color: "var(--rpg-muted)", fontSize: 12 }}>→</span>
+                  <input type="date" className="adm-input" style={{ width: 140 }} value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+                </>
+              )}
+              <span style={{ marginLeft: "auto", fontSize: 12, color: "var(--rpg-muted)" }}>
+                {range.startDate && range.endDate ? `${range.startDate} → ${range.endDate}` : "Chọn khoảng ngày"}
+              </span>
+              <button
+                type="button"
+                className="adm-btn adm-btn--sec adm-btn--sm"
+                disabled={!canExport}
+                onClick={() => downloadCsv(`learning-compass-report_${range.startDate}_${range.endDate}.csv`, buildReportCsvRows(analytics, report, range))}
+              >
+                ⬇️ Xuất CSV
+              </button>
+            </div>
+
+            <SectionCard title="Vận hành hệ thống">
+              {report?.current ? (
+                <div className="adm-ga-dashboard">
+                  <div className="adm-ga-metrics">
+                    {[
+                      ["Onboarding hoàn tất", report.current.onboarding.completed, report.deltas?.onboarding_completed],
+                      ["Khóa học hoàn thành", report.current.course_completions, report.deltas?.course_completions],
+                      ["Giữ chỗ session", report.current.reservations, report.deltas?.reservations],
+                      ["Lưu yêu thích", report.current.favorites, null],
+                      ["Feedback (n / rating TB)", `${report.current.feedback.count} · ${report.current.feedback.avg_rating != null ? report.current.feedback.avg_rating.toFixed(2) : "-"}★`, null],
+                      ["Testimonials", report.current.testimonials, null],
+                      ["Minigame — lượt chơi", report.current.minigame.runs, report.deltas?.minigame_runs],
+                      ["Minigame — người chơi", report.current.minigame.players, null],
+                    ].map(([label, value, delta]) => (
+                      <div key={label} className="adm-ga-metric">
+                        <div className="adm-ga-metric__label">{label}</div>
+                        <div className="adm-ga-metric__value">{value ?? "-"}</div>
+                        {formatDelta(delta) && (
+                          <div style={{ fontSize: 11, marginTop: 3, color: delta >= 0 ? "#2BB6A3" : "#C0504D" }}>
+                            {formatDelta(delta)}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <div className="adm-ga-title">Xu hướng theo tuần</div>
+                    <WeeklyLineChart
+                      data={report.timeline || []}
+                      series={[
+                        { key: "course_completions", label: "Khóa học hoàn thành", color: "#2bb6a3" },
+                        { key: "reservations", label: "Đăng ký học", color: "#6aa3e0" },
+                        { key: "active_users", label: "User hoạt động", color: "#9b7fff" },
+                      ]}
+                    />
+                  </div>
+
+                  {topCourses.length > 0 && (
+                    <div>
+                      <div className="adm-ga-title">Top 5 khóa học · Đăng ký nhiều nhất</div>
+                      <div className="adm-table-wrap">
+                        <table className="adm-table">
+                          <thead>
+                            <tr>
+                              <th>Khóa học</th>
+                              <th>Đăng ký</th>
+                              <th>Hoàn thành</th>
+                              <th>Rating</th>
+                              <th>Testimonial</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {topCourses.map((c, i) => (
+                              <tr key={`${c.title}-${i}`}>
+                                <td title={c.title}>{c.title}</td>
+                                <td>{c.registrations}</td>
+                                <td>{c.completions}</td>
+                                <td>{c.rating ? `${c.rating}★` : "-"}</td>
+                                <td>{c.testimonials}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ color: "var(--rpg-muted)", fontSize: 13 }}>Đang tải dữ liệu vận hành...</div>
+              )}
             </SectionCard>
 
             <SectionCard title="Site Analytics">
@@ -207,10 +477,12 @@ const COURSE_STATUSES = [
                       ["Users", metrics.users],
                       ["Sessions", metrics.sessions],
                       ["Pageviews", metrics.pageviews],
-                      ["Active today", metrics.active_users_today],
+                      ["Thời gian phiên TB", metrics.avg_session_duration],
+                      ["TB thời gian/lượt xem", metrics.avg_time_per_view],
                       ["Course views", metrics.course_views],
                       ["Register clicks", metrics.register_clicks],
                       ["Conversion rate", metrics.conversion_rate],
+                      ["Xem tài liệu", metrics.material_views],
                     ].map(([label, value]) => (
                       <div key={label} className="adm-ga-metric">
                         <div className="adm-ga-metric__label">{label}</div>
@@ -220,16 +492,49 @@ const COURSE_STATUSES = [
                   </div>
 
                   <div>
-                    <div className="adm-ga-title">Course funnel</div>
+                    <div className="adm-ga-title">Xu hướng theo tuần</div>
+                    <WeeklyLineChart
+                      data={analytics.timeline || []}
+                      series={[
+                        { key: "users", label: "Users", color: "#6aa3e0" },
+                        { key: "sessions", label: "Sessions", color: "#2bb6a3" },
+                        { key: "pageviews", label: "Pageviews", color: "#9b7fff" },
+                      ]}
+                    />
+                  </div>
+
+                  <div>
+                    <div className="adm-ga-title">Funnel onboarding (nhân vật)</div>
                     <div className="adm-bar-chart">
                       {[
-                        ["Course views", courseViews],
-                        ["Register clicks", registerClicks],
+                        ["Bắt đầu", Number(onboardingFunnel.start) || 0],
+                        ["Tạo avatar", Number(onboardingFunnel.avatar_created) || 0],
+                        ["Hoàn tất", Number(onboardingFunnel.completed) || 0],
                       ].map(([label, value]) => (
                         <div key={label} className="adm-bar-row">
                           <span className="adm-bar-name" title={label}>{label}</span>
                           <div className="adm-bar-track">
-                            <div className="adm-bar-fill adm-bar-fill--teal" style={{ width: `${(value / maxGaEvent) * 100}%` }} />
+                            <div className="adm-bar-fill" style={{ width: `${(value / maxOnboardingFunnel) * 100}%` }} />
+                          </div>
+                          <span className="adm-bar-val">{value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="adm-ga-title">Funnel khóa học (GA → SQL)</div>
+                    <div className="adm-bar-chart">
+                      {[
+                        ["Xem khóa học", courseViews],
+                        ["Bấm đăng ký", registerClicks],
+                        ["Giữ chỗ (SQL)", reservations],
+                        ["Hoàn thành (SQL)", courseCompletions],
+                      ].map(([label, value]) => (
+                        <div key={label} className="adm-bar-row">
+                          <span className="adm-bar-name" title={label}>{label}</span>
+                          <div className="adm-bar-track">
+                            <div className="adm-bar-fill adm-bar-fill--teal" style={{ width: `${(value / maxCourseFunnel) * 100}%` }} />
                           </div>
                           <span className="adm-bar-val">{value}</span>
                         </div>
@@ -239,15 +544,19 @@ const COURSE_STATUSES = [
 
                   {topGaPages.length > 0 && (
                     <div>
-                      <div className="adm-ga-title">Top pages</div>
+                      <div className="adm-ga-title">Top trang · Lượt xem / Người dùng / TB thời gian mỗi lượt xem</div>
                       <div className="adm-bar-chart">
                         {topGaPages.map((page, i) => (
-                          <div key={`${page.path || page.title}-${i}`} className="adm-bar-row">
-                            <span className="adm-bar-name" title={page.path || page.title}>{page.path || page.title}</span>
+                          <div key={`${page.path}-${i}`} className="adm-bar-row">
+                            <span className="adm-bar-name" title={page.path}>{page.path}</span>
                             <div className="adm-bar-track">
                               <div className="adm-bar-fill" style={{ width: `${((Number(page.views) || 0) / maxGaViews) * 100}%` }} />
                             </div>
-                            <span className="adm-bar-val">{page.views}</span>
+                            <span className="adm-bar-val" style={{ width: "auto", display: "flex", gap: 8 }}>
+                              <span>{page.views}v</span>
+                              <span style={{ color: "var(--rpg-muted)" }}>{page.users}u</span>
+                              <span style={{ color: "var(--rpg-muted)" }}>{page.avg_time_per_view}</span>
+                            </span>
                           </div>
                         ))}
                       </div>
