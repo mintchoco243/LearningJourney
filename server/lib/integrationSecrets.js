@@ -4,8 +4,11 @@ import { query } from "../db.js";
 const PREFIX = "enc:v1:";
 
 function encryptionKey() {
-  const secret = process.env.INTEGRATION_ENCRYPTION_KEY || process.env.JWT_SECRET;
-  if (!secret) throw new Error("INTEGRATION_ENCRYPTION_KEY_OR_JWT_SECRET_REQUIRED");
+  // Demo System injects DATABASE_URL but does not expose arbitrary project env vars.
+  // Keep it ahead of JWT_SECRET so adding/changing JWT_SECRET won't silently make
+  // previously stored integration credentials unreadable.
+  const secret = process.env.INTEGRATION_ENCRYPTION_KEY || process.env.DATABASE_URL || process.env.JWT_SECRET;
+  if (!secret) throw new Error("INTEGRATION_ENCRYPTION_KEY_OR_DATABASE_URL_REQUIRED");
   return crypto.scryptSync(secret, "learning-compass-integrations-v1", 32);
 }
 
