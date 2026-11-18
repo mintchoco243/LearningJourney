@@ -34,6 +34,12 @@ import { faqsRouter } from "./routes/faqs.js";
 import { minigameRouter } from "./routes/minigame.js";
 import { adminFaqsRouter } from "./routes/admin/faqs.js";
 import { localMockApiRouter, localMockAuthRouter } from "./local-mock.js";
+import { syncGigiBudget } from "./services/gigiBudget.js";
+import { adminAlphaSyncRouter } from "./routes/admin/alphaKnowledgeSync.js";
+import { pollProcessingAlphaRuns, runScheduledAlphaSyncs } from "./services/alphaKnowledgeSync.js";
+import { query } from "./db.js";
+import { hasPassedNineAm, nextNineAmDelay, vietnamDateKey } from "./lib/vietnamDailySchedule.js";
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const frontendDir = path.join(__dirname, "..", "frontend");
@@ -124,6 +130,46 @@ app.use("/admin/api/analytics", requireAuth, requireAdmin, adminAnalyticsRouter)
 app.use("/admin/api/report", requireAuth, requireAdmin, adminReportRouter);
 app.use("/admin/api/settings", requireAuth, requireAdmin, adminSettingsRouter);
 app.use("/admin/api/minigame", requireAuth, requireAdmin, adminMinigameRouter);
+
+app.use("/admin/api/alpha-knowledge", requireAuth, requireAdmin, adminAlphaSyncRouter);
+
+// Run on the server at 09:00 Vietnam time, even when nobody has the website open.
+if (process.env.LOCAL_MOCK_MODE !== "true") {
+  async function refreshBudget() {
+    try { await syncGigiBudget(); }
+    catch (error) { console.warn("[gigi-budget]", error.message); }
+  }
+
+  async function refreshAlpha() {
+    try { await runScheduledAlphaSyncs(); }
+    catch (error) { console.warn("[alpha-sync-schedule]", error.message); }
+  }
+
+  async function runDailyIntegrations() {
+    await refreshBudget();
+    await refreshAlpha(); // Users see the latest GiGi snapshot from this morning.
+  }
+
+  function scheduleNextNineAm() {
+    setTimeout(async () => {
+      try { await runDailyIntegrations(); }
+      finally { scheduleNextNineAm(); }
+    }, nextNineAmDelay()).unref();
+  }
+
+  // If the server starts after 09:00, catch up only when GiGi has not succeeded today.
+  if (hasPassedNineAm()) {
+    setTimeout(async () => {
+      try {
+        const state = await query("SELECT DATE_FORMAT(succeeded_at, '%Y-%m-%d') AS success_day FROM gigi_budget_sync WHERE id=1");
+        if (state.rows[0]?.success_day !== vietnamDateKey()) await refreshBudget();
+        await refreshAlpha();
+      } catch (error) { console.warn("[integration-catch-up]", error.message); }
+    }, 60_000).unref();
+  }
+  scheduleNextNineAm();
+  setInterval(() => pollProcessingAlphaRuns().catch((error) => console.warn("[alpha-sync-poll]", error.message)), 60_000).unref();
+}
 
 // Keep the public iframe URL stable while avoiding static-HTML deployment detection.
 app.get("/minigame/snake.html", (req, res, next) => {

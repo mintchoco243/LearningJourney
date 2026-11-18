@@ -24,6 +24,63 @@ const { Icon } = GLHUI;
 const { useGame, rankForUser } = GLHEngine;
 const { Avatar } = GLHAvatar;
 
+const formatVnd = (value) => `${new Intl.NumberFormat("vi-VN").format(value)} VNĐ`;
+const formatShortVnd = (value) => {
+  const amount = Number(value) || 0;
+  if (amount >= 1_000_000) return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 }).format(amount / 1_000_000)}tr`;
+  if (amount >= 1_000) return `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(amount / 1_000)}k`;
+  return `${new Intl.NumberFormat("vi-VN").format(amount)}đ`;
+};
+
+function BudgetSummary() {
+  const [budget, setBudget] = React.useState(undefined);
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = () => apiFetchResponse("/api/me/budget", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => { if (!cancelled) setBudget(data); })
+      .catch(() => { if (!cancelled) setBudget(null); });
+    load();
+    const timer = window.setInterval(() => { if (document.visibilityState === "visible") load(); }, 5 * 60 * 1000);
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => { cancelled = true; window.clearInterval(timer); window.removeEventListener("focus", onFocus); };
+  }, []);
+  if (budget === undefined) return React.createElement("div", { className: "dash-budget" }, "Đang tải Learning Budget…");
+  if (budget === null) return React.createElement("div", { className: "dash-budget" }, "Không tải được Learning Budget. Vui lòng thử lại sau.");
+  const cap = Number(budget.capVnd || 0);
+  const used = Number(budget.usedVnd || 0);
+  const pending = Number(budget.pendingVnd || 0);
+  const remaining = Number(budget.remainingVnd);
+  const ready = Boolean(budget.fetchedAt) && budget.remainingVnd !== null && Number.isFinite(remaining) && cap > 0;
+  const remainingPercent = ready ? Math.max(0, Math.min(100, remaining / cap * 100)) : 0;
+  const fetchedValue = String(budget.fetchedAt || "").replace(" ", "T");
+  const fetchedAt = fetchedValue ? new Date(fetchedValue + (/(?:Z|[+-]\d{2}:\d{2})$/i.test(fetchedValue) ? "" : "+07:00")) : null;
+  const updatedLabel = fetchedAt && !Number.isNaN(fetchedAt.getTime())
+    ? new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" }).format(fetchedAt)
+    : "chưa có";
+  return React.createElement("section", { className: "dash-budget", "aria-label": "Learning Budget Sponsor" },
+    React.createElement("div", { className: "dash-budget__heading" },
+      React.createElement("span", null, `Learning Budget Sponsor - ${budget.year}`),
+      React.createElement("details", { className: "dash-budget__details" },
+        React.createElement("summary", { "aria-label": "Xem chi tiết Learning Budget Sponsor", title: "Xem chi tiết budget" }, "ⓘ"),
+        React.createElement("div", { className: "dash-budget__tooltip" },
+          React.createElement("div", null, "Đã dùng: ", ready ? formatVnd(used) : "Chưa có dữ liệu"),
+          React.createElement("div", null, "Hạn mức: ", formatVnd(cap)),
+          React.createElement("div", null, "Đang chờ duyệt: ", ready ? formatVnd(pending) : "Chưa có dữ liệu"),
+          React.createElement("div", null, "Cập nhật: ", updatedLabel),
+          budget.unresolvedTickets > 0 && React.createElement("div", null, `${budget.unresolvedTickets} ticket cần kiểm tra.`),
+          budget.sourceStatus === "error" && React.createElement("div", null, "GiGi đang lỗi; đây là dữ liệu gần nhất.")))),
+    React.createElement("div", { className: "dash-budget__bar", role: "img", "aria-label": ready ? `Còn lại ${formatVnd(remaining)}, đã dùng ${formatVnd(used)}` : "Chưa có đủ dữ liệu budget" },
+      ready
+        ? React.createElement(React.Fragment, null,
+            React.createElement("div", { className: "dash-budget__remaining", style: { width: `${remainingPercent}%` } },
+              React.createElement("span", { className: "dash-budget__bar-label" }, `Còn lại: ${formatShortVnd(remaining)}`)),
+            React.createElement("div", { className: "dash-budget__used" },
+              React.createElement("span", { className: "dash-budget__bar-label" }, `Đã dùng: ${formatShortVnd(used)}`)))
+        : React.createElement("span", { className: "dash-budget__bar-label dash-budget__bar-label--empty" }, "Chưa có số dư")));
+}
+
 // ─── Stat box ─────────────────────────────────────────────────────────────────
 export function Stat({ value, label, onClick }) {
   const content = React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", minWidth: 0, textAlign: "center" } },
@@ -283,7 +340,7 @@ export function Dashboard(props) {
     }),
 
     // ── Hero ─────────────────────────────────────────────────────────────────
-    React.createElement("div", { className: "dash-hero", style: { padding: "8px 16px" } },
+    React.createElement("div", { className: "dash-hero" },
       React.createElement("div", { className: "dash-hero__avatar", style: { position: "relative", padding: 4 } },
         React.createElement(Avatar, { opts: revealOpts, size: 80, crisp: props.crisp }),
         React.createElement("button", {
@@ -307,10 +364,10 @@ export function Dashboard(props) {
           }
         }, React.createElement(Icon, { name: "edit-3", size: 11, color: "#fff" }))
       ),
-      React.createElement("div", { style: { minWidth: 0 } },
+      React.createElement("div", { className: "dash-hero__identity" },
         React.createElement("div", { className: "dash-rank" }, profileMeta),
         React.createElement("div", { className: "dash-classname", style: { color: "var(--ui-heading)" } }, displayName),
-        savedFocusSkills.length ? React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 } },
+        savedFocusSkills.length ? React.createElement("div", { className: "dash-hero__skills" },
           React.createElement("span", { style: { alignSelf: "center", color: "var(--ui-muted)", fontSize: 10, fontWeight: 700 } }, "Kỹ năng ưu tiên"),
           savedFocusSkills.map((skill) => {
             const visual = getSkillVisual(skill);
@@ -329,7 +386,8 @@ export function Dashboard(props) {
             key: item.icon,
             style: { display: "inline-flex", alignItems: "center", gap: 5, color: "var(--ui-muted)", fontSize: 10, fontWeight: 600 }
           }, React.createElement(Icon, { name: item.icon, size: 12, color: "var(--amber)" }), item.value))
-        ) : null)),
+        ) : null),
+      React.createElement(BudgetSummary, null)),
 
     React.createElement(Calendar, { embedded: true, onOpenCourse: props.onOpenCourse }),
 

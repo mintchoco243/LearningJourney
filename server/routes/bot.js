@@ -1,5 +1,6 @@
 import express from "express";
 import { query } from "../db.js";
+import { getSecret } from "../lib/integrationSecrets.js";
 
 export const botRouter = express.Router();
 
@@ -62,7 +63,7 @@ botRouter.post("/chat", async (req, res) => {
     }
 
     const baseUrl = (await getSetting("alpha_base_url", "https://knowledge.alpha.insea.io/api/")).replace(/\/?$/, "/");
-    const apiKey = await getSetting("alpha_api_key", "");
+    const apiKey = await getSecret("alpha_api_key", process.env.ALPHA_KNOWLEDGE_API_KEY || "");
     const expertId = await getSetting("alpha_expert_id", "");
 
     if (!apiKey || !expertId) {
