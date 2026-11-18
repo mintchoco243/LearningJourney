@@ -3,10 +3,13 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --omit=dev
+RUN npm ci --omit=dev
+
+COPY frontend/package*.json ./frontend/
+RUN npm ci --include=dev --prefix frontend
 
 COPY . .
+RUN npm run build --prefix frontend
 
 ENV NODE_ENV=production
-ENV DEV_AUTH_ENABLED=true
-CMD ["sh", "-c", "npm run db:migrate && npm start"]
+CMD ["sh", "-c", "npm run db:migrate && npm run start:server"]
