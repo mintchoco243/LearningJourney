@@ -9,9 +9,10 @@
   "scripts": {
     "dev": "node scripts/dev-local.mjs",
     "dev:server": "node --watch server/index.js",
-    "prestart": "node server/migrate.js && npm install --include=dev --prefix frontend && npm run build --prefix frontend",
+    "prestart": "node server/migrate.js",
     "start": "node -e \"process.env.NODE_ENV=process.env.NODE_ENV || 'production'; import('./server/index.js')\"",
     "start:server": "node -e \"process.env.NODE_ENV=process.env.NODE_ENV || 'production'; import('./server/index.js')\"",
+    "build": "npm ci --include=dev --prefix frontend && npm run build --prefix frontend",
     "db:migrate": "node server/migrate.js",
     "db:seed": "node server/seed.js",
     "db:import-policy": "node server/scripts/import-policy-html.mjs",
