@@ -65,6 +65,7 @@ authRouter.post("/refresh", requireAuth, (_req, res) => {
 });
 
 authRouter.post("/dev-login", async (req, res, next) => {
+  if (config.nodeEnv === "production") return res.status(404).json({ error: "NOT_FOUND" });
   try {
     const email = (req.body?.email || "demo@garena.vn").toLowerCase();
     if (!config.devAuthEnabled) {
