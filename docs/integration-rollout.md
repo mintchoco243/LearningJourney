@@ -24,4 +24,12 @@
 - The 20,000,000 VND cap is a configurable yearly default (`learning_budget_cap_{year}` in `app_settings`). There is no per-user cap override.
 - GiGi's own Form 46 screen calls a separate session-only budget API. In one read-only comparison, the three current-year ticket costs (including two `approving` tickets) totaled 10.1 million VND, matching the screen's 9.9 million VND remaining from the 20 million VND cap. This validates the chosen rule for that sample, not every employee. Check more employees after deployment.
 - Source records that disappear from GiGi are not automatically deleted from the local snapshot. L&D should investigate missing records rather than silently reducing used budget.
-- A read-only GiGi Form 46 API fetch was performed with a temporary key supplied in chat. No key was saved in the repository or app settings. No Alpha upload was performed. The configured MySQL host was unreachable from this workstation. The Alpha credential was verified read-only against the existing Course, Users, and Guideline folders.
+- A read-only GiGi Form 46 API fetch was performed with a temporary key supplied in chat. No real key was saved in the repository. No live Alpha upload was performed.
+
+## Local verification on 18 November 2026
+
+- The isolated worktree uses a separate `lc_local_integration_test` MariaDB schema on this computer. Its `.env` is ignored by Git. Do not copy the main workspace `.env` into this worktree: that file points to a shared database.
+- `node server/scripts/local-integration-smoke.mjs` tests GiGi ticket ingestion, annual budget math, course and testimonial joins, adoption of an existing Alpha Knowledge ID, and a second preview that skips unchanged content. The script intercepts both external APIs and refuses to run unless the database is `127.0.0.1/lc_local_integration_test`.
+- The smoke script removes its dummy integration keys and Alpha mapping when finished. It leaves a local sample account and budget snapshot for UI review.
+- The local frontend and backend run with `npm run dev`; the sample account is `budget-smoke@garena.vn`. The local profile showed 14 million VND remaining, 6 million used, 2 million pending, and the correct Vietnam update time.
+- Focused tests: 11 passed. Frontend production build: passed. Real GiGi and Alpha writes still require a separate, explicit live rollout after review.

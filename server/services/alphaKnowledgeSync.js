@@ -124,7 +124,9 @@ async function sourceDocuments(group, allowStale = false) {
   if (group === "users") {
     const state = await query("SELECT status, succeeded_at FROM gigi_budget_sync WHERE id=1");
     if (!state.rows[0]?.succeeded_at || (state.rows[0]?.status !== "success" && !allowStale)) throw new Error("GIGI_BUDGET_UNAVAILABLE_FOR_USERS");
-    const rows = await query("SELECT * FROM users WHERE is_active=TRUE AND user_type='staff' ORDER BY id");
+    const userTypeColumn = await query("SHOW COLUMNS FROM users LIKE 'user_type'");
+    const staffOnly = userTypeColumn.rowCount ? " AND user_type='staff'" : "";
+    const rows = await query(`SELECT * FROM users WHERE is_active=TRUE${staffOnly} ORDER BY id`);
     return userDocuments(rows.rows);
   }
   throw new Error("INVALID_SYNC_GROUP");

@@ -117,7 +117,7 @@ export async function budgetForEmail(email, year = Number(new Intl.DateTimeForma
   const normalizedEmail = String(email).trim().toLowerCase();
   const [tickets, state, capRaw] = await Promise.all([
     query("SELECT ticket_id, status, amount_vnd, amount_text, created_at_source, source_missing FROM gigi_budget_tickets WHERE email = $1 AND ticket_year = $2 ORDER BY ticket_id DESC", [normalizedEmail, year]),
-    query("SELECT status, succeeded_at, ticket_count, error_message FROM gigi_budget_sync WHERE id=1"),
+    query("SELECT status, UNIX_TIMESTAMP(succeeded_at) AS succeeded_epoch, ticket_count, error_message FROM gigi_budget_sync WHERE id=1"),
     getSetting(`learning_budget_cap_${year}`, "20000000"),
   ]);
   const cap = Number(capRaw);
@@ -125,7 +125,7 @@ export async function budgetForEmail(email, year = Number(new Intl.DateTimeForma
   const sync = state.rows[0] || {};
   return { year, ...totals, ticketCount: tickets.rowCount,
     tickets: tickets.rows.map((ticket) => ({ id: ticket.ticket_id, status: ticket.status, amountVnd: ticket.amount_vnd, createdAt: ticket.created_at_source, sourceMissing: Boolean(ticket.source_missing) })),
-    fetchedAt: sync.succeeded_at || null, sourceStatus: sync.status || "never" };
+    fetchedAt: sync.succeeded_epoch == null ? null : new Date(Number(sync.succeeded_epoch) * 1000).toISOString(), sourceStatus: sync.status || "never" };
 }
 
 export function summarizeBudget(tickets, cap) {
