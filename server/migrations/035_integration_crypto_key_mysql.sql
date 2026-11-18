@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS integration_crypto_keys (
+  key_id VARCHAR(50) PRIMARY KEY,
+  secret_value VARCHAR(128) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
