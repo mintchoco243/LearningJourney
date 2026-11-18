@@ -59,6 +59,7 @@ const { Icon } = GLHUI;
     { id: "site_feedback", label: "Site Feedback",  icon: "message-square" },
     { id: "minigame", label: "Minigame Launch", icon: "gamepad-2" },
     { id: "bot_settings", label: "Cấu hình Hệ thống", icon: "sliders" },
+      { id: "alpha_sync", label: "Alpha Knowledge Sync", icon: "refresh-cw" },
     { id: "accounts",     label: "Admin Accounts",  icon: "shield", superOnly: true },
   ];
 
@@ -172,12 +173,15 @@ const { Icon } = GLHUI;
   }
 
   /* ---- Toggle switch ---- */
-  function Toggle({ value, onChange, disabled = false }) {
+  function Toggle({ value, onChange, disabled = false, label }) {
     return (
       <button
         className={`adm-toggle${value ? " is-on" : ""}`}
         onClick={() => !disabled && onChange(!value)}
         type="button"
+        disabled={disabled}
+        aria-pressed={Boolean(value)}
+        aria-label={label || "Toggle"}
         style={{ opacity: disabled ? 0.38 : 1, cursor: disabled ? "not-allowed" : "pointer" }}
       >
         <span className="adm-toggle__thumb" />

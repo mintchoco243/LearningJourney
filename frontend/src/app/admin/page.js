@@ -10,6 +10,7 @@ import { PolicyScreen, AccountsScreen, TestimonialsScreen, SiteFeedbackScreen, I
 import { UsersScreen } from '@/components/admin/ADMScreensUsers';
 import { FaqsScreen } from '@/components/admin/ADMScreensFaqs';
 import { MinigameAdminScreen } from '@/components/admin/ADMScreensMinigame';
+import { AlphaSyncScreen } from '@/components/admin/ADMScreensAlphaSync';
 
 const { Sidebar } = ADMComponents;
 
@@ -84,6 +85,7 @@ function DevLoginButton() {
     site_feedback:{ label: "Site Feedback" },
     minigame:     { label: "Minigame Launch" },
     bot_settings: { label: "Cấu hình Hệ thống" },
+    alpha_sync:   { label: "Alpha Knowledge Sync" },
     accounts:     { label: "Admin Accounts" },
   };
 
@@ -241,6 +243,7 @@ function DevLoginButton() {
       site_feedback:<SiteFeedbackScreen />,
       minigame:     <MinigameAdminScreen />,
       bot_settings: <IntegrationsScreen />,
+      alpha_sync:   <AlphaSyncScreen />,
       accounts:     adminRole === "super_admin" ? <AccountsScreen /> : null,
     };
 

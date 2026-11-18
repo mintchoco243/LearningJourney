@@ -1,40 +1,25 @@
 import express from "express";
-import { query } from "../../db.js";
 import { config } from "../../config.js";
+import { getSetting, saveSetting, getSecret, saveSecret } from "../../lib/integrationSecrets.js";
+import { checkGigiConnection, syncGigiBudget } from "../../services/gigiBudget.js";
 
 export const adminSettingsRouter = express.Router();
 
-async function getSetting(key, defaultValue = "") {
-  try {
-    const res = await query("SELECT setting_value FROM app_settings WHERE setting_key = $1", [key]);
-    if (res && res.rowCount > 0) {
-      return res.rows[0].setting_value || defaultValue;
-    }
-  } catch (e) {
-    console.warn(`Error reading setting ${key}:`, e.message);
-  }
-  return defaultValue;
-}
-
-async function saveSetting(key, value) {
-  const check = await query("SELECT setting_key FROM app_settings WHERE setting_key = $1", [key]);
-  if (check && check.rowCount > 0) {
-    await query("UPDATE app_settings SET setting_value = $2 WHERE setting_key = $1", [key, value]);
-  } else {
-    await query("INSERT INTO app_settings (setting_key, setting_value) VALUES ($1, $2)", [key, value]);
-  }
+function canManageIntegrations(req, res, next) {
+  if (["super_admin", "ld_admin"].includes(req.adminRole)) return next();
+  return res.status(403).json({ error: "INTEGRATION_ADMIN_REQUIRED" });
 }
 
 // GET /admin/api/settings/bot
 adminSettingsRouter.get("/bot", async (req, res, next) => {
   try {
     const baseUrl = await getSetting("alpha_base_url", "https://knowledge.alpha.insea.io/api/");
-    const apiKey = await getSetting("alpha_api_key", "");
+    const apiKey = await getSecret("alpha_api_key", process.env.ALPHA_KNOWLEDGE_API_KEY || "");
     const expertId = await getSetting("alpha_expert_id", "");
 
     res.json({
       baseUrl,
-      apiKey,
+      hasApiKey: Boolean(apiKey),
       expertId
     });
   } catch (error) {
@@ -43,18 +28,70 @@ adminSettingsRouter.get("/bot", async (req, res, next) => {
 });
 
 // POST /admin/api/settings/bot
-adminSettingsRouter.post("/bot", async (req, res, next) => {
+adminSettingsRouter.post("/bot", canManageIntegrations, async (req, res, next) => {
   try {
     const { baseUrl, apiKey, expertId } = req.body;
 
     if (baseUrl !== undefined) await saveSetting("alpha_base_url", baseUrl.trim());
-    if (apiKey !== undefined) await saveSetting("alpha_api_key", apiKey.trim());
+    if (apiKey !== undefined && String(apiKey).trim()) await saveSecret("alpha_api_key", String(apiKey).trim());
     if (expertId !== undefined) await saveSetting("alpha_expert_id", expertId.trim());
 
     res.json({ success: true, message: "Đã cập nhật cấu hình AI Bot thành công." });
   } catch (error) {
     next(error);
   }
+});
+
+// Separate Alpha Knowledge ingestion from the chat bot connection.
+adminSettingsRouter.get("/alpha-sync", async (_req, res, next) => {
+  try {
+    const baseUrl = await getSetting("alpha_sync_base_url", "https://knowledge.alpha.insea.io/api/");
+    const legacyExpertId = await getSetting("alpha_expert_id", "");
+    const expertId = await getSetting("alpha_sync_expert_id", process.env.ALPHA_SYNC_EXPERT_ID || legacyExpertId || process.env.ALPHA_KNOWLEDGE_EXPERT_ID || "");
+    const legacyKey = await getSecret("alpha_api_key", process.env.ALPHA_KNOWLEDGE_API_KEY || "");
+    const key = await getSecret("alpha_sync_api_key", process.env.ALPHA_SYNC_API_KEY || legacyKey);
+    if (key && !await getSetting("alpha_sync_api_key", "")) {
+      await saveSecret("alpha_sync_api_key", key);
+      if (expertId) await saveSetting("alpha_sync_expert_id", expertId);
+    }
+    res.json({ baseUrl, expertId, hasApiKey: Boolean(key) });
+  } catch (error) { next(error); }
+});
+
+adminSettingsRouter.post("/alpha-sync", canManageIntegrations, async (req, res, next) => {
+  try {
+    const { baseUrl, expertId, apiKey } = req.body;
+    if (baseUrl !== undefined) await saveSetting("alpha_sync_base_url", String(baseUrl).trim());
+    if (expertId !== undefined) await saveSetting("alpha_sync_expert_id", String(expertId).trim());
+    if (apiKey !== undefined && String(apiKey).trim()) await saveSecret("alpha_sync_api_key", String(apiKey).trim());
+    res.json({ success: true });
+  } catch (error) { next(error); }
+});
+
+adminSettingsRouter.get("/gigi", async (_req, res, next) => {
+  try {
+    const key = await getSecret("gigi_client_key", process.env.GIGI_CLIENT_KEY || "");
+    res.json({ hasApiKey: Boolean(key) });
+  } catch (error) { next(error); }
+});
+
+adminSettingsRouter.post("/gigi", canManageIntegrations, async (req, res, next) => {
+  try {
+    const key = String(req.body.apiKey || "").trim();
+    if (!key) return res.status(400).json({ error: "GIGI_KEY_REQUIRED" });
+    await saveSecret("gigi_client_key", key);
+    res.json({ success: true });
+  } catch (error) { next(error); }
+});
+
+adminSettingsRouter.post("/gigi/check", canManageIntegrations, async (_req, res) => {
+  try { res.json(await checkGigiConnection()); }
+  catch (error) { res.status(502).json({ error: error.message }); }
+});
+
+adminSettingsRouter.post("/gigi/sync", canManageIntegrations, async (_req, res) => {
+  try { res.json(await syncGigiBudget()); }
+  catch (error) { res.status(502).json({ error: error.message }); }
 });
 
 // GET /admin/api/settings/analytics

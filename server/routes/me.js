@@ -3,8 +3,16 @@ import { query } from "../db.js";
 import { canonicalSkill, canonicalizeFocusSkills } from "../lib/skillCatalog.js";
 import { attachPublicCourseRatings } from "../services/publicCourseRatings.js";
 import { syncMinigameTasks } from "./minigame.js";
+import { budgetForEmail } from "../services/gigiBudget.js";
 
 export const meRouter = express.Router();
+
+meRouter.get("/budget", async (req, res, next) => {
+  try {
+    res.set("Cache-Control", "no-store");
+    res.json(await budgetForEmail(req.user.email));
+  } catch (error) { next(error); }
+});
 
 meRouter.get("/", async (req, res) => {
   const profile = await query("SELECT * FROM users WHERE id = $1", [req.user.id]);

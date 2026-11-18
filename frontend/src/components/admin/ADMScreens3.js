@@ -812,9 +812,15 @@ const D = ADM_DATA;
     // Bot states
     const [baseUrl, setBaseUrl] = React.useState("");
     const [apiKey, setApiKey] = React.useState("");
+    const [hasBotKey, setHasBotKey] = React.useState(false);
     const [expertId, setExpertId] = React.useState("");
     const [loadingBot, setLoadingBot] = React.useState(true);
     const [savingBot, setSavingBot] = React.useState(false);
+    const [gigiKey, setGigiKey] = React.useState("");
+    const [hasGigiKey, setHasGigiKey] = React.useState(false);
+    const [gigiBusy, setGigiBusy] = React.useState(false);
+    const [alphaSync, setAlphaSync] = React.useState({ baseUrl: "https://knowledge.alpha.insea.io/api/", expertId: "", apiKey: "", hasApiKey: false, usingServerKey: false });
+    const [alphaBusy, setAlphaBusy] = React.useState(false);
 
     // GA states
     const [propertyId, setPropertyId] = React.useState("");
@@ -829,7 +835,8 @@ const D = ADM_DATA;
       apiFetch("/admin/api/settings/bot")
         .then(data => {
           setBaseUrl(data.baseUrl || "");
-          setApiKey(data.apiKey || "");
+          setApiKey("");
+          setHasBotKey(Boolean(data.hasApiKey));
           setExpertId(data.expertId || "");
         })
         .catch(() => {})
@@ -844,6 +851,8 @@ const D = ADM_DATA;
         })
         .catch(() => {})
         .finally(() => setLoadingGa(false));
+      apiFetch("/admin/api/settings/gigi").then(data => setHasGigiKey(Boolean(data.hasApiKey))).catch(() => {});
+      apiFetch("/admin/api/settings/alpha-sync").then(data => setAlphaSync(current => ({ ...current, ...data, apiKey: "" }))).catch(() => {});
     }, []);
 
     async function handleSaveBot(e) {
@@ -854,14 +863,52 @@ const D = ADM_DATA;
         const res = await apiFetch("/admin/api/settings/bot", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ baseUrl, apiKey, expertId })
+           body: JSON.stringify({ baseUrl, ...(apiKey.trim() ? { apiKey: apiKey.trim() } : {}), expertId })
         });
+         if (apiKey.trim()) setHasBotKey(true);
+         setApiKey("");
         setMsg(res.message || "Đã lưu cấu hình AI Bot thành công!");
       } catch (err) {
         alert("Lỗi khi lưu cấu hình AI Bot: " + err.message);
       } finally {
         setSavingBot(false);
       }
+    }
+
+    async function saveGigi(e) {
+      e.preventDefault(); setGigiBusy(true); setMsg("");
+      try {
+        await apiFetch("/admin/api/settings/gigi", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ apiKey: gigiKey }) });
+        setGigiKey(""); setHasGigiKey(true); setMsg("Đã lưu key GiGi. Bấm Kiểm tra kết nối để xác nhận quyền Form 46.");
+      } catch (error) { setMsg("Không lưu được key GiGi: " + error.message); }
+      finally { setGigiBusy(false); }
+    }
+
+    async function checkGigi() {
+      setGigiBusy(true); setMsg("");
+      try {
+        const result = await apiFetch("/admin/api/settings/gigi/check", { method: "POST" });
+        setMsg(result.state === "connected" ? "Đã đọc được ticket Form 46." : result.state === "unverified_empty" ? "API trả danh sách rỗng. Chưa thể xác nhận key có quyền Form 46." : "Chưa có key GiGi.");
+      } catch (error) { setMsg("Kiểm tra GiGi thất bại: " + error.message); }
+      finally { setGigiBusy(false); }
+    }
+
+    async function refreshGigi() {
+      setGigiBusy(true); setMsg("");
+      try {
+        const result = await apiFetch("/admin/api/settings/gigi/sync", { method: "POST" });
+        setMsg(result.status === "success" ? `Đã cập nhật ${result.ticketCount} ticket Form 46.` : `Trạng thái: ${result.status}`);
+      } catch (error) { setMsg("Chưa cập nhật được budget: " + error.message); }
+      finally { setGigiBusy(false); }
+    }
+
+    async function saveAlphaSync(e) {
+      e.preventDefault(); setAlphaBusy(true); setMsg("");
+      try {
+        await apiFetch("/admin/api/settings/alpha-sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ baseUrl: alphaSync.baseUrl, expertId: alphaSync.expertId, ...(alphaSync.apiKey.trim() ? { apiKey: alphaSync.apiKey.trim() } : {}) }) });
+        setAlphaSync(current => ({ ...current, apiKey: "", hasApiKey: true })); setMsg("Đã lưu kết nối Alpha Knowledge Sync.");
+      } catch (error) { setMsg("Không lưu được kết nối Alpha: " + error.message); }
+      finally { setAlphaBusy(false); }
     }
 
     async function handleSaveGa(e) {
@@ -896,7 +943,7 @@ const D = ADM_DATA;
       <div style={{ maxWidth: 720 }}>
         <PageHeader
           title="Cấu hình Hệ thống (Integrations)"
-          sub="Thiết lập kết nối với các dịch vụ bên ngoài (Google Analytics & AI Bot Alpha Knowledge)."
+          sub="Thiết lập kết nối Google Analytics, GiGi, Alpha Knowledge Sync và Bot."
         />
 
         <div style={{ display: "flex", gap: 10, borderBottom: "1px solid var(--rpg-border)", paddingBottom: 12, marginBottom: 24, marginTop: 20 }}>
@@ -916,6 +963,8 @@ const D = ADM_DATA;
           >
             AI Bot (Alpha Knowledge)
           </button>
+          <button type="button" className={`adm-btn ${activeTab === "gigi" ? "adm-btn--primary" : ""}`} onClick={() => { setActiveTab("gigi"); setMsg(""); }}>GiGi Form 46</button>
+          <button type="button" className={`adm-btn ${activeTab === "alpha" ? "adm-btn--primary" : ""}`} onClick={() => { setActiveTab("alpha"); setMsg(""); }}>Alpha Knowledge Sync</button>
         </div>
 
         {activeTab === "ga" ? (
@@ -997,7 +1046,7 @@ const D = ADM_DATA;
               </div>
             </form>
           </div>
-        ) : (
+        ) : activeTab === "bot" ? (
           <div className="adm-section">
             <form onSubmit={handleSaveBot} style={{ display: "grid", gap: 20 }}>
               <div>
@@ -1034,7 +1083,7 @@ const D = ADM_DATA;
 
               <div>
                 <label style={{ display: "block", color: "#fff", fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-                  API Key (Bearer Token) <span style={{ color: "var(--amber)" }}>*</span>
+                  API Key của Bot {hasBotKey ? <span style={{ color: "var(--rpg-muted)", fontWeight: 400 }}>(đã cấu hình; để trống nếu giữ nguyên)</span> : null}
                 </label>
                 <input
                   type="password"
@@ -1045,7 +1094,7 @@ const D = ADM_DATA;
                   placeholder="Nhập API Key của bot..."
                 />
                 <div style={{ color: "var(--rpg-muted)", fontSize: 12, marginTop: 4 }}>
-                  Lấy trong phần Cài đặt Bot -&gt; Khóa API trên hệ thống Alpha Knowledge. Key sẽ được mã hóa và lưu an toàn trong Database của server production.
+                  Kết nối này chỉ dùng cho Bot. Key sẽ không hiện lại sau khi lưu.
                 </div>
               </div>
 
@@ -1060,6 +1109,34 @@ const D = ADM_DATA;
                   {savingBot ? "Đang lưu Bot..." : "Lưu Cấu Hình Bot"}
                 </button>
               </div>
+            </form>
+          </div>
+        ) : activeTab === "gigi" ? (
+          <div className="adm-section" style={{ display: "grid", gap: 16 }}>
+            <form onSubmit={saveGigi} style={{ display: "grid", gap: 12 }}>
+              <label style={{ color: "var(--rpg-text)", fontWeight: 700 }}>Client-ID key của GiGi Form 46 {hasGigiKey ? "· Đã cấu hình" : "· Chưa cấu hình"}</label>
+              <input type="password" className="adm-input" autoComplete="new-password" value={gigiKey} onChange={e => setGigiKey(e.target.value)} placeholder={hasGigiKey ? "Nhập key mới nếu muốn thay" : "Dán key GiGi tại đây"} style={{ width: "100%" }} />
+              <div style={{ color: "var(--rpg-muted)", fontSize: 12 }}>Key cần có quyền đọc Form 46. Sau khi lưu, key không hiển thị lại.</div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button className="adm-btn adm-btn--primary" type="submit" disabled={gigiBusy || !gigiKey.trim()}>Lưu key GiGi</button>
+                <button className="adm-btn" type="button" disabled={gigiBusy || !hasGigiKey} onClick={checkGigi}>Kiểm tra kết nối</button>
+                <button className="adm-btn" type="button" disabled={gigiBusy || !hasGigiKey} onClick={refreshGigi}>Cập nhật budget ngay</button>
+              </div>
+            </form>
+            {msg && <div role="status" style={{ color: "var(--rpg-text)" }}>{msg}</div>}
+          </div>
+        ) : (
+          <div className="adm-section">
+            <form onSubmit={saveAlphaSync} style={{ display: "grid", gap: 14 }}>
+              <label style={{ color: "var(--rpg-text)", fontWeight: 700 }}>Alpha Knowledge API URL</label>
+              <input className="adm-input" value={alphaSync.baseUrl} onChange={e => setAlphaSync(s => ({ ...s, baseUrl: e.target.value }))} style={{ width: "100%" }} />
+              <label style={{ color: "var(--rpg-text)", fontWeight: 700 }}>Expert ID</label>
+              <input className="adm-input" value={alphaSync.expertId} onChange={e => setAlphaSync(s => ({ ...s, expertId: e.target.value }))} style={{ width: "100%" }} />
+              <label style={{ color: "var(--rpg-text)", fontWeight: 700 }}>API key riêng cho đồng bộ {alphaSync.hasApiKey ? "· Đã cấu hình" : "· Chưa cấu hình"}</label>
+              <input type="password" className="adm-input" autoComplete="new-password" value={alphaSync.apiKey} onChange={e => setAlphaSync(s => ({ ...s, apiKey: e.target.value }))} placeholder="Để trống nếu giữ key hiện có" style={{ width: "100%" }} />
+              <div style={{ color: "var(--rpg-muted)", fontSize: 12 }}>Kết nối này độc lập với Bot. Hiện có thể dùng key trên máy chủ; sau này thay Bot sẽ không ảnh hưởng tới đồng bộ Alpha.</div>
+              <button className="adm-btn adm-btn--primary" type="submit" disabled={alphaBusy || !alphaSync.expertId.trim()}>Lưu kết nối Alpha Sync</button>
+              {msg && <div role="status" style={{ color: "var(--rpg-text)" }}>{msg}</div>}
             </form>
           </div>
         )}
